@@ -256,8 +256,10 @@ def recv_complex_data(comm, source_rank):
     object
         Received data object from another MPI process.
     """
-    # Recv main message pack buffer
-    buf_size = comm.recv(source=source_rank)
+    # Recv main message pack buffer.
+    # First MPI call uses busy wait loop to remove possible contention
+    # in a long running data receive operations.
+    buf_size = mpi_busy_wait_recv(comm, source_rank)
     msgpack_buffer = bytearray(buf_size)
     comm.Recv([msgpack_buffer, MPI.CHAR], source=source_rank)
 
