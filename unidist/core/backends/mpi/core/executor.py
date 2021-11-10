@@ -8,7 +8,6 @@ import weakref
 import itertools
 from collections import defaultdict
 
-import sys
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication

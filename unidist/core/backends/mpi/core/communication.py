@@ -4,14 +4,14 @@
 
 """MPI communication interfaces."""
 
+import time
 import mpi4py
-
-mpi4py.rc(recv_mprobe=False)
 from mpi4py import MPI
 
-import time
-
 from unidist.core.backends.mpi.core.serialization import MPISerializer
+
+mpi4py.rc(recv_mprobe=False)
+
 
 # Sleep time setting inside the busy wait loop
 sleep_time = 0.0001
