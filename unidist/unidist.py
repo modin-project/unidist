@@ -6,18 +6,10 @@ import ipaddress
 
 
 def get_unidist_home():
-    pacakge_info = subprocess.run(
-        ["pip3", "show", "unidist"], capture_output=True, text=True
+    unidist_home_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    os.environ["PYTHONPATH"] = (
+        os.environ.get("PYTHONPATH", "") + os.pathsep + unidist_home_path
     )
-    if pacakge_info.stderr:
-        unidist_home_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..")
-        )
-        os.environ["PYTHONPATH"] = (
-            os.environ.get("PYTHONPATH", "") + os.pathsep + unidist_home_path
-        )
-    else:
-        unidist_home_path = pacakge_info.stdout.split("Location: ")[1].split("\n")[0]
 
     return unidist_home_path
 
