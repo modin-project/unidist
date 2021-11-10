@@ -7,6 +7,7 @@
 import time
 import mpi4py
 
+# TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False)
 from mpi4py import MPI  # noqa: E402
 
