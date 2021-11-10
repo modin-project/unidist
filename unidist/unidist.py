@@ -22,7 +22,7 @@ def get_unidist_home():
     return unidist_home_path
 
 
-def validate_ips(ips):
+def validate_hosts(ips):
     if not isinstance(ips, list):
         ips = [ips]
 
@@ -56,12 +56,12 @@ def create_command(args):
     if args.backend == "MPI":
         unidist_home_path = get_unidist_home()
 
-        ips = validate_ips(args.ip_address)
+        hosts = validate_hosts(args.hosts)
         n_workers = validate_n_workers(args.n_workers)
 
-        assert len(ips) == len(
+        assert len(hosts) == len(
             n_workers
-        ), "`n_workers` and `ip_address` parameters must have the similar number of values."
+        ), "`n_workers` and `hosts` parameters must have the similar number of values."
 
         command = [
             "mpiexec",
@@ -92,8 +92,8 @@ def create_command(args):
 
         command += command_executor + [":"] + command_monitor
 
-        for ip, n in zip(ips, n_workers):
-            command += [":"] + get_worker_command(ip, n)
+        for host, n in zip(hosts, n_workers):
+            command += [":"] + get_worker_command(host, n)
     else:
         command = [args.executor, args.script]
 
@@ -121,8 +121,8 @@ def main():
         help="set a number of workers. If `default`, will be equal to the number of CPUs. Can accept multiple values in case of working on several nodes",
     )
     parser.add_argument(
-        "-ip",
-        "--ip_address",
+        "-hosts",
+        "--hosts",
         default="localhost",
         nargs="+",
         help="set an node ip to use. Can accept multiple values in case of working on several nodes. Default is `localhost`",
