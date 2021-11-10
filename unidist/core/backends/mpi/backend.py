@@ -15,6 +15,7 @@ from unidist.core.base.backend import Backend
 # Static variable for `get_ip` function
 host = None
 
+
 class MPIBackend(Backend):
     """The class that implements the interface in ``Backend`` using MPI."""
 

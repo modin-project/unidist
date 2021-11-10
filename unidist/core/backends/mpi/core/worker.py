@@ -16,8 +16,9 @@ import unidist.core.backends.mpi.core.communication as communication
 comm, rank, world_size = communication.get_mpi_state()
 
 # Logger configuration
-log_file = 'worker_{}.log'.format(rank)
-w_logger = common.get_logger('worker', log_file)
+log_file = "worker_{}.log".format(rank)
+w_logger = common.get_logger("worker", log_file)
+
 
 class ObjectStore:
     """
@@ -141,6 +142,7 @@ class ObjectStore:
                 w_logger.debug("CLEANUP DataOwnerMap id {}".format(data_id._id))
                 del self._data_owner_map[data_id]
 
+
 class RequestStore:
     """
     Class that stores data requests that couldn't be satisfied now.
@@ -149,6 +151,7 @@ class RequestStore:
     -----
     Supports GET and WAIT requests.
     """
+
     REQ_DATA = 0
     REQ_WAIT = 1
     REQ_DATA_CACHE = 2
@@ -260,9 +263,10 @@ class RequestStore:
                 comm.send(data_ids, dest=communication.MPIRank.ROOT)
                 del self._wait_request[data_ids]
 
+
 class TaskStore:
     """Class that stores tasks/actor-tasks that couldn't be executed due to data dependencies."""
-    
+
     def __init__(self):
         # Incomplete tasks list - arguments not ready yet
         self._pending_tasks_list = []
@@ -327,13 +331,14 @@ class TaskStore:
                     updated_list.append(pending_request)
             self._pending_actor_tasks_list = updated_list
 
+
 class AsyncOperations:
     """
     Class that stores MPI async communication handlers.
 
     Class holds a reference to sending data to prolong data lifetime during send operation.
     """
-    
+
     def __init__(self):
         # I-prefixed mpi call handlers
         self._send_async_handlers = []
@@ -351,6 +356,7 @@ class AsyncOperations:
 
     def check(self):
         """Check all MPI async send requests readiness and remove a reference to sending data."""
+
         def is_ready(handler):
             is_ready = handler.Test()
             if is_ready:
@@ -360,7 +366,9 @@ class AsyncOperations:
             return is_ready
 
         # tup[0] - mpi async send handler object
-        self._send_async_handlers[:] = [tup for tup in self._send_async_handlers if not is_ready(tup[0])]
+        self._send_async_handlers[:] = [
+            tup for tup in self._send_async_handlers if not is_ready(tup[0])
+        ]
 
     def finish(self):
         """Cancel all MPI async send requests."""
@@ -369,6 +377,7 @@ class AsyncOperations:
             handler.Cancel()
             handler.Wait()
         self._send_async_handlers.clear()
+
 
 # Local data
 
@@ -384,6 +393,7 @@ ActorsMap = {}
 # --------------------------------------------------------------------------------------
 # Operations implementation
 # --------------------------------------------------------------------------------------
+
 
 def process_wait_request(data_id):
     """
@@ -407,6 +417,7 @@ def process_wait_request(data_id):
     else:
         request_store.put(data_id, communication.MPIRank.ROOT, RequestStore.REQ_WAIT)
         w_logger.debug("Pending wait request {} id".format(data_id._id))
+
 
 def process_get_request(source_rank, data_id):
     """
@@ -438,13 +449,22 @@ def process_get_request(source_rank, data_id):
                 "data": object_store.get(data_id),
             }
             # Async send to avoid possible dead-lock between workers
-            h_list = communication.isend_complex_operation(comm, operation_type, operation_data, source_rank)
+            h_list = communication.isend_complex_operation(
+                comm, operation_type, operation_data, source_rank
+            )
             async_operations.extend(h_list)
 
-        w_logger.debug("Send requested {} id to {} rank - PROCESSED".format(data_id._id, source_rank))
+        w_logger.debug(
+            "Send requested {} id to {} rank - PROCESSED".format(
+                data_id._id, source_rank
+            )
+        )
     else:
-        w_logger.debug("Pending request {} id to {} rank".format(data_id._id, source_rank))
+        w_logger.debug(
+            "Pending request {} id to {} rank".format(data_id._id, source_rank)
+        )
         request_store.put(data_id, source_rank, RequestStore.REQ_DATA)
+
 
 def request_worker_data(dest_rank, data_id):
     """
@@ -469,6 +489,7 @@ def request_worker_data(dest_rank, data_id):
 
     # Save request in order to prevent massive communication during pending task checks
     request_store.put(data_id, dest_rank, RequestStore.REQ_DATA_CACHE)
+
 
 def execute_received_task(output_data_ids, task, args, kwargs):
     """
@@ -524,7 +545,9 @@ def execute_received_task(output_data_ids, task, args, kwargs):
             else:
                 object_store.put(output_data_ids, output_values)
     # Monitor the task execution
-    communication.mpi_send_object(comm, common.Operation.TASK_DONE, communication.MPIRank.MONITOR)
+    communication.mpi_send_object(
+        comm, common.Operation.TASK_DONE, communication.MPIRank.MONITOR
+    )
 
 
 def unwrap_local_data_id(arg):
@@ -565,6 +588,7 @@ def unwrap_local_data_id(arg):
     else:
         return arg, False
 
+
 def process_task_request(request):
     """
     Parse request data and execute the task if possible.
@@ -588,7 +612,9 @@ def process_task_request(request):
     output_ids = request["output"]
 
     w_logger.debug("REMOTE args: {}".format(common.unwrapped_data_ids_list(args)))
-    w_logger.debug("REMOTE outputs: {}".format(common.unwrapped_data_ids_list(output_ids)))
+    w_logger.debug(
+        "REMOTE outputs: {}".format(common.unwrapped_data_ids_list(output_ids))
+    )
 
     # DataID -> real data
     args, is_pending = common.materialize_data_ids(args, unwrap_local_data_id)
@@ -607,9 +633,11 @@ def process_task_request(request):
             request_store.check_pending_wait_requests(output_ids)
         return None
 
+
 # --------------------------------------------------------------------------------------
 # Worker event processing loop
 # --------------------------------------------------------------------------------------
+
 
 def event_loop():
     """
@@ -645,7 +673,11 @@ def event_loop():
 
         elif operation_type == common.Operation.PUT_DATA:
             request = communication.recv_complex_operation(comm, source_rank)
-            w_logger.debug("PUT (RECV) {} id from {} rank".format(request["id"]._id, request["source"]))
+            w_logger.debug(
+                "PUT (RECV) {} id from {} rank".format(
+                    request["id"]._id, request["source"]
+                )
+            )
             object_store.put(request["id"], request["data"])
 
             # Clear cached request to another worker, if data_id became available
@@ -660,7 +692,11 @@ def event_loop():
             request = communication.recv_simple_operation(comm, source_rank)
             object_store.put_data_owner(request["id"], request["owner"])
 
-            w_logger.debug("PUT_OWNER {} id is owned by {} rank".format(request["id"]._id, request["owner"]))
+            w_logger.debug(
+                "PUT_OWNER {} id is owned by {} rank".format(
+                    request["id"]._id, request["owner"]
+                )
+            )
 
         elif operation_type == common.Operation.WAIT:
             request = communication.recv_simple_operation(comm, source_rank)
@@ -707,7 +743,7 @@ def event_loop():
         # Check completion status of previous async MPI routines
         async_operations.check()
 
+
 # Process requests in an infinite loop
 if rank != communication.MPIRank.ROOT:
     event_loop()
-

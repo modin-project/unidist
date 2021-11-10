@@ -4,21 +4,26 @@
 
 """MPI communication interfaces."""
 
-import mpi4py
-mpi4py.rc(recv_mprobe=False)
-from mpi4py import MPI
-
 import time
+import mpi4py
 
-from unidist.core.backends.mpi.core.serialization import MPISerializer
+# TODO: Find a way to move this after all imports
+mpi4py.rc(recv_mprobe=False)
+from mpi4py import MPI  # noqa: E402
+
+from unidist.core.backends.mpi.core.serialization import MPISerializer  # noqa: E402
+
 
 # Sleep time setting inside the busy wait loop
 sleep_time = 0.0001
 
+
 class MPIRank:
     """Class that describes ranks assignment."""
+
     ROOT = 0
     MONITOR = 1
+
 
 def get_mpi_state():
     """
@@ -38,7 +43,9 @@ def get_mpi_state():
     world_size = comm.Get_size()
     return comm, rank, world_size
 
+
 # Main communication utilities
+
 
 def mpi_send_object(comm, data, dest_rank):
     """
@@ -54,6 +61,7 @@ def mpi_send_object(comm, data, dest_rank):
         Target MPI process to transfer data.
     """
     comm.send(data, dest=dest_rank)
+
 
 def mpi_isend_object(comm, data, dest_rank):
     """
@@ -75,6 +83,7 @@ def mpi_isend_object(comm, data, dest_rank):
     """
     return comm.isend(data, dest=dest_rank)
 
+
 def mpi_send_buffer(comm, data, dest_rank):
     """
     Send buffer object to another MPI rank in a blocking way.
@@ -89,6 +98,7 @@ def mpi_send_buffer(comm, data, dest_rank):
         Target MPI process to transfer data.
     """
     comm.Send([data, MPI.CHAR], dest=dest_rank)
+
 
 def mpi_isend_buffer(comm, data, dest_rank):
     """
@@ -110,6 +120,7 @@ def mpi_isend_buffer(comm, data, dest_rank):
     """
     return comm.Isend([data, MPI.CHAR], dest=dest_rank)
 
+
 def mpi_busy_wait_recv(comm, source_rank):
     """
     Wait for receive operation result in a custom busy wait loop.
@@ -128,6 +139,7 @@ def mpi_busy_wait_recv(comm, source_rank):
             return data
         else:
             time.sleep(sleep_time)
+
 
 def recv_operation_type(comm):
     """
@@ -156,8 +168,10 @@ def recv_operation_type(comm):
         else:
             time.sleep(sleep_time)
 
+
 # Communication operation functions
 # ---------------------------------
+
 
 def send_complex_data(comm, data, dest_rank):
     """
@@ -189,6 +203,7 @@ def send_complex_data(comm, data, dest_rank):
         comm.send(len(raw_buffers[i].raw()), dest=dest_rank)
         comm.Send([raw_buffers[i], MPI.CHAR], dest=dest_rank)
     comm.send(len_buffers, dest=dest_rank)
+
 
 def isend_complex_data(comm, data, dest_rank):
     """
@@ -238,6 +253,7 @@ def isend_complex_data(comm, data, dest_rank):
 
     return handler_list
 
+
 def recv_complex_data(comm, source_rank):
     """
     Receive the data that may consist of different user provided complex types, lambdas and buffers.
@@ -281,8 +297,10 @@ def recv_complex_data(comm, source_rank):
     # Start unpacking
     return deserializer.deserialize(msgpack_buffer)
 
+
 # Public API
-#-----------
+# -----------
+
 
 def send_complex_operation(comm, operation_type, operation_data, dest_rank):
     """
@@ -305,6 +323,7 @@ def send_complex_operation(comm, operation_type, operation_data, dest_rank):
     comm.send(operation_type, dest=dest_rank)
     # Send complex dictionary data
     send_complex_data(comm, operation_data, dest_rank)
+
 
 def isend_complex_operation(comm, operation_type, operation_data, dest_rank):
     """
@@ -337,6 +356,7 @@ def isend_complex_operation(comm, operation_type, operation_data, dest_rank):
     handler_list.extend(h2_list)
     return handler_list
 
+
 def recv_complex_operation(comm, source_rank):
     """
     Receive the data that may consist of different user provided complex types, lambdas and buffers.
@@ -356,6 +376,7 @@ def recv_complex_operation(comm, source_rank):
         Received data object from another MPI process.
     """
     return recv_complex_data(comm, source_rank)
+
 
 def send_simple_operation(comm, operation_type, operation_data, dest_rank):
     """
@@ -380,6 +401,7 @@ def send_simple_operation(comm, operation_type, operation_data, dest_rank):
     mpi_send_object(comm, operation_type, dest_rank)
     # Send request details
     mpi_send_object(comm, operation_data, dest_rank)
+
 
 def recv_simple_operation(comm, source_rank):
     """

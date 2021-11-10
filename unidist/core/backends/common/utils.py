@@ -6,6 +6,7 @@
 
 from unidist import is_object_ref
 
+
 def unwrap_object_refs(obj_refs):
     """Find all ``unidist.core.base.ObjectRef`` instances and unwrap underlying objects.
 
@@ -22,7 +23,9 @@ def unwrap_object_refs(obj_refs):
         container = type(obj_refs)()
         for value in obj_refs:
             if isinstance(value, (list, tuple, dict)):
-                unwrapped_value = unwrap_object_refs({value: obj_refs[value]} if isinstance(obj_refs, dict) else value)
+                unwrapped_value = unwrap_object_refs(
+                    {value: obj_refs[value]} if isinstance(obj_refs, dict) else value
+                )
                 if isinstance(container, list):
                     container += [unwrapped_value]
                 elif isinstance(container, tuple):

@@ -8,7 +8,6 @@ import weakref
 import itertools
 from collections import defaultdict
 
-import sys
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
@@ -18,6 +17,7 @@ from unidist.core.backends.common.data_id import is_data_id
 # MPI stuff
 comm, rank, world_size = communication.get_mpi_state()
 
+
 class ObjectStore:
     """
     Class that stores objects and provides access to these from master process.
@@ -26,6 +26,7 @@ class ObjectStore:
     -----
     Currently, the storage is local to the current process only.
     """
+
     def __init__(self):
         # Add local data {DataID : Data}
         self._data_map = weakref.WeakKeyDictionary()
@@ -220,7 +221,10 @@ class ObjectStore:
         bool
             ``True`` if communication event already happened.
         """
-        return (data_id in self._sent_data_map) and (rank in self._sent_data_map[data_id])
+        return (data_id in self._sent_data_map) and (
+            rank in self._sent_data_map[data_id]
+        )
+
 
 class GarbageCollector:
     """
@@ -235,6 +239,7 @@ class GarbageCollector:
     -----
     Cleanup relies on internal threshold settings.
     """
+
     def __init__(self, object_store):
         # Cleanup frequency settings
         self._cleanup_counter = 1
@@ -256,9 +261,15 @@ class GarbageCollector:
         cleanup_list : list
             List of data IDs.
         """
-        e_logger.debug("Send cleanup list - {}".format(common.unwrapped_data_ids_list(cleanup_list)))
+        e_logger.debug(
+            "Send cleanup list - {}".format(
+                common.unwrapped_data_ids_list(cleanup_list)
+            )
+        )
         for rank_id in range(2, world_size):
-            communication.send_simple_operation(comm, common.Operation.CLEANUP, cleanup_list, rank_id)
+            communication.send_simple_operation(
+                comm, common.Operation.CLEANUP, cleanup_list, rank_id
+            )
 
     def increment_task_counter(self):
         """
@@ -290,17 +301,30 @@ class GarbageCollector:
         Cleanup triggers based on internal threshold settings.
         """
         e_logger.debug("Cleaunup list len - {}".format(len(self._cleanup_list)))
-        e_logger.debug("Cleanup counter {}, threshold reached - {}".format(self._cleanup_counter, (self._cleanup_counter % self._cleanup_threshold) == 0))
+        e_logger.debug(
+            "Cleanup counter {}, threshold reached - {}".format(
+                self._cleanup_counter,
+                (self._cleanup_counter % self._cleanup_threshold) == 0,
+            )
+        )
 
         if len(self._cleanup_list) > self._cleanup_list_threshold:
             if self._cleanup_counter % self._cleanup_threshold == 0:
                 e_logger.debug("Cleanup counter {}".format(self._cleanup_counter))
 
                 # Compare submitted and executed tasks
-                communication.mpi_send_object(comm, common.Operation.GET_TASK_COUNT, communication.MPIRank.MONITOR)
-                executed_task_counter = communication.recv_simple_operation(comm, communication.MPIRank.MONITOR)
+                communication.mpi_send_object(
+                    comm, common.Operation.GET_TASK_COUNT, communication.MPIRank.MONITOR
+                )
+                executed_task_counter = communication.recv_simple_operation(
+                    comm, communication.MPIRank.MONITOR
+                )
 
-                e_logger.debug("Local task count {} vs global task count {}".format(self._task_counter, executed_task_counter))
+                e_logger.debug(
+                    "Local task count {} vs global task count {}".format(
+                        self._task_counter, executed_task_counter
+                    )
+                )
                 if executed_task_counter == self._task_counter:
                     self._send_cleanup_request(self._cleanup_list)
                     # Clear the remaining references
@@ -310,16 +334,18 @@ class GarbageCollector:
             else:
                 self._cleanup_counter += 1
 
+
 object_store = ObjectStore()
 garbage_collector = GarbageCollector(object_store)
 
-e_logger = common.get_logger('executor', 'executor.log')
+e_logger = common.get_logger("executor", "executor.log")
 
 # Internal functions
 # -----------------------------------------------------------------------------
 
 # Current rank for schedule (exclude MPIRank.ROOT and monitor ranks)
 round_robin = itertools.cycle(range(2, world_size))
+
 
 def schedule_rank():
     """
@@ -355,7 +381,9 @@ def request_worker_data(data_id):
     # Worker request
     operation_type = common.Operation.GET
     operation_data = {"source": rank, "id": data_id.base_data_id()}
-    communication.send_simple_operation(comm, operation_type, operation_data, owner_rank)
+    communication.send_simple_operation(
+        comm, operation_type, operation_data, owner_rank
+    )
 
     # Blocking get
     data = communication.recv_complex_operation(comm, owner_rank)
@@ -388,7 +416,9 @@ def push_local_data(dest_rank, data_id):
             "source": rank,
             "data": object_store.get(data_id),
         }
-        communication.send_complex_operation(comm, operation_type, operation_data, dest_rank)
+        communication.send_complex_operation(
+            comm, operation_type, operation_data, dest_rank
+        )
         #  Remember pushed id
         object_store.cache_send_info(data_id, dest_rank)
 
@@ -440,6 +470,7 @@ def push_data(dest_rank, value):
         else:
             raise ValueError("Unknown DataID!")
 
+
 # Control API
 # -----------------------------------------------------------------------------
 
@@ -472,6 +503,7 @@ def shutdown():
 
 # Data API
 # -----------------------------------------------------------------------------
+
 
 def put(data):
     """
@@ -509,6 +541,7 @@ def get(data_ids):
     object
         A Python object.
     """
+
     def get_impl(data_id):
         if object_store.contains(data_id):
             value = object_store.get(data_id)
@@ -534,6 +567,7 @@ def get(data_ids):
 
     return values if is_list else values[0]
 
+
 def wait(data_ids, num_returns=1):
     """
     Wait until `data_ids` are finished.
@@ -554,6 +588,7 @@ def wait(data_ids, num_returns=1):
     tuple
         List of data IDs that are ready and list of the remaining data IDs.
     """
+
     def wait_impl(data_id):
         if object_store.contains(data_id):
             return
@@ -562,7 +597,9 @@ def wait(data_ids, num_returns=1):
 
         operation_type = common.Operation.WAIT
         operation_data = {"id": data_id.base_data_id()}
-        communication.send_simple_operation(comm, operation_type, operation_data, owner_rank)
+        communication.send_simple_operation(
+            comm, operation_type, operation_data, owner_rank
+        )
 
         e_logger.debug("WAIT {} id from {} rank".format(data_id._id, owner_rank))
 
@@ -622,11 +659,21 @@ def remote(task, *args, num_returns=1, **kwargs):
 
     dest_rank = schedule_rank()
 
-    output_ids = object_store.generate_output_data_id(dest_rank, garbage_collector, num_returns)
+    output_ids = object_store.generate_output_data_id(
+        dest_rank, garbage_collector, num_returns
+    )
 
     e_logger.debug("REMOTE OPERATION")
-    e_logger.debug("REMOTE args to {} rank: {}".format(dest_rank, common.unwrapped_data_ids_list(args)))
-    e_logger.debug("REMOTE outputs to {} rank: {}".format(dest_rank, common.unwrapped_data_ids_list(output_ids)))
+    e_logger.debug(
+        "REMOTE args to {} rank: {}".format(
+            dest_rank, common.unwrapped_data_ids_list(args)
+        )
+    )
+    e_logger.debug(
+        "REMOTE outputs to {} rank: {}".format(
+            dest_rank, common.unwrapped_data_ids_list(output_ids)
+        )
+    )
 
     unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
     unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
@@ -639,9 +686,11 @@ def remote(task, *args, num_returns=1, **kwargs):
         "task": task,
         "args": unwrapped_args,
         "kwargs": unwrapped_kwargs,
-        "output": common.master_data_ids_to_base(output_ids)
+        "output": common.master_data_ids_to_base(output_ids),
     }
-    communication.send_complex_operation(comm, operation_type, operation_data, dest_rank)
+    communication.send_complex_operation(
+        comm, operation_type, operation_data, dest_rank
+    )
 
     # Track the task execution
     garbage_collector.increment_task_counter()
@@ -666,12 +715,15 @@ class ActorMethod:
     method_name : str
         The name of the method to be called.
     """
+
     def __init__(self, actor, method_name):
         self._actor = actor
         self._method_name = method_name
 
     def __call__(self, *args, num_returns=1, **kwargs):
-        output_id = object_store.generate_output_data_id(self._actor._owner_rank, garbage_collector, num_returns)
+        output_id = object_store.generate_output_data_id(
+            self._actor._owner_rank, garbage_collector, num_returns
+        )
 
         unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
         unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
@@ -687,7 +739,9 @@ class ActorMethod:
             "output": common.master_data_ids_to_base(output_id),
             "handler": self._actor._handler_id.base_data_id(),
         }
-        communication.send_complex_operation(comm, operation_type, operation_data, self._actor._owner_rank)
+        communication.send_complex_operation(
+            comm, operation_type, operation_data, self._actor._owner_rank
+        )
 
         return output_id
 
@@ -709,6 +763,7 @@ class Actor:
     -----
     Instance of the `cls` will be created on the worker.
     """
+
     def __init__(self, cls, *args, **kwargs):
         self._owner_rank = schedule_rank()
         self._handler_id = object_store.generate_data_id(garbage_collector)
@@ -720,7 +775,9 @@ class Actor:
             "kwargs": kwargs,
             "handler": self._handler_id.base_data_id(),
         }
-        communication.send_complex_operation(comm, operation_type, operation_data, self._owner_rank)
+        communication.send_complex_operation(
+            comm, operation_type, operation_data, self._owner_rank
+        )
 
     def __getattr__(self, name):
         return ActorMethod(self, name)

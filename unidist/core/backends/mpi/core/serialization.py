@@ -8,16 +8,17 @@ import inspect
 import sys
 
 # Serialization libraries
-if sys.version_info[1] < 8: # check the minor Python version
+if sys.version_info[1] < 8:  # check the minor Python version
     import pickle5 as pkl
 else:
     import pickle as pkl
 import cloudpickle as cpkl
 import msgpack
-import gc # msgpack optimization
+import gc  # msgpack optimization
 
 # Handle special case
 import pandas as pd
+
 
 def is_cpkl_serializable(data):
     """
@@ -35,6 +36,7 @@ def is_cpkl_serializable(data):
     """
     return inspect.isfunction(data) or inspect.isclass(data) or inspect.ismethod(data)
 
+
 def is_pickle5_serializable(data):
     """
     Check if the data should be serialized with pickle 5 protocol.
@@ -50,6 +52,7 @@ def is_pickle5_serializable(data):
         ``True`` if the data should be serialized with pickle using protocol 5 (out-of-band data).
     """
     return isinstance(data, pd.DataFrame)
+
 
 class MPISerializer:
     """
@@ -102,7 +105,7 @@ class MPISerializer:
         s_frame = pkl.dumps(frame, protocol=5, buffer_callback=self._buffer_callback)
         self.len_buffers.append(self._callback_counter)
         self._callback_counter = 0
-        return {'__dataframe_custom__': True, 'as_bytes': s_frame}
+        return {"__dataframe_custom__": True, "as_bytes": s_frame}
 
     def _cpkl_encode(self, obj):
         """
@@ -118,7 +121,7 @@ class MPISerializer:
         dict
             Dictionary with array of serialized bytes.
         """
-        return {'__cloud_custom__': True, 'as_bytes': cpkl.dumps(obj)}
+        return {"__cloud_custom__": True, "as_bytes": cpkl.dumps(obj)}
 
     def _pkl_encode(self, obj):
         """
@@ -134,7 +137,7 @@ class MPISerializer:
         dict
             Dictionary with array of serialized bytes.
         """
-        return {'__pickle_custom__': True, 'as_bytes': pkl.dumps(obj)}
+        return {"__pickle_custom__": True, "as_bytes": pkl.dumps(obj)}
 
     def _encode_custom(self, obj):
         """
@@ -180,13 +183,13 @@ class MPISerializer:
         obj : object
             Python object.
         """
-        if '__cloud_custom__' in obj:
+        if "__cloud_custom__" in obj:
             return cpkl.loads(obj["as_bytes"])
-        elif '__pickle_custom__' in obj:
+        elif "__pickle_custom__" in obj:
             return pkl.loads(obj["as_bytes"])
-        elif '__dataframe_custom__' in obj:
+        elif "__dataframe_custom__" in obj:
             frame = pkl.loads(obj["as_bytes"], buffers=self.buffers)
-            del self.buffers[:self.len_buffers.pop(0)]
+            del self.buffers[: self.len_buffers.pop(0)]
             return frame
         else:
             return obj

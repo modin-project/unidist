@@ -15,6 +15,7 @@ class DataID:
     id_value : object
         Any comparable and hashable ID value.
     """
+
     def __init__(self, id_value=None):
         self._id = id_value if id_value is not None else uuid.uuid4().hex
 
@@ -26,6 +27,7 @@ class DataID:
 
     def __hash__(self):
         return hash(self._id)
+
 
 def is_data_id(arg):
     """Check if argument is an instance of ``DataID``.

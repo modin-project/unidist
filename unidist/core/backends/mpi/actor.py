@@ -121,9 +121,7 @@ class MPIActor(Actor):
         MPIActor
         """
         if num_cpus is not None or self._num_cpus is not None:
-            raise NotImplementedError(
-                "'num_cpus' is not supported yet by MPI backend."
-            )
+            raise NotImplementedError("'num_cpus' is not supported yet by MPI backend.")
         if resources is not None or self._resources is not None:
             raise NotImplementedError(
                 "'resources' is not supported yet by MPI backend."
