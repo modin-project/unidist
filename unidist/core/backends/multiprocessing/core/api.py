@@ -8,7 +8,10 @@ import cloudpickle as pkl
 from multiprocessing import cpu_count
 
 from unidist.core.backends.multiprocessing.core.object_store import ObjectStore, Delayed
-from unidist.core.backends.multiprocessing.core.process_manager import ProcessManager, Task
+from unidist.core.backends.multiprocessing.core.process_manager import (
+    ProcessManager,
+    Task,
+)
 
 
 def init(num_workers=cpu_count()):

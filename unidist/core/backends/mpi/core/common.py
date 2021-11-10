@@ -8,6 +8,7 @@ import logging
 
 from unidist.core.backends.common.data_id import DataID, is_data_id
 
+
 class Operation:
     """
     Class that describes supported operations.
@@ -37,6 +38,7 @@ class Operation:
     CANCEL : int, default 11
         Return global task counter to a requester.
     """
+
     ### --- Master/worker operations --- ###
     EXECUTE = 1
     GET = 2
@@ -52,6 +54,7 @@ class Operation:
     ### --- Common operations --- ###
     CANCEL = 11
 
+
 class MasterDataID(DataID):
     """
     Class for tracking data IDs of the main process.
@@ -65,6 +68,7 @@ class MasterDataID(DataID):
     garbage_collector : unidist.core.backends.mpi.core.executor.GarbageCollector
         A reference to the garbage collector instance.
     """
+
     def __init__(self, id_value, garbage_collector):
         super().__init__(id_value)
         self._gc = garbage_collector if garbage_collector else None
@@ -77,7 +81,7 @@ class MasterDataID(DataID):
     def __getstate__(self):
         """Remove a reference to garbage collector for correct `pickle` serialization."""
         attributes = self.__dict__.copy()
-        del attributes['_gc']
+        del attributes["_gc"]
         return attributes
 
     def base_data_id(self):
@@ -90,6 +94,7 @@ class MasterDataID(DataID):
             Base ``DataID`` class object without garbage collector reference.
         """
         return DataID(self._id)
+
 
 def get_logger(logger_name, file_name, activate=False):
     """
@@ -109,7 +114,7 @@ def get_logger(logger_name, file_name, activate=False):
     object
         A Python logger object.
     """
-    f_format = logging.Formatter('%(message)s')
+    f_format = logging.Formatter("%(message)s")
     f_handler = logging.FileHandler(file_name, delay=True)
     f_handler.setFormatter(f_format)
 
@@ -121,6 +126,7 @@ def get_logger(logger_name, file_name, activate=False):
     logger.addHandler(f_handler)
 
     return logger
+
 
 def unwrapped_data_ids_list(args):
     """
@@ -189,7 +195,9 @@ def unwrap_data_ids(data_ids):
         container = type(data_ids)()
         for value in data_ids:
             if isinstance(value, (list, tuple, dict)):
-                unwrapped_value = unwrap_data_ids({value: data_ids[value]} if isinstance(data_ids, dict) else value)
+                unwrapped_value = unwrap_data_ids(
+                    {value: data_ids[value]} if isinstance(data_ids, dict) else value
+                )
                 if isinstance(container, list):
                     container += [unwrapped_value]
                 elif isinstance(container, tuple):
@@ -198,9 +206,13 @@ def unwrap_data_ids(data_ids):
                     container.update(unwrapped_value)
             else:
                 if isinstance(container, list):
-                    container += [value.base_data_id()] if is_data_id(value) else [value]
+                    container += (
+                        [value.base_data_id()] if is_data_id(value) else [value]
+                    )
                 elif isinstance(container, tuple):
-                    container += (value.base_data_id(),) if is_data_id(value) else (value,)
+                    container += (
+                        (value.base_data_id(),) if is_data_id(value) else (value,)
+                    )
                 elif isinstance(container, dict):
                     container[value] = (
                         data_ids[value].base_data_id()
@@ -230,6 +242,7 @@ def materialize_data_ids(data_ids, unwrap_data_id_impl, is_pending=False):
     iterable or bool
         Transformed iterable object (task arguments) and status if all ``DataID`` instances were transformed.
     """
+
     def _unwrap_data_id(*args):
         nonlocal is_pending
         value, progress = unwrap_data_id_impl(*args)
@@ -241,7 +254,11 @@ def materialize_data_ids(data_ids, unwrap_data_id_impl, is_pending=False):
         container = type(data_ids)()
         for value in data_ids:
             if isinstance(value, (list, tuple, dict)):
-                unwrapped_value, is_pending = materialize_data_ids({value: data_ids[value]} if isinstance(data_ids, dict) else value, unwrap_data_id_impl, is_pending=is_pending)
+                unwrapped_value, is_pending = materialize_data_ids(
+                    {value: data_ids[value]} if isinstance(data_ids, dict) else value,
+                    unwrap_data_id_impl,
+                    is_pending=is_pending,
+                )
                 if isinstance(container, list):
                     container += [_unwrap_data_id(unwrapped_value)]
                 elif isinstance(container, tuple):

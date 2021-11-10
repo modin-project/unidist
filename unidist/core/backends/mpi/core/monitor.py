@@ -13,6 +13,7 @@ comm, rank, world_size = communication.get_mpi_state()
 # Global counter of executed task
 task_counter = 0
 
+
 def monitor_loop():
     """
     Infinite monitor operations processing loop.
@@ -38,6 +39,7 @@ def monitor_loop():
             break  # leave event loop and shutdown monitoring
         else:
             raise ValueError("Unsupported operation!")
+
 
 # Event loop
 if rank == communication.MPIRank.MONITOR:

@@ -37,7 +37,9 @@ def init_backend():
             backend_cls = DaskBackend()
     elif backend_name == "MultiProcessing":
         from unidist.core.backends.multiprocessing.backend import MultiProcessingBackend
-        from unidist.core.backends.multiprocessing.utils import initialize_multiprocessing
+        from unidist.core.backends.multiprocessing.utils import (
+            initialize_multiprocessing,
+        )
 
         initialize_multiprocessing()
         backend_cls = MultiProcessingBackend()
@@ -82,7 +84,9 @@ def get_backend_proxy():
 
             backend_cls = DaskBackend()
         elif backend_name == "MultiProcessing":
-            from unidist.core.backends.multiprocessing.backend import MultiProcessingBackend
+            from unidist.core.backends.multiprocessing.backend import (
+                MultiProcessingBackend,
+            )
 
             backend_cls = MultiProcessingBackend()
         elif backend_name == "Python":

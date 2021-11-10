@@ -9,6 +9,7 @@ from unidist.core.backends.common.utils import unwrap_object_refs
 from unidist.core.base.object_ref import ObjectRef
 from unidist.core.base.remote_function import RemoteFunction
 
+
 class MPIRemoteFunction(RemoteFunction):
     """
     The class that implements the interface in ``RemoteFunction`` using MPI.
@@ -58,9 +59,7 @@ class MPIRemoteFunction(RemoteFunction):
             * if `num_returns == 0`, ``None`` will be returned.
         """
         if num_cpus is not None or self._num_cpus is not None:
-            raise NotImplementedError(
-                "'num_cpus' is not supported yet by MPI backend."
-            )
+            raise NotImplementedError("'num_cpus' is not supported yet by MPI backend.")
         if resources is not None or self._resources is not None:
             raise NotImplementedError(
                 "'resources' is not supported yet by MPI backend."
@@ -73,7 +72,10 @@ class MPIRemoteFunction(RemoteFunction):
         unwrapped_kwargs = {k: unwrap_object_refs(v) for k, v in kwargs.items()}
 
         data_ids = mpi.remote(
-            self._remote_function, *unwrapped_args, num_returns=num_returns, **unwrapped_kwargs
+            self._remote_function,
+            *unwrapped_args,
+            num_returns=num_returns,
+            **unwrapped_kwargs
         )
 
         if num_returns == 1:
