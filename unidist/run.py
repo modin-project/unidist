@@ -24,39 +24,52 @@ def validate_hosts(ips):
     ]
 
 
-def validate_num_workers(n_workers):
-    if not isinstance(n_workers, list):
-        n_workers = [n_workers]
-
+def validate_num_workers(num_workers: list):
     def validate(value):
         try:
             value = int(value)
-        except Exception:
+            if value < 1:
+                raise RuntimeError(
+                    "'num_workers' must be more than 0, got '{num_workers}'"
+                )
+        except ValueError:
             if value == "default":
                 return mp.cpu_count()
             else:
                 raise TypeError(
-                    f"`num_workers` should be integer, 'default' or sequence of integers but got '{n_workers}'"
+                    f"`num_workers` must be integer, 'default' or sequence of integers, got '{num_workers}'"
                 )
         else:
             return value
 
-    return [str(validate(n)) for n in n_workers]
+    return [str(validate(n)) for n in num_workers]
 
 
-def create_command(args):
-    if args.backend == "MPI":
+def create_command(
+    script,
+    executor="python3",
+    backend="Ray",
+    num_workers=[mp.cpu_count()],
+    hosts="localhost",
+):
+    if backend == "MPI":
         unidist_home_path = get_unidist_home()
 
-        hosts = validate_hosts(args.hosts)
-        n_workers = validate_num_workers(args.n_workers)
+        if len(hosts) != len(num_workers):
+            # If `num_workers` isn't provided or a single value `default` is provided
+            # all workers will use `default` value
+            if len(num_workers) == 1 and num_workers[0] == "default":
+                num_workers *= len(hosts)
+            else:
+                raise RuntimeError(
+                    "`num_workers` and `hosts` parameters must have the equal number of values."
+                )
 
-        assert len(hosts) == len(
-            n_workers
-        ), "`n_workers` and `hosts` parameters must have the similar number of values."
+        hosts = validate_hosts(hosts)
+        num_workers = validate_num_workers(num_workers)
 
         command = ["mpirun"]
-        command_executor = ["-n", "1", "-host", "127.0.0.1", args.executor, args.script]
+        command_executor = ["-n", "1", "-host", "127.0.0.1", executor, script]
         command_monitor = [
             "-n",
             "1",
@@ -64,7 +77,7 @@ def create_command(args):
             "127.0.0.1",
             "-wdir",
             "/tmp",
-            args.executor,
+            "python3",
             unidist_home_path + "/unidist/core/backends/mpi/core/monitor.py",
         ]
 
@@ -76,16 +89,16 @@ def create_command(args):
                 ip,
                 "-wdir",
                 "/tmp",
-                args.executor,
+                "python3",
                 unidist_home_path + "/unidist/core/backends/mpi/core/worker.py",
             ]
 
         command += command_executor + [":"] + command_monitor
 
-        for host, n in zip(hosts, n_workers):
+        for host, n in zip(hosts, num_workers):
             command += [":"] + get_worker_command(host, n)
     else:
-        command = [args.executor, args.script]
+        command = [executor, script]
 
     return command
 
@@ -98,7 +111,7 @@ def main():
         "\n\tunidist script.py --executor pytest -b Dask  # Dask backend is used, running using 'pytest'",
         "\n\n\tTo run from sources use 'unidist/run.py':",
         "\n\tpython3 unidist/run.py script.py -b MPI --num_workers=16 --hosts localhost  # MPI backend uses 16 workers on 'localhost' node",
-        "\n\tunidist script.py -b MPI --num_workers=2 4 --hosts localhost x.x.x.x  # MPI backend uses 2 workers on `localhost` and 4 on 'x.x.x.x'",
+        "\n\tunidist script.py -b MPI --num_workers=2 4 --hosts localhost x.x.x.x  # MPI backend uses 2 workers on 'localhost' and 4 on 'x.x.x.x'",
     ]
     parser = argparse.ArgumentParser(
         description="Run python code with `unidist` under the hood.",
@@ -125,22 +138,23 @@ def main():
     parser.add_argument(
         "-num_workers",
         "--num_workers",
-        default="default",
+        default=["default"],
         nargs="+",
         help="set a number of workers per node in a cluster. Can accept multiple values in a case of working on the cluster. Default is equal to the number of CPUs on a head node.",
     )
     parser.add_argument(
         "-hosts",
         "--hosts",
-        default="localhost",
+        default=["localhost"],
         nargs="+",
         help="set a node ip address to use. Can accept multiple values in a case of working on the cluster. Default is 'localhost'.",
     )
     args = parser.parse_args()
+    kwargs = vars(args)
 
-    os.environ["UNIDIST_BACKEND"] = args.backend
+    os.environ["UNIDIST_BACKEND"] = kwargs["backend"]
 
-    command = create_command(args)
+    command = create_command(kwargs.pop("script"), **kwargs)
     subprocess.run(command)
 
 
