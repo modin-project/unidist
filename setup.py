@@ -31,6 +31,6 @@ setup(
         "mpi": mpi_deps,
         "all": all_deps,
     },
-    entry_points={"console_scripts": ["unidist = unidist.unidist:main"]},
+    entry_points={"console_scripts": ["unidist = unidist.run:main"]},
     python_requires=">=3.7.1",
 )
