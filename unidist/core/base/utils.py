@@ -4,27 +4,38 @@
 
 """Utilities used to initialize execution backend."""
 
-import os
-
+from unidist.config import Backend, CpuCount
 from .backend import BackendProxy
 
 
-def init_backend():
+def init_backend(backend=None, num_cpus=None):
     """
     Initialize an execution backend.
 
+    Parameters
+    ----------
+    backend : str, optional
+        Backend that unidist should run on.
+    num_cpus : int, optional
+        Number of CPUs that should be used by backend.
+
     Notes
     -----
-    The concrete execution backend is chosen in depend on
-    `UNIDIST_BACKEND` environment variable.
-    If the variable is not set, Ray backend is used.
+    The concrete execution backend can also be chosen via
+    `UNIDIST_BACKEND` environment variable or ``Backend`` config value.
+    Ray backend is used by default.
     """
-    backend_name = os.environ.get("UNIDIST_BACKEND", "Ray")
+    if num_cpus is not None:
+        CpuCount.put(num_cpus)
+    else:
+        num_cpus = CpuCount.get()
+
+    backend_name = backend or Backend.get()
     if backend_name == "Ray":
         from unidist.core.backends.ray.backend import RayBackend
         from unidist.core.backends.ray.utils import initialize_ray
 
-        initialize_ray()
+        initialize_ray(num_cpus=num_cpus)
         backend_cls = RayBackend()
     elif backend_name == "Dask":
         import threading
@@ -33,15 +44,21 @@ def init_backend():
             from unidist.core.backends.dask.backend import DaskBackend
             from unidist.core.backends.dask.utils import initialize_dask
 
-            initialize_dask()
+            initialize_dask(num_cpus=num_cpus)
             backend_cls = DaskBackend()
-    elif backend_name == "MultiProcessing":
+    elif backend_name == "Mpi":
+        from unidist.core.backends.mpi.backend import MPIBackend
+        from unidist.core.backends.mpi.utils import initialize_mpi
+
+        initialize_mpi()
+        backend_cls = MPIBackend()
+    elif backend_name == "Multiprocessing":
         from unidist.core.backends.multiprocessing.backend import MultiProcessingBackend
         from unidist.core.backends.multiprocessing.utils import (
             initialize_multiprocessing,
         )
 
-        initialize_multiprocessing()
+        initialize_multiprocessing(num_cpus=num_cpus)
         backend_cls = MultiProcessingBackend()
     elif backend_name == "Python":
         from unidist.core.backends.python.backend import PythonBackend
@@ -49,12 +66,6 @@ def init_backend():
 
         initialize_python()
         backend_cls = PythonBackend()
-    elif backend_name == "MPI":
-        from unidist.core.backends.mpi.backend import MPIBackend
-        from unidist.core.backends.mpi.utils import initialize_mpi
-
-        initialize_mpi()
-        backend_cls = MPIBackend()
     else:
         raise ImportError("Unrecognized execution backend.")
 
@@ -74,7 +85,7 @@ def get_backend_proxy():
 
     if backend is None:
 
-        backend_name = os.environ.get("UNIDIST_BACKEND", "Ray")
+        backend_name = Backend.get()
         if backend_name == "Ray":
             from unidist.core.backends.ray.backend import RayBackend
 
@@ -83,7 +94,11 @@ def get_backend_proxy():
             from unidist.core.backends.dask.backend import DaskBackend
 
             backend_cls = DaskBackend()
-        elif backend_name == "MultiProcessing":
+        elif backend_name == "Mpi":
+            from unidist.core.backends.mpi.backend import MPIBackend
+
+            backend_cls = MPIBackend()
+        elif backend_name == "Multiprocessing":
             from unidist.core.backends.multiprocessing.backend import (
                 MultiProcessingBackend,
             )
@@ -93,10 +108,6 @@ def get_backend_proxy():
             from unidist.core.backends.python.backend import PythonBackend
 
             backend_cls = PythonBackend()
-        elif backend_name == "MPI":
-            from unidist.core.backends.mpi.backend import MPIBackend
-
-            backend_cls = MPIBackend()
         else:
             raise ValueError("Unrecognized execution backend.")
 

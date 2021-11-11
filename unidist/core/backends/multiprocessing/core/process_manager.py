@@ -8,9 +8,9 @@ import cloudpickle as pkl
 from multiprocessing import (
     Process,
     JoinableQueue,
-    cpu_count,
 )
 
+from unidist.config import CpuCount
 from unidist.core.backends.common.data_id import DataID
 from unidist.core.backends.multiprocessing.core.object_store import ObjectStore
 
@@ -90,7 +90,7 @@ class ProcessManager:
     def __init__(self, num_workers=None):
         if ProcessManager.__instance is None:
             if num_workers is None:
-                num_workers = cpu_count()
+                num_workers = CpuCount.get()
             self.workers = [None] * num_workers
             self.grabbed_workers = [None] * num_workers
             self.__class__._worker_id = 0

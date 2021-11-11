@@ -142,6 +142,4 @@ class PythonBackend(Backend):
         -------
         int
         """
-        from multiprocessing import cpu_count
-
-        return cpu_count()
+        1

@@ -5,8 +5,8 @@
 """An implementation of ``Backend`` interface using MPI."""
 
 import socket
-from multiprocessing import cpu_count
 
+from unidist.config import CpuCount
 import unidist.core.backends.mpi.core as mpi
 from unidist.core.backends.mpi.actor import MPIActor
 from unidist.core.backends.mpi.remote_function import MPIRemoteFunction
@@ -143,7 +143,7 @@ class MPIBackend(Backend):
         -------
         int
         """
-        return cpu_count()
+        return CpuCount.get()
 
     @staticmethod
     def shutdown():

@@ -79,17 +79,24 @@ def make_decorator(num_cpus=None, num_returns=None, resources=None):
 # --------------------------------------------------------------------------------------
 # unidist execution layer public API
 # --------------------------------------------------------------------------------------
-def init():
+def init(backend=None, num_cpus=None):
     """
     Initialize an execution backend.
 
+    Parameters
+    ----------
+    backend : str, optional
+        Backend that unidist should run on.
+    num_cpus : int, optional
+        Number of CPUs that should be used by backend.
+
     Notes
     -----
-    The concrete execution backend is chosen in depend on
-    `UNIDIST_BACKEND` environment variable.
-    If the variable is not set, Ray backend is used.
+    The concrete execution backend can also be chosen via
+    `UNIDIST_BACKEND` environment variable or ``Backend`` config value.
+    Ray backend is used by default.
     """
-    init_backend()
+    init_backend(backend=backend, num_cpus=num_cpus)
 
 
 def shutdown():

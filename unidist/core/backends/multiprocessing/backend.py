@@ -4,9 +4,9 @@
 
 """An implementation of ``Backend`` interface using MultiProcessing."""
 
-from multiprocessing import cpu_count
 import socket
 
+from unidist.config import CpuCount
 import unidist.core.backends.multiprocessing.core as mp
 from unidist.core.backends.multiprocessing.actor import MultiProcessingActor
 from unidist.core.backends.multiprocessing.remote_function import (
@@ -139,7 +139,7 @@ class MultiProcessingBackend(Backend):
         -------
         int
         """
-        return cpu_count()
+        return CpuCount.get()
 
     @staticmethod
     def shutdown():

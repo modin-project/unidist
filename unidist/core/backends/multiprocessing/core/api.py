@@ -5,8 +5,8 @@
 """High-level API of MultiProcessing backend."""
 
 import cloudpickle as pkl
-from multiprocessing import cpu_count
 
+from unidist.config import CpuCount
 from unidist.core.backends.multiprocessing.core.object_store import ObjectStore, Delayed
 from unidist.core.backends.multiprocessing.core.process_manager import (
     ProcessManager,
@@ -14,7 +14,7 @@ from unidist.core.backends.multiprocessing.core.process_manager import (
 )
 
 
-def init(num_workers=cpu_count()):
+def init(num_workers=CpuCount.get()):
     """
     Initialize shared object storage and workers pool.
 

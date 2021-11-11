@@ -6,6 +6,7 @@ import pytest
 import time
 
 import unidist
+from unidist.config import Backend, CpuCount
 from .utils import assert_equal, task, TestActor
 
 unidist.init()
@@ -45,6 +46,7 @@ def test_get_ip():
 
 
 def test_num_cpus():
-    import multiprocessing as mp
-
-    assert_equal(unidist.num_cpus(), mp.cpu_count())
+    if Backend.get() == "Python":
+        assert_equal(unidist.num_cpus(), 1)
+    else:
+        assert_equal(unidist.num_cpus(), CpuCount.get())
