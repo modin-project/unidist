@@ -14,10 +14,7 @@ def get_unidist_home():
     return unidist_home_path
 
 
-def validate_hosts(ips):
-    if not isinstance(ips, list):
-        ips = [ips]
-
+def validate_hosts(ips: list):
     return [
         str(ipaddress.ip_address("127.0.0.1" if ip == "localhost" else ip))
         for ip in ips
@@ -114,12 +111,13 @@ def main():
         "\n\tunidist script.py -b MPI --num_workers=2 4 --hosts localhost x.x.x.x  # MPI backend uses 2 workers on 'localhost' and 4 on 'x.x.x.x'",
     ]
     parser = argparse.ArgumentParser(
-        description="Run python code with `unidist` under the hood.",
+        description="Run python code with 'unidist' under the hood.",
         usage="".join(usage_examples),
     )
 
-    parser.add_argument_group()
-    parser.add_argument("script", help="set script to be run")
+    required_args_group = parser.add_argument_group("required arguments")
+    mpi_args_group = parser.add_argument_group("MPI-backend specific arguments")
+    required_args_group.add_argument("script", help="set script to be run")
     parser.add_argument(
         "-b",
         "--backend",
@@ -135,14 +133,14 @@ def main():
         default="python3",
         help="set an executable to run. Default is 'python3'",
     )
-    parser.add_argument(
+    mpi_args_group.add_argument(
         "-num_workers",
         "--num_workers",
         default=["default"],
         nargs="+",
         help="set a number of workers per node in a cluster. Can accept multiple values in a case of working on the cluster. Default is equal to the number of CPUs on a head node.",
     )
-    parser.add_argument(
+    mpi_args_group.add_argument(
         "-hosts",
         "--hosts",
         default=["localhost"],
