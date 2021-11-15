@@ -1,3 +1,9 @@
+# Copyright (C) 2021 Modin authors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+"""Command line interface for unidist."""
+
 import os
 import argparse
 import subprocess
@@ -5,7 +11,15 @@ import multiprocessing as mp
 import ipaddress
 
 
-def get_unidist_home():
+def _get_unidist_home_path():
+    """
+    Get a home path of unidist package.
+
+    Returns
+    -------
+    str
+        Unidist home path.
+    """
     unidist_home_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     os.environ["PYTHONPATH"] = (
         os.environ.get("PYTHONPATH", "") + os.pathsep + unidist_home_path
@@ -14,14 +28,50 @@ def get_unidist_home():
     return unidist_home_path
 
 
-def validate_hosts(ips: list):
-    return [
+def _validate_hosts(hosts: list):
+    """
+    Validate `hosts` list of ip-addresses on correctness and check duplicates.
+
+    Parameters
+    ----------
+    hosts : list
+        List of strings with ip-addresses.
+
+    Returns
+    -------
+    list
+        List of validated IPs.
+    """
+    ips = [
         str(ipaddress.ip_address("127.0.0.1" if ip == "localhost" else ip))
-        for ip in ips
+        for ip in hosts
     ]
+    ips_duplicated = [ip for ip in set(ips) if ips.count(ip) > 1]
+    if len(ips_duplicated):
+        raise RuntimeError(f"'hosts' list contains duplicates {ips_duplicated}")
+    return ips
 
 
-def validate_num_workers(num_workers: list):
+def _validate_num_workers(num_workers: list):
+    """
+    Validate `num_workers` on correctness.
+
+    Each value of `num_workers` is checked on possibility
+    of converting to int. In case value is ``default`` it will
+    be equal to number of CPUs on ``localhost`` node.
+
+    Parameters
+    ----------
+    num_workers : list
+        List of string values. The each value represents
+        a number of workers for corresponded host.
+
+    Returns
+    -------
+    list
+        List of validated numbers of workers per hosts.
+    """
+
     def validate(value):
         try:
             value = int(value)
@@ -47,10 +97,32 @@ def create_command(
     executor="python3",
     backend="Ray",
     num_workers=[mp.cpu_count()],
-    hosts="localhost",
+    hosts=["localhost"],
 ):
+    """
+    Create a command to be runned in a subprocess.
+
+    Parameters
+    ----------
+    script : str
+        Name of .py script to be run.
+    executor : str, default: 'python3'
+        Executable to run `script`.
+    backend : str, default: 'Ray'
+        Unidist backend name to use.
+    num_workers : list, default: ['localhost' cpu count]
+        List of string values. The each value represents
+        a number of workers for corresponded host.
+    hosts : list, default: ['localhost']
+        List of strings with ip-addresses.
+
+    Returns
+    -------
+    list
+        List of strings represents command for ``subprocess``.
+    """
     if backend == "MPI":
-        unidist_home_path = get_unidist_home()
+        unidist_home_path = _get_unidist_home_path()
 
         if len(hosts) != len(num_workers):
             # If `num_workers` isn't provided or a single value `default` is provided
@@ -62,9 +134,9 @@ def create_command(
                     "`num_workers` and `hosts` parameters must have the equal number of values."
                 )
 
-        hosts = validate_hosts(hosts)
-        num_workers = validate_num_workers(num_workers)
-
+        hosts = _validate_hosts(hosts)
+        num_workers = _validate_num_workers(num_workers)
+        workers_dir = "/tmp"
         command = ["mpirun"]
         command_executor = ["-n", "1", "-host", "127.0.0.1", executor, script]
         command_monitor = [
@@ -73,7 +145,7 @@ def create_command(
             "-host",
             "127.0.0.1",
             "-wdir",
-            "/tmp",
+            workers_dir,
             "python3",
             unidist_home_path + "/unidist/core/backends/mpi/core/monitor.py",
         ]
@@ -85,7 +157,7 @@ def create_command(
                 "-host",
                 ip,
                 "-wdir",
-                "/tmp",
+                workers_dir,
                 "python3",
                 unidist_home_path + "/unidist/core/backends/mpi/core/worker.py",
             ]
@@ -101,6 +173,7 @@ def create_command(
 
 
 def main():
+    """Run an unidist application."""
     usage_examples = [
         "\n\tIn case 'unidist' is installed, use binary:",
         "\n\tunidist script.py  # Ray backend is used",
