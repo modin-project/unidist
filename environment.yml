@@ -6,10 +6,10 @@ dependencies:
   - dask[complete]>=2.22.0
   - distributed>=2.22.0
   - mpi4py>=3.0.3
-  - msgpack
+  - msgpack-python
   - packaging
   - pandas
   - pickle5
   - psutil
   - pytest
-  - ray[default]>=1.4.0
+  - ray-default

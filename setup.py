@@ -7,12 +7,12 @@ here = pathlib.Path(__file__).parent.resolve()
 # Get the long description from the README file
 long_description = (here / "README.md").read_text(encoding="utf-8")
 
-ray_deps = ["ray[default]>=1.4.0", "pandas"]
+ray_deps = ["ray[default]", "pandas"]
 dask_deps = ["dask[complete]>=2.22.0", "distributed>=2.22.0"]
-mpi4py_deps = ["pandas", "msgpack"]
+mpi_deps = ["pandas", "msgpack"]
 if sys.version_info[1] < 8:
-    mpi4py_deps += "pickle5"
-all_deps = ray_deps + dask_deps + mpi4py_deps
+    mpi_deps += "pickle5"
+all_deps = ray_deps + dask_deps + mpi_deps
 
 setup(
     name="unidist",
@@ -28,7 +28,7 @@ setup(
         # can be installed by pip install unidist[ray]
         "ray": ray_deps,
         "dask": dask_deps,
-        "mpi4py": mpi4py_deps,
+        "mpi": mpi_deps,
         "all": all_deps,
     },
     python_requires=">=3.7.1",
