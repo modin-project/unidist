@@ -9,6 +9,7 @@ import argparse
 import subprocess
 import multiprocessing as mp
 import ipaddress
+import socket
 
 
 def _get_unidist_home_path():
@@ -28,6 +29,18 @@ def _get_unidist_home_path():
     return unidist_home_path
 
 
+def _get_localhost_ip():
+    """
+    Get a public IP-address of a head node.
+
+    Returns
+    -------
+    str
+        Public IP-address of the head node.
+    """
+    return socket.gethostbyname(socket.gethostname())
+
+
 def _validate_hosts(hosts: list):
     """
     Validate `hosts` list of ip-addresses on correctness and check duplicates.
@@ -43,7 +56,7 @@ def _validate_hosts(hosts: list):
         List of validated IPs.
     """
     ips = [
-        str(ipaddress.ip_address("127.0.0.1" if ip == "localhost" else ip))
+        str(ipaddress.ip_address(_get_localhost_ip() if ip == "localhost" else ip))
         for ip in hosts
     ]
     ips_duplicated = [ip for ip in set(ips) if ips.count(ip) > 1]
@@ -69,7 +82,7 @@ def _validate_num_workers(num_workers: list):
     Returns
     -------
     list
-        List of validated numbers of workers per hosts.
+        List of validated number of workers per host.
     """
 
     def validate(value):
@@ -84,7 +97,7 @@ def _validate_num_workers(num_workers: list):
                 return mp.cpu_count()
             else:
                 raise TypeError(
-                    f"`num_workers` must be integer, 'default' or sequence of integers, got '{num_workers}'"
+                    f"'num_workers' must be integer, 'default' or sequence of integers, got '{num_workers}'"
                 )
         else:
             return value
@@ -100,7 +113,7 @@ def create_command(
     hosts=["localhost"],
 ):
     """
-    Create a command to be runned in a subprocess.
+    Create a command to be run in a subprocess.
 
     Parameters
     ----------
@@ -137,35 +150,36 @@ def create_command(
         hosts = _validate_hosts(hosts)
         num_workers = _validate_num_workers(num_workers)
         workers_dir = "/tmp"
-        command = ["mpirun"]
-        command_executor = ["-n", "1", "-host", "127.0.0.1", executor, script]
+        command = ["mpiexec", "-hosts"]
+
+        hosts_str = f"{_get_localhost_ip()}:1,{_get_localhost_ip()}:1,"
+        for host, n in zip(hosts, num_workers):
+            hosts_str += host + ":" + n + ","
+
+        command_executor = ["-n", "1", executor, script]
         command_monitor = [
             "-n",
             "1",
-            "-host",
-            "127.0.0.1",
             "-wdir",
             workers_dir,
             "python3",
             unidist_home_path + "/unidist/core/backends/mpi/core/monitor.py",
         ]
 
-        def get_worker_command(ip, num_workers):
+        def get_worker_command(num_workers):
             return [
                 "-n",
                 num_workers,
-                "-host",
-                ip,
                 "-wdir",
                 workers_dir,
                 "python3",
                 unidist_home_path + "/unidist/core/backends/mpi/core/worker.py",
             ]
 
-        command += command_executor + [":"] + command_monitor
+        command += [hosts_str] + command_executor + [":"] + command_monitor
 
-        for host, n in zip(hosts, num_workers):
-            command += [":"] + get_worker_command(host, n)
+        for n in num_workers:
+            command += [":"] + get_worker_command(n)
     else:
         command = [executor, script]
 
@@ -173,7 +187,7 @@ def create_command(
 
 
 def main():
-    """Run an unidist application."""
+    """Run unidist application."""
     usage_examples = [
         "\n\tIn case 'unidist' is installed, use binary:",
         "\n\tunidist script.py  # Ray backend is used",
