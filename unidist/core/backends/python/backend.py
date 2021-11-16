@@ -142,4 +142,4 @@ class PythonBackend(Backend):
         -------
         int
         """
-        1
+        return 1

@@ -183,28 +183,9 @@ class Parameter(object):
         value : Any
             Config value to set.
         """
-        cls._put_config_value(value)
-
-    @classmethod
-    def _put_config_value(cls, value):
-        """
-        Set config value.
-
-        Parameters
-        ----------
-        value : Any
-            Config value to set.
-
-        Returns
-        -------
-        Any
-            Replaced (old) config value.
-        """
         if not _TYPE_PARAMS[cls.type].verify(value):
             raise ValueError(f"Unsupported value: {value}")
-        value = _TYPE_PARAMS[cls.type].normalize(value)
-        oldvalue, cls._value = cls.get(), value
-        return oldvalue
+        cls._value = _TYPE_PARAMS[cls.type].normalize(value)
 
 
 class EnvironmentVariable(Parameter, type=str, abstract=True):

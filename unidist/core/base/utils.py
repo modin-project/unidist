@@ -30,7 +30,11 @@ def init_backend(backend=None, num_cpus=None):
     else:
         num_cpus = CpuCount.get()
 
-    backend_name = backend or Backend.get()
+    if backend is not None:
+        Backend.put(backend)
+    else:
+        backend_name = Backend.get()
+
     if backend_name == "Ray":
         from unidist.core.backends.ray.backend import RayBackend
         from unidist.core.backends.ray.utils import initialize_ray
