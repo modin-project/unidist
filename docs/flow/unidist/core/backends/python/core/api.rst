@@ -8,25 +8,23 @@
 Python High-level API
 """""""""""""""""""""
 
-Python API module provides high-level functions for initialization of the backend,
-for working with object storage and submitting tasks.
+Python API module provides high-level functions for wrapping/unwrapping objects and
+submitting tasks.
 
 API
 ===
 
-Function :py:func:`~unidist.core.backends.python.core.api.init` creates an instance of singleton
+Functions :py:func:`~unidist.core.backends.python.core.api.init` creates an instance of singleton
 class :py:class:`~unidist.core.backends.python.core.object_store.ObjectStore`.
 
-.. autofunction:: unidist.core.backends.python.core.api.init
+Functions :py:func:`~unidist.core.backends.python.core.api.unwrap` and
+:`~unidist.core.backends.python.core.api.wrap` are responsible for
+unwrap/wrap, respectively, objects from/in :py:class:`~unidist.backends.common.data_id.DataID`.
 
-Functions :py:func:`~unidist.core.backends.python.core.api.get` and
-:py:func:`~unidist.core.backends.python.core.api.put` are responsible for
-read/write, respectively, objects from/to :py:class:`~unidist.core.backends.python.core.object_store.ObjectStore`.
+.. autofunction:: unidist.core.backends.python.core.api.unwrap
+.. autofunction:: unidist.core.backends.python.core.api.wrap
 
-.. autofunction:: unidist.core.backends.python.core.api.get
-.. autofunction:: unidist.core.backends.python.core.api.put
-
-:py:func:`~unidist.core.backends.python.core.api.submit` executes a task, which result will be put into
-:py:class:`~unidist.core.backends.python.core.object_store.ObjectStore`.
+:py:func:`~unidist.core.backends.python.core.api.submit` executes a task, which result will be wrapped
+in :py:class:`~unidist.backends.common.data_id.DataID`-(s).
 
 .. autofunction:: unidist.core.backends.python.core.api.submit

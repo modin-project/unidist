@@ -6,52 +6,52 @@
 
 
 from unidist.core.backends.common.data_id import DataID
-from unidist.core.backends.python.core.object_store import ObjectStore
 
 
-def init():
+def wrap(data):
     """
-    Initialize an object storage.
-
-    Notes
-    -----
-    Run initialization of singleton object ``unidist.core.backends.python.core.object_store.ObjectStore``.
-    """
-    ObjectStore.get_instance()
-
-
-def put(data):
-    """
-    Put data into object storage.
+    Wrap data in ``DataID``.
 
     Parameters
     ----------
     data : object
-        Data to be put.
+        Data to be wrapped.
 
     Returns
     -------
     unidist.core.backends.common.data_id.DataID
-        An ID of object in object storage.
     """
-    return ObjectStore.get_instance().put(data)
+    return DataID(data)
 
 
-def get(data_ids):
+def unwrap(data_ids):
     """
-    Get object(s) associated with `data_ids` from the object storage.
+    Unwrap object(s) from `data_ids`.
 
     Parameters
     ----------
     data_ids : unidist.core.backends.common.data_id.DataID or list
-        ID(s) to object(s) to get data from.
+        ID(s) of object(s) to be unwrapped.
 
     Returns
     -------
     object
         A Python object.
     """
-    return ObjectStore.get_instance().get(data_ids)
+    is_list = isinstance(data_ids, list)
+    if not is_list:
+        data_ids = [data_ids]
+    if not all(isinstance(data_id, DataID) for data_id in data_ids):
+        raise ValueError("`data_ids` must either be a data ID or a list of data IDs.")
+
+    def check_exception(value):
+        if isinstance(value, Exception):
+            raise value
+        return value
+
+    values = [check_exception(data_id._id) for data_id in data_ids]
+
+    return values if is_list else values[0]
 
 
 def submit(func, *args, num_returns=1, **kwargs):
@@ -78,13 +78,11 @@ def submit(func, *args, num_returns=1, **kwargs):
         * if `num_returns > 1`, list of ``DataID``-s will be returned.
         * if `num_returns == 0`, ``None`` will be returned.
     """
-    obj_store = ObjectStore.get_instance()
-
     materialized_args = [
-        obj_store.get(arg) if isinstance(arg, DataID) else arg for arg in args
+        unwrap(arg) if isinstance(arg, DataID) else arg for arg in args
     ]
     materialized_kwargs = {
-        key: obj_store.get(value) if isinstance(value, DataID) else value
+        key: unwrap(value) if isinstance(value, DataID) else value
         for key, value in kwargs.items()
     }
 
@@ -96,8 +94,8 @@ def submit(func, *args, num_returns=1, **kwargs):
     if num_returns == 0:
         data_ids = None
     elif num_returns > 1:
-        data_ids = [obj_store.put(result[idx]) for idx in range(num_returns)]
+        data_ids = [DataID(result[idx]) for idx in range(num_returns)]
     else:
-        data_ids = obj_store.put(result)
+        data_ids = DataID(result)
 
     return data_ids
