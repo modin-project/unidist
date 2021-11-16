@@ -61,7 +61,7 @@ class PythonBackend(Backend):
     @staticmethod
     def get(data_ids):
         """
-        Get an object or a list of objects from object store.
+        Get an object or a list of objects from ``DataID``-(s).
 
         Parameters
         ----------
@@ -73,12 +73,12 @@ class PythonBackend(Backend):
         object
             A Python object or a list of Python objects.
         """
-        return py.get(data_ids)
+        return py.unwrap(data_ids)
 
     @staticmethod
     def put(data):
         """
-        Put `data` into object store.
+        Put `data` into ``DataID``.
 
         Parameters
         ----------
@@ -90,7 +90,7 @@ class PythonBackend(Backend):
         unidist.core.backends.common.data_id.DataID
             ``DataID`` matching to data.
         """
-        return py.put(data)
+        return py.wrap(data)
 
     @staticmethod
     def wait(data_ids, num_returns=1):

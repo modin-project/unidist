@@ -8,7 +8,10 @@ import uuid
 
 
 class DataID:
-    """Class that holds unique identifier.
+    """
+    Class that holds unique identifier.
+
+    In the case of Python backend this class holds an original object.
 
     Parameters
     ----------

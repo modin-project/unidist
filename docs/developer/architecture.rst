@@ -80,8 +80,7 @@ details just pick module you are interested in.
            │   │   └─── :doc:`remote_function </flow/unidist/core/backends/multiprocessing/remote_function>`
            │   ├───python
            │   |   ├───core
-           │   │   │    ├─── :doc:`api </flow/unidist/core/backends/python/core/api>`
-           │   │   │    └─── :doc:`object_store </flow/unidist/core/backends/python/core/object_store>`
+           │   │   │    └─── :doc:`api </flow/unidist/core/backends/python/core/api>` 
            │   │   ├─── :doc:`actor </flow/unidist/core/backends/python/actor>`
            │   │   ├─── :doc:`backend </flow/unidist/core/backends/python/backend>`
            │   │   └─── :doc:`remote_function </flow/unidist/core/backends/python/remote_function>`

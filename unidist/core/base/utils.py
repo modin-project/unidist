@@ -45,9 +45,7 @@ def init_backend():
         backend_cls = MultiProcessingBackend()
     elif backend_name == "Python":
         from unidist.core.backends.python.backend import PythonBackend
-        from unidist.core.backends.python.utils import initialize_python
 
-        initialize_python()
         backend_cls = PythonBackend()
     elif backend_name == "MPI":
         from unidist.core.backends.mpi.backend import MPIBackend
