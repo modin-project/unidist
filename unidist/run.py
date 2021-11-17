@@ -12,26 +12,26 @@ import ipaddress
 import socket
 
 
-def _get_unidist_home_path():
+def _get_unidist_root():
     """
-    Get a home path of unidist package.
+    Get the project root directory.
 
     Returns
     -------
     str
-        Unidist home path.
+        Absolute path to the project root directory.
     """
-    unidist_home_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    unidist_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     os.environ["PYTHONPATH"] = (
-        os.environ.get("PYTHONPATH", "") + os.pathsep + unidist_home_path
+        unidist_root + os.pathsep + os.environ.get("PYTHONPATH", "")
     )
 
-    return unidist_home_path
+    return unidist_root
 
 
 def _get_localhost_ip():
     """
-    Get a public IP-address of a head node.
+    Get a public IP-address of the head node.
 
     Returns
     -------
@@ -43,7 +43,7 @@ def _get_localhost_ip():
 
 def _validate_hosts(hosts: list):
     """
-    Validate `hosts` list of ip-addresses on correctness and check duplicates.
+    Validate `hosts` list of ip-addresses on correctness and duplicates.
 
     Parameters
     ----------
@@ -59,9 +59,9 @@ def _validate_hosts(hosts: list):
         str(ipaddress.ip_address(_get_localhost_ip() if ip == "localhost" else ip))
         for ip in hosts
     ]
-    ips_duplicated = [ip for ip in set(ips) if ips.count(ip) > 1]
-    if len(ips_duplicated):
-        raise RuntimeError(f"'hosts' list contains duplicates {ips_duplicated}")
+    duplicate_ips = [ip for ip in set(ips) if ips.count(ip) > 1]
+    if len(duplicate_ips):
+        raise RuntimeError(f"'hosts' list contains duplicates {duplicate_ips}")
     return ips
 
 
@@ -135,7 +135,7 @@ def create_command(
         List of strings represents command for ``subprocess``.
     """
     if backend == "MPI":
-        unidist_home_path = _get_unidist_home_path()
+        unidist_home_path = _get_unidist_root()
 
         if len(hosts) != len(num_workers):
             # If `num_workers` isn't provided or a single value `default` is provided
@@ -187,15 +187,15 @@ def create_command(
 
 
 def main():
-    """Run unidist application."""
+    """Run an application with unidist."""
     usage_examples = [
-        "\n\tIn case 'unidist' is installed, use binary:",
-        "\n\tunidist script.py  # Ray backend is used",
+        "\n\tIn case 'unidist' is installed as a python package, use binary:",
+        "\n\tunidist script.py  # Ray backend is used by default",
         "\n\tunidist script.py --backend MPI  # MPI backend is used",
-        "\n\tunidist script.py --executor pytest -b Dask  # Dask backend is used, running using 'pytest'",
+        "\n\tunidist script.py --executor pytest -b Dask  # Dask backend is used, running the script using 'pytest'",
         "\n\n\tTo run from sources use 'unidist/run.py':",
-        "\n\tpython3 unidist/run.py script.py -b MPI --num_workers=16 --hosts localhost  # MPI backend uses 16 workers on 'localhost' node",
-        "\n\tunidist script.py -b MPI --num_workers=2 4 --hosts localhost x.x.x.x  # MPI backend uses 2 workers on 'localhost' and 4 on 'x.x.x.x'",
+        "\n\tpython unidist/run.py script.py -b MPI --num_workers=16 --hosts localhost  # MPI backend uses 16 workers on 'localhost' node",
+        "\n\tpython unidist/run.py script.py -b MPI --num_workers=2 4 --hosts localhost x.x.x.x  # MPI backend uses 2 workers on 'localhost' and 4 on 'x.x.x.x'",
     ]
     parser = argparse.ArgumentParser(
         description="Run python code with 'unidist' under the hood.",
@@ -203,8 +203,8 @@ def main():
     )
 
     required_args_group = parser.add_argument_group("required arguments")
-    mpi_args_group = parser.add_argument_group("MPI-backend specific arguments")
-    required_args_group.add_argument("script", help="set script to be run")
+    mpi_args_group = parser.add_argument_group("MPI backend-specific arguments")
+    required_args_group.add_argument("script", help="specify a script to be run")
     parser.add_argument(
         "-b",
         "--backend",
