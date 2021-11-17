@@ -135,7 +135,7 @@ def create_command(
         List of strings represents command for ``subprocess``.
     """
     if backend == "MPI":
-        unidist_home_path = _get_unidist_root()
+        unidist_root = _get_unidist_root()
 
         if len(hosts) != len(num_workers):
             # If `num_workers` isn't provided or a single value `default` is provided
@@ -163,7 +163,7 @@ def create_command(
             "-wdir",
             workers_dir,
             "python3",
-            unidist_home_path + "/unidist/core/backends/mpi/core/monitor.py",
+            unidist_root + "/unidist/core/backends/mpi/core/monitor.py",
         ]
 
         def get_worker_command(num_workers):
@@ -173,7 +173,7 @@ def create_command(
                 "-wdir",
                 workers_dir,
                 "python3",
-                unidist_home_path + "/unidist/core/backends/mpi/core/worker.py",
+                unidist_root + "/unidist/core/backends/mpi/core/worker.py",
             ]
 
         command += [hosts_str] + command_executor + [":"] + command_monitor
