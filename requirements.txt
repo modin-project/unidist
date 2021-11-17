@@ -1,8 +1,9 @@
 cloudpickle
 dask[complete]>=2.22.0
 distributed>=2.22.0
-mpi4py
 msgpack
-pickle5
-psutil==5.6.6
-ray[default]>=1.4.0
+packaging
+pandas
+psutil
+pytest
+ray[default]

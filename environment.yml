@@ -1,0 +1,14 @@
+name: unidist
+channels:
+  - conda-forge
+dependencies:
+  - cloudpickle
+  - dask[complete]>=2.22.0
+  - distributed>=2.22.0
+  - mpi4py>=3.0.3
+  - msgpack-python
+  - packaging
+  - pandas
+  - psutil
+  - pytest
+  - ray-default
