@@ -11,3 +11,6 @@ ray[default]
 # for building the documentation
 sphinx
 sphinx_rtd_theme
+# for code checks
+black
+flake8
