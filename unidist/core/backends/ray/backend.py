@@ -141,3 +141,22 @@ class RayBackend(Backend):
     def shutdown():
         """Shutdown Ray execution backend."""
         ray.shutdown()
+
+    @staticmethod
+    def cluster_resources():
+        """
+        Get resources of the Ray cluster.
+
+        Returns
+        -------
+        dict
+            Dictionary with cluster nodes info in the style '{node_ip: {CPU: xx, ...}, ..}'.
+        """
+        node_resources = {
+            node_info["NodeManagerAddress"]: {
+                "CPU": int(node_info["Resources"].get("CPU", 1))
+            }
+            for node_info in ray.nodes()
+        }
+
+        return node_resources

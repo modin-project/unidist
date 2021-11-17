@@ -230,3 +230,16 @@ def num_cpus():
     """
     execution_backend = get_backend_proxy()
     return execution_backend.num_cpus()
+
+
+def cluster_resources():
+    """
+    Get resources of the cluster.
+
+    Returns
+    -------
+    dict
+        Dictionary with cluster nodes info in the style '{node_ip: {CPU: xx, ...}, ..}'.
+    """
+    execution_backend = get_backend_proxy()
+    return execution_backend.cluster_resources()

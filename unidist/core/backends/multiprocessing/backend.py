@@ -153,3 +153,19 @@ class MultiProcessingBackend(Backend):
         raise NotImplementedError(
             "'shutdown' is not supported yet by MultiProcessing backend."
         )
+
+    @staticmethod
+    def cluster_resources():
+        """
+        Get resources of the cluster.
+
+        Returns
+        -------
+        dict
+            Dictionary with cluster nodes info in the style '{head_node_ip: {CPU: xx, ...}}'.
+        """
+        node_resources = {
+            MultiProcessingBackend.get_ip(): {"CPU": MultiProcessingBackend.num_cpus()}
+        }
+
+        return node_resources

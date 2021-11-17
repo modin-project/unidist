@@ -14,6 +14,7 @@ from .api import (
     is_object_ref,
     get_ip,
     num_cpus,
+    cluster_resources,
 )
 from ._version import get_versions
 
@@ -27,6 +28,7 @@ __all__ = [
     "is_object_ref",
     "get_ip",
     "num_cpus",
+    "cluster_resources",
 ]
 
 __version__ = get_versions()["version"]
