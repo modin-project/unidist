@@ -9,7 +9,6 @@ dependencies:
   - msgpack-python
   - packaging
   - pandas
-  - pickle5
   - psutil
   - pytest
   - ray-default

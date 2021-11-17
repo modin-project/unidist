@@ -4,7 +4,6 @@ distributed>=2.22.0
 msgpack
 packaging
 pandas
-pickle5
 psutil
 pytest
 ray[default]
