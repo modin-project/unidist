@@ -7,14 +7,9 @@
 from unidist.config import CpuCount
 
 
-def initialize_multiprocessing(num_cpus=None):
+def initialize_multiprocessing():
     """
     Initialize the MultiProcessing execution backend.
-
-    Parameters
-    ----------
-    num_cpus : int, optional
-        Number of CPUs that should be used by backend. If ``None``, ``CpuCount`` is used.
 
     Notes
     -----
@@ -22,4 +17,4 @@ def initialize_multiprocessing(num_cpus=None):
     """
     from unidist.core.backends.multiprocessing.core import init
 
-    init(num_workers=num_cpus or CpuCount.get())
+    init(num_workers=CpuCount.get())

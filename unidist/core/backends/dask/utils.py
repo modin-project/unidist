@@ -7,14 +7,9 @@
 from unidist.config import CpuCount, DaskMemoryLimit
 
 
-def initialize_dask(num_cpus=None):
+def initialize_dask():
     """
     Initialize the Dask execution backend.
-
-    Parameters
-    ----------
-    num_cpus : int, optional
-        Number of CPUs that should be used by backend. If ``None``, ``CpuCount`` is used.
 
     Notes
     -----
@@ -27,7 +22,7 @@ def initialize_dask(num_cpus=None):
     except ValueError:
         from distributed.client import Client
 
-        num_cpus = num_cpus or CpuCount.get()
+        num_cpus = CpuCount.get()
         memory_limit = DaskMemoryLimit.get()
         worker_memory_limit = memory_limit if memory_limit else "auto"
         Client(n_workers=num_cpus, memory_limit=worker_memory_limit)

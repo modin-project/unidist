@@ -4,42 +4,27 @@
 
 """Utilities used to initialize execution backend."""
 
-from unidist.config import Backend, CpuCount
+from unidist.config import Backend
 from .backend import BackendProxy
 
 
-def init_backend(backend=None, num_cpus=None):
+def init_backend():
     """
     Initialize an execution backend.
 
-    Parameters
-    ----------
-    backend : str, optional
-        Backend that unidist should run on.
-    num_cpus : int, optional
-        Number of CPUs that should be used by backend.
-
     Notes
     -----
-    The concrete execution backend can also be chosen via
+    The concrete execution backend can be set via
     `UNIDIST_BACKEND` environment variable or ``Backend`` config value.
     Ray backend is used by default.
     """
-    if num_cpus is not None:
-        CpuCount.put(num_cpus)
-    else:
-        num_cpus = CpuCount.get()
-
-    if backend is not None:
-        Backend.put(backend)
-    else:
-        backend_name = Backend.get()
+    backend_name = Backend.get()
 
     if backend_name == "Ray":
         from unidist.core.backends.ray.backend import RayBackend
         from unidist.core.backends.ray.utils import initialize_ray
 
-        initialize_ray(num_cpus=num_cpus)
+        initialize_ray()
         backend_cls = RayBackend()
     elif backend_name == "Dask":
         import threading
@@ -48,7 +33,7 @@ def init_backend(backend=None, num_cpus=None):
             from unidist.core.backends.dask.backend import DaskBackend
             from unidist.core.backends.dask.utils import initialize_dask
 
-            initialize_dask(num_cpus=num_cpus)
+            initialize_dask()
             backend_cls = DaskBackend()
     elif backend_name == "Mpi":
         from unidist.core.backends.mpi.backend import MPIBackend
@@ -62,7 +47,7 @@ def init_backend(backend=None, num_cpus=None):
             initialize_multiprocessing,
         )
 
-        initialize_multiprocessing(num_cpus=num_cpus)
+        initialize_multiprocessing()
         backend_cls = MultiProcessingBackend()
     elif backend_name == "Python":
         from unidist.core.backends.python.backend import PythonBackend

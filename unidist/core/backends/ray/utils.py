@@ -20,14 +20,9 @@ from unidist.config import (
 )
 
 
-def initialize_ray(num_cpus=None):
+def initialize_ray():
     """
-    Initialize Ray based on parameters, ``unidist.config`` variables and internal defaults
-
-    Parameters
-    ----------
-    num_cpus : int, optional
-        Number of CPUs that should be used by backend. If ``None``, ``CpuCount`` is used.
+    Initialize the Ray execution backend.
 
     Notes
     -----
@@ -76,7 +71,7 @@ def initialize_ray(num_cpus=None):
                 object_store_memory = int(object_store_memory)
 
             ray_init_kwargs = {
-                "num_cpus": num_cpus or CpuCount.get(),
+                "num_cpus": CpuCount.get(),
                 "num_gpus": RayGpuCount.get(),
                 "include_dashboard": False,
                 "ignore_reinit_error": True,
