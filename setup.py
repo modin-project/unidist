@@ -20,7 +20,7 @@ setup(
     description="Unified Distributed Execution",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    license="Apache 2",
+    license="Apache-2.0",
     packages=find_packages(),
     url="https://github.com/modin-project/unidist",
     install_requires=["packaging", "cloudpickle"],
