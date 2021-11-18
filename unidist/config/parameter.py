@@ -85,18 +85,11 @@ class Parameter(object):
         String that denotes ``Parameter`` type.
     default : Any
         ``Parameter`` default value.
-    is_abstract : bool, default: True
-        Whether or not ``Parameter`` is abstract.
-    _value_source : int
-        Source of the ``Parameter`` value, should be set by
-        ``ValueSource``.
     """
 
     choices: typing.Sequence[str] = None
     type = str
     default = None
-    is_abstract = True
-    _value_source = None
 
     @classmethod
     def _get_raw_from_config(cls) -> str:
@@ -120,7 +113,7 @@ class Parameter(object):
         """
         raise NotImplementedError()
 
-    def __init_subclass__(cls, type, abstract=False, **kw):
+    def __init_subclass__(cls, type, **kw):
         """
         Initialize subclass.
 
@@ -128,16 +121,12 @@ class Parameter(object):
         ----------
         type : Any
             Type of the config.
-        abstract : bool, default: False
-            Whether config is abstract.
         **kw : dict
             Optional arguments for config initialization.
         """
         assert type in _TYPE_PARAMS, f"Unsupported variable type: {type}"
         cls.type = type
-        cls.is_abstract = abstract
         cls._value = _UNSET
-        cls._subs = []
         super().__init_subclass__(**kw)
 
     @classmethod
@@ -188,7 +177,7 @@ class Parameter(object):
         cls._value = _TYPE_PARAMS[cls.type].normalize(value)
 
 
-class EnvironmentVariable(Parameter, type=str, abstract=True):
+class EnvironmentVariable(Parameter, type=str):
     """Base class for environment variables-based configuration."""
 
     varname: str = None
