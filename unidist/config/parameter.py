@@ -40,13 +40,13 @@ _TYPE_PARAMS = {
     str: TypeDescriptor(
         decode=lambda value: value.strip().title(),
         normalize=lambda value: value.strip().title(),
-        verify=lambda value: True,
+        verify=lambda value: isinstance(value, str),
         help="a case-insensitive string",
     ),
     ExactStr: TypeDescriptor(
         decode=lambda value: value,
         normalize=lambda value: value,
-        verify=lambda value: True,
+        verify=lambda value: isinstance(value, str),
         help="a string",
     ),
     bool: TypeDescriptor(
