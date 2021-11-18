@@ -194,8 +194,8 @@ def main():
         "\n\tunidist script.py --backend MPI  # MPI backend is used",
         "\n\tunidist script.py --executor pytest -b Dask  # Dask backend is used, running the script using 'pytest'",
         "\n\n\tTo run from sources use 'unidist/run.py':",
-        "\n\tpython unidist/run.py script.py -b MPI --num_workers=16 --hosts localhost  # MPI backend uses 16 workers on 'localhost' node",
-        "\n\tpython unidist/run.py script.py -b MPI --num_workers=2 4 --hosts localhost x.x.x.x  # MPI backend uses 2 workers on 'localhost' and 4 on 'x.x.x.x'",
+        "\n\tpython unidist/run.py script.py -b MPI --num_workers 16 --hosts localhost  # MPI backend uses 16 workers on 'localhost' node",
+        "\n\tpython unidist/run.py script.py -b MPI --num_workers 2 4 --hosts localhost x.x.x.x  # MPI backend uses 2 workers on 'localhost' and 4 on 'x.x.x.x'",
     ]
     parser = argparse.ArgumentParser(
         description="Run python code with 'unidist' under the hood.",
