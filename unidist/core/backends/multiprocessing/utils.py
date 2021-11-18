@@ -4,6 +4,8 @@
 
 """Utilities used to initialize MultiProcessing execution backend."""
 
+from unidist.config import CpuCount
+
 
 def initialize_multiprocessing():
     """
@@ -11,11 +13,8 @@ def initialize_multiprocessing():
 
     Notes
     -----
-    A number of workers will be equal
-    to the number of CPUs on the head node.
+    Number of workers for MultiProcessing is equal to number of CPUs used by the backend.
     """
-    from multiprocessing import cpu_count
-
     from unidist.core.backends.multiprocessing.core import init
 
-    init(num_workers=cpu_count())
+    init(num_workers=CpuCount.get())

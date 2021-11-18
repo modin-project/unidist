@@ -85,9 +85,9 @@ def init():
 
     Notes
     -----
-    The concrete execution backend is chosen in depend on
-    `UNIDIST_BACKEND` environment variable.
-    If the variable is not set, Ray backend is used.
+    The concrete execution backend can be set via
+    `UNIDIST_BACKEND` environment variable or ``Backend`` config value.
+    Ray backend is used by default.
     """
     init_backend()
 

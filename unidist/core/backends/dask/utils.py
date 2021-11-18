@@ -4,6 +4,8 @@
 
 """Utilities used to initialize Dask execution backend."""
 
+from unidist.config import CpuCount, DaskMemoryLimit
+
 
 def initialize_dask():
     """
@@ -11,16 +13,16 @@ def initialize_dask():
 
     Notes
     -----
-    A number of workers in Dask Client will be equal
-    to the number of CPUs on the head node.
+    Number of workers for Dask Client is equal to number of CPUs used by the backend.
     """
     from distributed.client import get_client
 
     try:
         get_client()
     except ValueError:
-        import multiprocessing
         from distributed.client import Client
 
-        cpu_count = multiprocessing.cpu_count()
-        Client(n_workers=cpu_count)
+        num_cpus = CpuCount.get()
+        memory_limit = DaskMemoryLimit.get()
+        worker_memory_limit = memory_limit if memory_limit else "auto"
+        Client(n_workers=num_cpus, memory_limit=worker_memory_limit)

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""The module holds utility and initialization routines for Modin on Ray."""
+"""Utilities used to initialize Ray execution backend."""
 
 import os
 import psutil
@@ -10,105 +10,29 @@ import ray
 import sys
 import warnings
 
-# FIXME: Uncomment when integration to Modin
-# from modin.config import (
-#     Backend,
-#     IsRayCluster,
-#     RayRedisAddress,
-#     RayRedisPassword,
-#     CpuCount,
-#     GpuCount,
-#     Memory,
-#     NPartitions,
-# )
+from unidist.config import (
+    CpuCount,
+    RayGpuCount,
+    IsRayCluster,
+    RayRedisAddress,
+    RayRedisPassword,
+    RayObjectStoreMemory,
+)
 
 
-def _move_stdlib_ahead_of_site_packages(*args):
+def initialize_ray():
     """
-    Ensure packages from stdlib have higher import priority than from site-packages.
-
-    Parameters
-    ----------
-    *args : tuple
-        Ignored, added for compatibility with Ray.
+    Initialize the Ray execution backend.
 
     Notes
     -----
-    This function is expected to be run on all workers including the driver.
-    This is a hack solution to fix GH-#647, GH-#746.
-    """
-    site_packages_path = None
-    site_packages_path_index = -1
-    for i, path in enumerate(sys.path):
-        if sys.exec_prefix in path and path.endswith("site-packages"):
-            site_packages_path = path
-            site_packages_path_index = i
-            # break on first found
-            break
-
-    if site_packages_path is not None:
-        # stdlib packages layout as follows:
-        # - python3.x
-        #   - typing.py
-        #   - site-packages/
-        #     - pandas
-        # So extracting the dirname of the site_packages can point us
-        # to the directory containing standard libraries.
-        sys.path.insert(site_packages_path_index, os.path.dirname(site_packages_path))
-
-
-def _import_pandas(*args):
-    """
-    Import pandas to make sure all its machinery is ready.
-
-    This prevents a race condition between two threads deserializing functions
-    and trying to import pandas at the same time.
-
-    Parameters
-    ----------
-    *args : tuple
-        Ignored, added for compatibility with Ray.
-
-    Notes
-    -----
-    This function is expected to be run on all workers before any
-    serialization or deserialization starts.
-    """
-    import pandas  # noqa F401
-
-
-def initialize_ray(
-    override_is_cluster=False,
-    override_redis_address: str = None,
-    override_redis_password: str = None,
-):
-    """
-    Initialize Ray based on parameters, ``modin.config`` variables and internal defaults.
-
-    Parameters
-    ----------
-    override_is_cluster : bool, default: False
-        Whether to override the detection of Modin being run in a cluster
-        and always assume this runs on cluster head node.
-        This also overrides Ray worker detection and always runs the initialization
-        function (runs from main thread only by default).
-        If not specified, ``modin.config.IsRayCluster`` variable is used.
-    override_redis_address : str, optional
-        What Redis address to connect to when running in Ray cluster.
-        If not specified, ``modin.config.RayRedisAddress`` is used.
-    override_redis_password : str, optional
-        What password to use when connecting to Redis.
-        If not specified, ``modin.config.RayRedisPassword`` is used.
+    Number of workers for Ray is equal to number of CPUs used by the backend.
     """
 
-    if not ray.is_initialized() or override_is_cluster:
-        # FIXME: Uncomment when integration to Modin
-        # cluster = override_is_cluster or IsRayCluster.get()
-        # redis_address = override_redis_address or RayRedisAddress.get()
-        # redis_password = override_redis_password or RayRedisPassword.get()
-        cluster = override_is_cluster
-        redis_address = override_redis_address
-        redis_password = override_redis_password
+    if not ray.is_initialized() or IsRayCluster.get():
+        cluster = IsRayCluster.get()
+        redis_address = RayRedisAddress.get()
+        redis_password = RayRedisPassword.get()
 
         if cluster:
             # We only start ray in a cluster setting for the head node.
@@ -119,22 +43,8 @@ def initialize_ray(
                 _redis_password=redis_password,
             )
         else:
-            # FIXME: Uncomment when integration to Modin
-            # from modin.error_message import ErrorMessage
-
-            # This string is intentionally formatted this way. We want it indented in
-            # the warning message.
-            #             ErrorMessage.not_initialized(
-            #                 "Ray",
-            #                 """
-            #     import ray
-            #     ray.init()
-            # """,
-            #             )
-            # FIXME: Uncomment when integration to Modin
-            # object_store_memory = Memory.get()
-            object_store_memory = None
-            # In case anything failed above, we can still improve the memory for Modin.
+            object_store_memory = RayObjectStoreMemory.get()
+            # In case anything failed above, we can still improve the memory for unidist.
             if object_store_memory is None:
                 virtual_memory = psutil.virtual_memory().total
                 if sys.platform.startswith("linux"):
@@ -147,7 +57,7 @@ def initialize_ray(
                                 f"The size of /dev/shm is too small ({system_memory} bytes). The required size "
                                 f"at least half of RAM ({virtual_memory // 2} bytes). Please, delete files in /dev/shm or "
                                 "increase size of /dev/shm with --shm-size in Docker. Also, you can set "
-                                "the required memory size for each Ray worker in bytes to MODIN_MEMORY environment variable."
+                                "the required memory size for each Ray worker in bytes to UNIDIST_RAY_OBJECT_STORE_MEMORY environment variable."
                             )
                     finally:
                         os.close(shm_fd)
@@ -161,9 +71,8 @@ def initialize_ray(
                 object_store_memory = int(object_store_memory)
 
             ray_init_kwargs = {
-                # FIXME: Uncomment when integration to Modin
-                # "num_cpus": CpuCount.get(),
-                # "num_gpus": GpuCount.get(),
+                "num_cpus": CpuCount.get(),
+                "num_gpus": RayGpuCount.get(),
                 "include_dashboard": False,
                 "ignore_reinit_error": True,
                 "object_store_memory": object_store_memory,
@@ -172,27 +81,3 @@ def initialize_ray(
                 "_memory": object_store_memory,
             }
             ray.init(**ray_init_kwargs)
-
-        # FIXME: Uncomment when integration to Modin
-        # if Backend.get() == "Cudf":
-        #     from modin.engines.ray.cudf_on_ray.frame.gpu_manager import GPUManager
-        #     from modin.engines.ray.cudf_on_ray.frame.partition_manager import (
-        #         GPU_MANAGERS,
-        #     )
-
-        #     # Check that GPU_MANAGERS is empty because _update_engine can be called multiple times
-        #     if not GPU_MANAGERS:
-        #         for i in range(GpuCount.get()):
-        #             GPU_MANAGERS.append(GPUManager.remote(i))
-    _move_stdlib_ahead_of_site_packages()
-    ray.worker.global_worker.run_function_on_all_workers(
-        _move_stdlib_ahead_of_site_packages
-    )
-    ray.worker.global_worker.run_function_on_all_workers(_import_pandas)
-    # FIXME: Uncomment when integration to Modin
-    # num_cpus = int(ray.cluster_resources()["CPU"])
-    # num_gpus = int(ray.cluster_resources().get("GPU", 0))
-    # if Backend.get() == "Cudf":
-    #     NPartitions._put(num_gpus)
-    # else:
-    #     NPartitions._put(num_cpus)
