@@ -4,7 +4,12 @@
 
 """Utilities used to initialize Dask execution backend."""
 
-from unidist.config import CpuCount, DaskMemoryLimit
+from unidist.config import (
+    CpuCount,
+    DaskMemoryLimit,
+    IsDaskCluster,
+    DaskSchedulerAddress,
+)
 
 
 def initialize_dask():
@@ -24,5 +29,11 @@ def initialize_dask():
 
         num_cpus = CpuCount.get()
         memory_limit = DaskMemoryLimit.get()
+        is_cluster = IsDaskCluster.get()
+        scheduler_address = DaskSchedulerAddress.get()
         worker_memory_limit = memory_limit if memory_limit else "auto"
-        Client(n_workers=num_cpus, memory_limit=worker_memory_limit)
+
+        if is_cluster:
+            Client(address=scheduler_address)
+        else:
+            Client(n_workers=num_cpus, memory_limit=worker_memory_limit)

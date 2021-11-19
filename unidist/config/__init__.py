@@ -12,7 +12,7 @@ from .backends.ray import (
     RayRedisPassword,
     RayObjectStoreMemory,
 )
-from .backends.dask import DaskMemoryLimit
+from .backends.dask import DaskMemoryLimit, IsDaskCluster, DaskSchedulerAddress
 
 __all__ = [
     "Backend",
@@ -23,4 +23,6 @@ __all__ = [
     "RayRedisPassword",
     "RayObjectStoreMemory",
     "DaskMemoryLimit",
+    "IsDaskCluster",
+    "DaskSchedulerAddress",
 ]

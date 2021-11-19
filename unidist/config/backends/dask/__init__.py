@@ -4,6 +4,6 @@
 
 """Config entities specific for Dask backend which can be used for unidist behavior tuning."""
 
-from .envvars import DaskMemoryLimit
+from .envvars import DaskMemoryLimit, IsDaskCluster, DaskSchedulerAddress
 
-__all__ = ["DaskMemoryLimit"]
+__all__ = ["DaskMemoryLimit", "IsDaskCluster", "DaskSchedulerAddress"]
