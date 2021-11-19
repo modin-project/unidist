@@ -5,7 +5,6 @@
 """Command line interface for unidist."""
 
 import os
-import sys
 import argparse
 import subprocess
 import multiprocessing as mp
@@ -243,7 +242,18 @@ def create_command(
             os.environ["UNIDIST_RAY_REDIS_PASSWORD"] = redis_password
         else:
             os.environ["UNIDIST_CPUS"] = num_cpus
-
+    elif backend == "Dask":
+        command = [executor, script]
+        if hosts is not None:
+            os.environ["UNIDIST_DASK_CLUSTER"] = "True"
+            os.environ["UNIDIST_DASK_SCHEDULER_ADDRESS"] = hosts
+        else:
+            os.environ["UNIDIST_CPUS"] = num_cpus
+    elif backend == "MultiProcessing":
+        command = [executor, script]
+        os.environ["UNIDIST_CPUS"] = num_cpus
+    else:
+        command = [executor, script]
     return command
 
 
