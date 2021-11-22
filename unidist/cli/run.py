@@ -64,7 +64,7 @@ def main():
         "--executor",
         type=str,
         default=Defaults.EXECUTOR,
-        help="set an executable to run. Default is 'python3'",
+        help="set an executable to run. Default is 'python'",
     )
     parser.add_argument(
         "-num_cpus",

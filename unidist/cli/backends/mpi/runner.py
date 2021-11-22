@@ -91,8 +91,10 @@ class MPIRunner(BackendRunner):
             "1",
             "-wdir",
             workers_dir,
-            "python3",
-            unidist_root + "/unidist/core/backends/mpi/core/monitor.py",
+            "python",
+            os.path.join(
+                unidist_root, "unidist", "core", "backends", "mpi", "core", "monitor.py"
+            ),
         ]
 
         def get_worker_command(num_cpus):
@@ -101,8 +103,16 @@ class MPIRunner(BackendRunner):
                 num_cpus,
                 "-wdir",
                 workers_dir,
-                "python3",
-                unidist_root + "/unidist/core/backends/mpi/core/worker.py",
+                "python",
+                os.path.join(
+                    unidist_root,
+                    "unidist",
+                    "core",
+                    "backends",
+                    "mpi",
+                    "core",
+                    "worker.py",
+                ),
             ]
 
         command += [hosts_str] + command_executor + [":"] + command_monitor

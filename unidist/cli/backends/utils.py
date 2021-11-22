@@ -23,7 +23,7 @@ class BackendName:
 class Defaults:
     """Default values for supported CLI parameters."""
 
-    EXECUTOR = "python3"
+    EXECUTOR = "python"
     BACKEND = BackendName.RAY
     NUM_CPUS = "default"
     HOSTS = "localhost"
