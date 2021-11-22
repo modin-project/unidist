@@ -7,7 +7,7 @@ here = pathlib.Path(__file__).parent.resolve()
 # Get the long description from the README file
 long_description = (here / "README.md").read_text(encoding="utf-8")
 
-ray_deps = ["ray[default]", "pandas"]
+ray_deps = ["ray[default]"]
 dask_deps = ["dask[complete]>=2.22.0", "distributed>=2.22.0"]
 mpi_deps = ["pandas", "msgpack"]
 if sys.version_info[1] < 8:
