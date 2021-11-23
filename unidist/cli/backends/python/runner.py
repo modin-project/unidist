@@ -6,8 +6,8 @@
 
 import warnings
 
-from unidist.cli.backends.base.runner import BackendRunner
-from unidist.cli.backends.utils import Defaults, BackendName
+from unidist.cli.base.runner import BackendRunner
+from unidist.cli.base.utils import Defaults, BackendName
 
 
 class PythonRunner(BackendRunner):

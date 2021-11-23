@@ -7,8 +7,8 @@
 import os
 import warnings
 
-from unidist.cli.backends.base.runner import BackendRunner
-from unidist.cli.backends.utils import (
+from unidist.cli.base.runner import BackendRunner
+from unidist.cli.base.utils import (
     Defaults,
     BackendName,
     validate_num_cpus,

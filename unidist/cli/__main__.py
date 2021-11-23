@@ -15,7 +15,7 @@ except ImportError:
         0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
     )
 
-from unidist.cli.backends.utils import BackendName, Defaults
+from unidist.cli.base.utils import BackendName, Defaults
 from unidist.cli.backends.ray.runner import RayRunner
 from unidist.cli.backends.mpi.runner import MPIRunner
 from unidist.cli.backends.dask.runner import DaskRunner
