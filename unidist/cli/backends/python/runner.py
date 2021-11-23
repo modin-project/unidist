@@ -25,7 +25,7 @@ class PythonRunner(BackendRunner):
         super().__init__(**cli_kwargs)
 
     def check_kwargs_support(self, **kwargs):
-        """Check the support of `kwargs` combination for Python backend."""
+        """Check support for `kwargs` combination for Python backend."""
         if kwargs.get("num_cpus", Defaults.NUM_CPUS) != Defaults.NUM_CPUS:
             warnings.warn(
                 f"`num_cpus` isn't supported for {self.backend} backend, ignored.",

@@ -13,7 +13,7 @@ from unidist.cli.backends.utils import Defaults
 
 class BackendRunner:
     """
-    A base class for any unidist backend runner.
+    Base class for any unidist backend runner.
 
     Parameters
     ----------
@@ -24,10 +24,11 @@ class BackendRunner:
     def __init__(self, **cli_kwargs):
         self.script = cli_kwargs.pop("script", "")
         self.executor = cli_kwargs.pop("executor", Defaults.EXECUTOR)
+        self.backend = cli_kwargs.pop("backend", Defaults.BACKEND)
         self.check_kwargs_support(**cli_kwargs)
 
     def check_kwargs_support(self, **kwargs):
-        """Check the support of `kwargs` combination for a specific backend."""
+        """Check support for `kwargs` combination for a specific backend."""
         raise NotImplementedError
 
     def prepare_env(self):

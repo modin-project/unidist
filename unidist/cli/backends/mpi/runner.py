@@ -33,7 +33,7 @@ class MPIRunner(BackendRunner):
         super().__init__(**cli_kwargs)
 
     def check_kwargs_support(self, **kwargs):
-        """Check the support of `kwargs` combination for MPI backend."""
+        """Check support for `kwargs` combination for MPI backend."""
         hosts = kwargs.get("hosts", Defaults.HOSTS)
         num_cpus = kwargs.get("num_cpus", Defaults.NUM_CPUS)
 

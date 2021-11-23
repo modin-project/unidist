@@ -26,7 +26,7 @@ class RayRunner(BackendRunner):
         super().__init__(**cli_kwargs)
 
     def check_kwargs_support(self, **kwargs):
-        """Check the support of `kwargs` combination for Ray backend."""
+        """Check support for `kwargs` combination for Ray backend."""
         hosts = kwargs.get("hosts", Defaults.HOSTS)
         num_cpus = kwargs.get("num_cpus", Defaults.NUM_CPUS)
         self.redis_password = kwargs.get("redis_password", Defaults.REDIS_PASSWORD)
