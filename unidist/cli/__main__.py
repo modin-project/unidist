@@ -31,9 +31,9 @@ def main():
         f"\n\tunidist script.py --backend {BackendName.MPI}  # MPI backend is used",
         f"\n\tunidist script.py --executor pytest -b {BackendName.DASK}  # Dask backend is used, running the script using 'pytest'",
         f"\n\tunidist script.py -b {BackendName.MP} --num_cpus 16 # MultiProcessing backend is used and uses 16 CPUs,",
-        "\n\n\tTo run from sources use 'unidist/cli/run.py':",
-        f"\n\tpython unidist/cli/run.py script.py -b {BackendName.MPI} --num_cpus 16 -hosts localhost  # MPI backend uses 16 workers on 'localhost' node",
-        f"\n\tpython unidist/cli/run.py script.py -b {BackendName.MPI} -num_cpus 2 4 --hosts localhost x.x.x.x  # MPI backend uses 2 workers on 'localhost' and 4 on 'x.x.x.x'",
+        "\n\n\tTo run from sources use 'unidist/cli.py':",
+        f"\n\tpython unidist/cli script.py -b {BackendName.MPI} --num_cpus 16 -hosts localhost  # MPI backend uses 16 workers on 'localhost' node",
+        f"\n\tpython unidist/cli script.py -b {BackendName.MPI} -num_cpus 2 4 --hosts localhost x.x.x.x  # MPI backend uses 2 workers on 'localhost' and 4 on 'x.x.x.x'",
     ]
     parser = argparse.ArgumentParser(
         description="Run python code with 'unidist'.",
