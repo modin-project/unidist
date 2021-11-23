@@ -13,11 +13,11 @@ import multiprocessing as mp
 class BackendName:
     """String representations of unidist backends."""
 
-    RAY = "Ray"
-    MPI = "MPI"
-    DASK = "Dask"
-    MP = "MultiProcessing"
-    PY = "Python"
+    RAY = "ray"
+    MPI = "mpi"
+    DASK = "dask"
+    MP = "multiprocessing"
+    PY = "python"
 
 
 class Defaults:
