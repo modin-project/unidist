@@ -50,7 +50,7 @@ class MPIRunner(BackendRunner):
                 num_cpus *= len(hosts)
             else:
                 raise RuntimeError(
-                    "`num_cpus` and `hosts` parameters must have the equal number of values."
+                    "`num_cpus` and `hosts` parameters must have an equal number of values."
                 )
 
         if (

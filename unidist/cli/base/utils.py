@@ -49,17 +49,17 @@ def get_unidist_root():
 
 def validate_hosts(hosts: list):
     """
-    Validate `hosts` list of ip-addresses on correctness and duplicates.
+    Validate `hosts` list of IP addresses on correctness and duplicates.
 
     Parameters
     ----------
     hosts : list
-        List of strings with ip-addresses.
+        List of IP addresses to be validated.
 
     Returns
     -------
     list
-        List of validated IPs.
+        List of validated IP addresses.
     """
     ips = [
         str(ipaddress.ip_address(get_localhost_ip() if ip == "localhost" else ip))
@@ -82,13 +82,13 @@ def validate_num_cpus(num_cpus: list):
     Parameters
     ----------
     num_cpus : list
-        List of string values. The each value represents
-        a number of workers for corresponded host.
+        List of string values. Each value represents
+        number of CPUs to be used by corresponding host.
 
     Returns
     -------
     list
-        List of validated number of workers per host.
+        List of validated number of CPUs per host.
     """
 
     def validate(value):
