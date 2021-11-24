@@ -9,7 +9,9 @@ import time
 try:
     import mpi4py
 except ImportError:
-    raise ImportError("Missing dependency 'mpi4py'. Use conda to install it.") from None
+    raise ImportError(
+        "Missing dependency 'mpi4py'. Use pip or conda to install it."
+    ) from None
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False)
