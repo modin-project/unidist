@@ -26,12 +26,12 @@ from unidist.cli.backends.multiprocessing.runner import MultiProcessingRunner
 def main():
     """Run an application with unidist."""
     usage_examples = [
-        "\n\tIn case 'unidist' is installed as a python package, use binary:",
+        "\n\tIn case 'unidist' is installed as a python package, run binary:",
         "\n\tunidist script.py  # Ray backend is used by default",
         f"\n\tunidist script.py --backend {BackendName.MPI}  # MPI backend is used",
         f"\n\tunidist script.py --executor pytest -b {BackendName.DASK}  # Dask backend is used, running the script using 'pytest'",
-        f"\n\tunidist script.py -b {BackendName.MP} --num_cpus 16 # MultiProcessing backend is used and uses 16 CPUs,",
-        "\n\n\tTo run from sources use 'unidist/cli.py':",
+        f"\n\tunidist script.py -b {BackendName.MP} --num_cpus 16 # MultiProcessing backend is used and uses 16 CPUs",
+        "\n\n\tTo run from sources run 'unidist/cli':",
         f"\n\tpython unidist/cli script.py -b {BackendName.MPI} --num_cpus 16 -hosts localhost  # MPI backend uses 16 workers on 'localhost' node",
         f"\n\tpython unidist/cli script.py -b {BackendName.MPI} -num_cpus 2 4 --hosts localhost x.x.x.x  # MPI backend uses 2 workers on 'localhost' and 4 on 'x.x.x.x'",
     ]
@@ -57,35 +57,35 @@ def main():
             BackendName.PY,
         ],
         default=Defaults.BACKEND,
-        help="set an execution backend. Default is 'Ray'",
+        help="specify an execution backend. Default is 'Ray'",
     )
     parser.add_argument(
         "-e",
         "--executor",
         type=str,
         default=Defaults.EXECUTOR,
-        help="set an executor to run. Default is 'python'",
+        help="specify an executor to run with. Default is 'python'",
     )
     parser.add_argument(
         "-num_cpus",
         "--num_cpus",
         default=Defaults.NUM_CPUS,
         nargs="+",
-        help="set a number of CPUs per node used by the backend in a cluster. Can accept multiple values in the case of running in the cluster. Default is equal to the number of CPUs on a head node.",
+        help="specify a number of CPUs per node used by the backend in a cluster. Can accept multiple values in the case of running in the cluster. Default is equal to the number of CPUs on a head node.",
     )
     parser.add_argument(
         "-hosts",
         "--hosts",
         default=Defaults.HOSTS,
         nargs="+",
-        help="set a node(-s) ip address(-s) to use by backend. Can accept multiple values in the case of running on the cluster. Default is 'localhost'.",
+        help="specify node(s) IP address(es) to use by the backend. Can accept multiple values in the case of running in the cluster. Default is 'localhost'.",
     )
     ray_specific_args_group.add_argument(
         "-redis_pswd",
         "--redis_password",
         default=Defaults.REDIS_PASSWORD,
         type=str,
-        help="set redis password to connect to existing Ray cluster.",
+        help="specify redis password to connect to existing Ray cluster.",
     )
     args = parser.parse_args()
     kwargs = vars(args)
