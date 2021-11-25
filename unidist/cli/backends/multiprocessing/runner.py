@@ -27,8 +27,8 @@ class MultiProcessingRunner(BackendRunner):
 
     def check_kwargs_support(self, **kwargs):
         """Check support for `kwargs` combination for MultiProcessing backend."""
-        hosts = kwargs.get("hosts", Defaults.HOSTS)
-        num_cpus = kwargs.get("num_cpus", Defaults.NUM_CPUS)
+        hosts = kwargs.get("hosts", self.hosts)
+        num_cpus = kwargs.get("num_cpus", self.num_cpus)
         if hosts == Defaults.HOSTS:
             if num_cpus == Defaults.NUM_CPUS:
                 self.num_cpus = validate_num_cpus([num_cpus])[0]

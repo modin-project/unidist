@@ -34,8 +34,8 @@ class MPIRunner(BackendRunner):
 
     def check_kwargs_support(self, **kwargs):
         """Check support for `kwargs` combination for MPI backend."""
-        hosts = kwargs.get("hosts", Defaults.HOSTS)
-        num_cpus = kwargs.get("num_cpus", Defaults.NUM_CPUS)
+        hosts = kwargs.get("hosts", self.hosts)
+        num_cpus = kwargs.get("num_cpus", self.num_cpus)
 
         if not isinstance(num_cpus, list):
             num_cpus = [num_cpus]

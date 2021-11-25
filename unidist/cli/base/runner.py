@@ -24,6 +24,9 @@ class BackendRunner:
         self.script = cli_kwargs.pop("script", "")
         self.executor = cli_kwargs.pop("executor", Defaults.EXECUTOR)
         self.backend = cli_kwargs.pop("backend", Defaults.BACKEND)
+        self.hosts = cli_kwargs.get("hosts", Defaults.HOSTS)
+        self.num_cpus = cli_kwargs.get("hosts", Defaults.NUM_CPUS)
+        self.redis_password = cli_kwargs.get("redis_password", Defaults.REDIS_PASSWORD)
         self.check_kwargs_support(**cli_kwargs)
 
     def check_kwargs_support(self, **kwargs):
