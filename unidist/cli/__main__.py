@@ -53,7 +53,7 @@ def main():
             BackendName.PY,
         ],
         default=Defaults.BACKEND,
-        help="specify an execution backend. Default is 'Ray'",
+        help=f"specify an execution backend. Default is value from 'UNIDIST_BACKEND' environment variable, if 'UNIDIST_BACKEND' wasn't set '{BackendName.RAY}' backend is used",
     )
     parser.add_argument(
         "-m",
@@ -65,7 +65,13 @@ def main():
         "--num_cpus",
         default=Defaults.NUM_CPUS,
         nargs="+",
-        help="specify a number of CPUs per node used by the backend in a cluster. Can accept multiple values in the case of running in the cluster. Default is equal to the number of CPUs on a head node.",
+        help=" ".join(
+            [
+                "specify a number of CPUs per node used by the backend in a cluster.",
+                "Can accept multiple values in the case of running in the cluster.",
+                "Default is value from 'UNIDIST_CPUS' environment variable, if 'UNIDIST_CPUS' wasn't set, value will be equal to the number of CPUs on a head node.",
+            ]
+        ),
     )
     parser.add_argument(
         "-hosts",

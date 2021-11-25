@@ -9,14 +9,14 @@ import ipaddress
 import socket
 import multiprocessing as mp
 
-from unidist.core.base.common import BackendName
+from unidist.config import CpuCount, Backend
 
 
 class Defaults:
     """Default values for supported CLI parameters."""
 
-    BACKEND = BackendName.RAY
-    NUM_CPUS = "default"
+    BACKEND = Backend.get()
+    NUM_CPUS = CpuCount.get()
     HOSTS = "localhost"
     REDIS_PASSWORD = ""
 
