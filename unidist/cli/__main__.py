@@ -16,11 +16,6 @@ except ImportError:
     )
 
 from unidist.cli.base.utils import Defaults
-from unidist.cli.backends.ray.runner import RayRunner
-from unidist.cli.backends.mpi.runner import MPIRunner
-from unidist.cli.backends.dask.runner import DaskRunner
-from unidist.cli.backends.python.runner import PythonRunner
-from unidist.cli.backends.multiprocessing.runner import MultiProcessingRunner
 from unidist.core.base.common import BackendName
 
 
@@ -93,14 +88,24 @@ def main():
 
     backend = kwargs.get("backend")
     if backend == BackendName.RAY:
+        from unidist.cli.backends.ray.runner import RayRunner
+
         runner = RayRunner(**kwargs)
     elif backend == BackendName.MPI:
+        from unidist.cli.backends.mpi.runner import MPIRunner
+
         runner = MPIRunner(**kwargs)
     elif backend == BackendName.DASK:
+        from unidist.cli.backends.dask.runner import DaskRunner
+
         runner = DaskRunner(**kwargs)
     elif backend == BackendName.MP:
+        from unidist.cli.backends.multiprocessing.runner import MultiProcessingRunner
+
         runner = MultiProcessingRunner(**kwargs)
     else:
+        from unidist.cli.backends.python.runner import PythonRunner
+
         runner = PythonRunner(**kwargs)
     runner.run()
 

@@ -7,6 +7,8 @@
 import os
 import warnings
 
+from ray import ray_constants
+
 from unidist.cli.base.runner import BackendRunner
 from unidist.cli.base.utils import Defaults, validate_num_cpus
 from unidist.core.base.common import BackendName
@@ -30,7 +32,12 @@ class RayRunner(BackendRunner):
         """Check support for `kwargs` combination for Ray backend."""
         hosts = kwargs.get("hosts", self.hosts)
         num_cpus = kwargs.get("num_cpus", self.num_cpus)
-        self.redis_password = kwargs.get("redis_password", self.redis_password)
+        self.redis_password = (
+            self.redis_password
+            if kwargs.get("redis_password", Defaults.REDIS_PASSWORD)
+            != Defaults.REDIS_PASSWORD
+            else ray_constants.REDIS_DEFAULT_PASSWORD
+        )
         if hosts == Defaults.HOSTS:
             self.hosts = None
             if num_cpus == Defaults.NUM_CPUS:

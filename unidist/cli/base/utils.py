@@ -19,7 +19,7 @@ class Defaults:
     BACKEND = BackendName.RAY
     NUM_CPUS = "default"
     HOSTS = "localhost"
-    REDIS_PASSWORD = "5241590000000000"
+    REDIS_PASSWORD = ""
 
 
 def get_unidist_root():
