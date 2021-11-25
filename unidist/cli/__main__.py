@@ -25,7 +25,7 @@ def main():
         "\n\tIn case 'unidist' is installed as a python package, run binary:",
         "\n\tunidist script.py  # Ray backend is used by default",
         f"\n\tunidist script.py --backend {BackendName.MPI}  # MPI backend is used",
-        f"\n\tunidist script.py --executor pytest -b {BackendName.DASK}  # Dask backend is used, running the script using 'pytest'",
+        f"\n\tunidist -m pytest script.py -b {BackendName.DASK}  # Dask backend is used, running the script using 'pytest'",
         f"\n\tunidist script.py -b {BackendName.MP} --num_cpus 16 # MultiProcessing backend is used and uses 16 CPUs",
         "\n\n\tTo run from sources run 'unidist/cli':",
         f"\n\tpython unidist/cli script.py -b {BackendName.MPI} --num_cpus 16 -hosts localhost  # MPI backend uses 16 workers on 'localhost' node",
@@ -56,11 +56,9 @@ def main():
         help="specify an execution backend. Default is 'Ray'",
     )
     parser.add_argument(
-        "-e",
-        "--executor",
-        type=str,
-        default=Defaults.EXECUTOR,
-        help="specify an executor to run with. Default is 'python'",
+        "-m",
+        "--module",
+        help="run library module as a script",
     )
     parser.add_argument(
         "-num_cpus",
@@ -83,8 +81,9 @@ def main():
         type=str,
         help="specify redis password to connect to existing Ray cluster.",
     )
-    args = parser.parse_args()
+    args, script_args = parser.parse_known_args()
     kwargs = vars(args)
+    kwargs["script_args"] = script_args
 
     backend = kwargs.get("backend")
     if backend == BackendName.RAY:

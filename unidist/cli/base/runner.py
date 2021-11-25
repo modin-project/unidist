@@ -21,9 +21,10 @@ class BackendRunner:
     """
 
     def __init__(self, **cli_kwargs):
-        self.script = cli_kwargs.pop("script", "")
-        self.executor = cli_kwargs.pop("executor", Defaults.EXECUTOR)
-        self.backend = cli_kwargs.pop("backend", Defaults.BACKEND)
+        self.script = cli_kwargs.get("script", "")
+        self.script_args = cli_kwargs.get("script_args", [""])
+        self.module = cli_kwargs.get("module", None)
+        self.backend = cli_kwargs.get("backend", Defaults.BACKEND)
         self.hosts = cli_kwargs.get("hosts", Defaults.HOSTS)
         self.num_cpus = cli_kwargs.get("hosts", Defaults.NUM_CPUS)
         self.redis_password = cli_kwargs.get("redis_password", Defaults.REDIS_PASSWORD)
@@ -46,7 +47,11 @@ class BackendRunner:
         list
             List of strings with the command representation.
         """
-        return [self.executor, self.script]
+        return (
+            ["python", "-m", self.module, self.script] + self.script_args
+            if self.module is not None
+            else ["python", self.script] + self.script_args
+        )
 
     def run(self):
         """Run a command in a subprocess."""

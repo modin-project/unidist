@@ -78,7 +78,7 @@ class MPIRunner(BackendRunner):
         hosts_str = f"{get_localhost_ip()}:1,{get_localhost_ip()}:1,"
         for host, n in zip(self.hosts, self.num_cpus):
             hosts_str += host + ":" + n + ","
-        command_executor = ["-n", "1", self.executor, self.script]
+        command_executor = ["-n", "1"] + super().get_command()
         command_monitor = [
             "-n",
             "1",
