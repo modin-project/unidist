@@ -15,7 +15,6 @@ from unidist.core.base.common import BackendName
 class Defaults:
     """Default values for supported CLI parameters."""
 
-    EXECUTOR = "python"
     BACKEND = BackendName.RAY
     NUM_CPUS = "default"
     HOSTS = "localhost"
