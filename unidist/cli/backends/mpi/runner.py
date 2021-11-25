@@ -10,12 +10,12 @@ import warnings
 from unidist.cli.base.runner import BackendRunner
 from unidist.cli.base.utils import (
     Defaults,
-    BackendName,
     validate_num_cpus,
     validate_hosts,
     get_localhost_ip,
     get_unidist_root,
 )
+from unidist.core.base.common import BackendName
 
 
 class MPIRunner(BackendRunner):

@@ -8,7 +8,8 @@ import os
 import warnings
 
 from unidist.cli.base.runner import BackendRunner
-from unidist.cli.base.utils import Defaults, BackendName, validate_num_cpus
+from unidist.cli.base.utils import Defaults, validate_num_cpus
+from unidist.core.base.common import BackendName
 
 
 class MultiProcessingRunner(BackendRunner):

@@ -9,15 +9,7 @@ import ipaddress
 import socket
 import multiprocessing as mp
 
-
-class BackendName:
-    """String representations of unidist backends."""
-
-    RAY = "ray"
-    MPI = "mpi"
-    DASK = "dask"
-    MP = "multiprocessing"
-    PY = "python"
+from unidist.core.base.common import BackendName
 
 
 class Defaults:
