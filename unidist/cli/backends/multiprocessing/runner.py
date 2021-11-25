@@ -31,9 +31,11 @@ class MultiProcessingRunner(BackendRunner):
         hosts = kwargs.get("hosts", self.hosts)
         num_cpus = kwargs.get("num_cpus", self.num_cpus)
         if hosts == Defaults.HOSTS:
-            if num_cpus == Defaults.NUM_CPUS:
-                self.num_cpus = validate_num_cpus([num_cpus])[0]
-            elif isinstance(num_cpus, list) and len(num_cpus) == 1:
+            if (
+                num_cpus == Defaults.NUM_CPUS
+                or isinstance(num_cpus, list)
+                and len(num_cpus) == 1
+            ):
                 self.num_cpus = validate_num_cpus(num_cpus)[0]
             else:
                 raise RuntimeError(

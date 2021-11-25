@@ -39,20 +39,23 @@ def get_unidist_root():
     return unidist_root
 
 
-def validate_hosts(hosts: list):
+def validate_hosts(hosts):
     """
-    Validate `hosts` list of IP addresses on correctness and duplicates.
+    Validate `hosts` IP address(es) on correctness and duplicates.
 
     Parameters
     ----------
-    hosts : list
-        List of IP addresses to be validated.
+    hosts : list or str
+        IP addresses to be validated.
 
     Returns
     -------
     list
         List of validated IP addresses.
     """
+    if not isinstance(hosts, list):
+        hosts = [hosts]
+
     ips = [
         str(ipaddress.ip_address(get_localhost_ip() if ip == "localhost" else ip))
         for ip in hosts
@@ -63,17 +66,17 @@ def validate_hosts(hosts: list):
     return ips
 
 
-def validate_num_cpus(num_cpus: list):
+def validate_num_cpus(num_cpus):
     """
     Validate `num_cpus` on correctness.
 
     Each value of `num_cpus` is checked on possibility
-    of converting to int. In case value is ``default`` it will
+    of converting to int. In case `num_cpus` is ``default`` it will
     be equal to number of CPUs on ``localhost`` node.
 
     Parameters
     ----------
-    num_cpus : list
+    num_cpus : list or "default"
         List of string values. Each value represents
         number of CPUs to be used by corresponding host.
 
@@ -82,6 +85,8 @@ def validate_num_cpus(num_cpus: list):
     list
         List of validated number of CPUs per host.
     """
+    if not isinstance(num_cpus, list):
+        num_cpus = [num_cpus]
 
     def validate(value):
         try:
@@ -93,7 +98,7 @@ def validate_num_cpus(num_cpus: list):
                 return mp.cpu_count()
             else:
                 raise TypeError(
-                    f"'num_cpus' must be integer, 'default' or sequence of integers, got '{num_cpus}'"
+                    f"'num_cpus' must be integer or sequence of integers, got '{num_cpus}'"
                 )
         else:
             return value

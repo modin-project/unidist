@@ -37,21 +37,17 @@ class MPIRunner(BackendRunner):
         hosts = kwargs.get("hosts", self.hosts)
         num_cpus = kwargs.get("num_cpus", self.num_cpus)
 
-        if not isinstance(num_cpus, list):
-            num_cpus = [num_cpus]
+        if isinstance(hosts, list) and not isinstance(num_cpus, list):
+            # If `num_cpus` isn't provided all workers will use `default` value
+            num_cpus = [num_cpus] * len(hosts)
 
-        if not isinstance(hosts, list):
-            hosts = [hosts]
+        self.hosts = validate_hosts(hosts)
+        self.num_cpus = validate_num_cpus(num_cpus)
 
-        if len(hosts) != len(num_cpus):
-            # If `num_cpus` isn't provided or a single value `default` is provided
-            # all workers will use `default` value
-            if len(num_cpus) == 1 and num_cpus[0] == Defaults.NUM_CPUS:
-                num_cpus *= len(hosts)
-            else:
-                raise RuntimeError(
-                    "`num_cpus` and `hosts` parameters must have an equal number of values."
-                )
+        if len(self.hosts) != len(self.num_cpus):
+            raise RuntimeError(
+                "`num_cpus` and `hosts` parameters must have an equal number of values."
+            )
 
         if (
             kwargs.get("redis_password", Defaults.REDIS_PASSWORD)
@@ -61,9 +57,6 @@ class MPIRunner(BackendRunner):
                 f"`redis_password` isn't supported for {self.backend} backend, ignored.",
                 RuntimeWarning,
             )
-
-        self.hosts = validate_hosts(hosts)
-        self.num_cpus = validate_num_cpus(num_cpus)
 
     def prepare_env(self):
         """Setup unidist environment variables for MPI backend."""

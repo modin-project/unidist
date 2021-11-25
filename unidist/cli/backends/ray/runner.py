@@ -40,9 +40,11 @@ class RayRunner(BackendRunner):
         )
         if hosts == Defaults.HOSTS:
             self.hosts = None
-            if num_cpus == Defaults.NUM_CPUS:
-                self.num_cpus = validate_num_cpus([num_cpus])[0]
-            elif isinstance(num_cpus, list) and len(num_cpus) == 1:
+            if (
+                num_cpus == Defaults.NUM_CPUS
+                or isinstance(num_cpus, list)
+                and len(num_cpus) == 1
+            ):
                 self.num_cpus = validate_num_cpus(num_cpus)[0]
             else:
                 raise RuntimeError(
