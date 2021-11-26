@@ -69,12 +69,11 @@ def validate_num_cpus(num_cpus):
     Validate `num_cpus` on correctness.
 
     Each value of `num_cpus` is checked on possibility
-    of converting to int. In case `num_cpus` is ``default`` it will
-    be equal to number of CPUs on ``localhost`` node.
+    of converting to int.
 
     Parameters
     ----------
-    num_cpus : list or "default"
+    num_cpus : list or str
         List of string values. Each value represents
         number of CPUs to be used by corresponding host.
 
