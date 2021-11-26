@@ -11,7 +11,6 @@ from ray import ray_constants
 
 from unidist.cli.base.runner import BackendRunner
 from unidist.cli.base.utils import Defaults, validate_num_cpus
-from unidist.core.base.common import BackendName
 
 
 class RayRunner(BackendRunner):
@@ -25,7 +24,8 @@ class RayRunner(BackendRunner):
     """
 
     def __init__(self, **cli_kwargs):
-        self.backend = BackendName.RAY
+        self.hosts = cli_kwargs.get("hosts", Defaults.HOSTS)
+        self.redis_password = cli_kwargs.get("redis_password", Defaults.REDIS_PASSWORD)
         super().__init__(**cli_kwargs)
 
     def check_kwargs_support(self, **kwargs):
@@ -54,7 +54,7 @@ class RayRunner(BackendRunner):
             self.hosts = hosts[0]
             if isinstance(num_cpus, list):
                 warnings.warn(
-                    f"`num_cpus` isn't supported for existing {self.backend} cluster, ignored.",
+                    f"`num_cpus` isn't supported for existing {self.backend} cluster.",
                     RuntimeWarning,
                 )
             self.num_cpus = None

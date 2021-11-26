@@ -15,7 +15,6 @@ from unidist.cli.base.utils import (
     get_localhost_ip,
     get_unidist_root,
 )
-from unidist.core.base.common import BackendName
 
 
 class MPIRunner(BackendRunner):
@@ -29,7 +28,7 @@ class MPIRunner(BackendRunner):
     """
 
     def __init__(self, **cli_kwargs):
-        self.backend = BackendName.MPI
+        self.hosts = cli_kwargs.get("hosts", Defaults.HOSTS)
         super().__init__(**cli_kwargs)
 
     def check_kwargs_support(self, **kwargs):
@@ -54,7 +53,7 @@ class MPIRunner(BackendRunner):
             != Defaults.REDIS_PASSWORD
         ):
             warnings.warn(
-                f"`redis_password` isn't supported for {self.backend} backend, ignored.",
+                f"`redis_password` isn't supported for {self.backend} backend.",
                 RuntimeWarning,
             )
 

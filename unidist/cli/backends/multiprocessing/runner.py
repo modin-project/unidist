@@ -9,7 +9,6 @@ import warnings
 
 from unidist.cli.base.runner import BackendRunner
 from unidist.cli.base.utils import Defaults, validate_num_cpus
-from unidist.core.base.common import BackendName
 
 
 class MultiProcessingRunner(BackendRunner):
@@ -23,14 +22,13 @@ class MultiProcessingRunner(BackendRunner):
     """
 
     def __init__(self, **cli_kwargs):
-        self.backend = BackendName.MP
+        self.hosts = cli_kwargs.get("hosts", Defaults.HOSTS)
         super().__init__(**cli_kwargs)
 
     def check_kwargs_support(self, **kwargs):
         """Check support for `kwargs` combination for MultiProcessing backend."""
-        hosts = kwargs.get("hosts", self.hosts)
         num_cpus = kwargs.get("num_cpus", self.num_cpus)
-        if hosts == Defaults.HOSTS:
+        if self.hosts == Defaults.HOSTS:
             if (
                 num_cpus == Defaults.NUM_CPUS
                 or isinstance(num_cpus, list)
@@ -49,7 +47,7 @@ class MultiProcessingRunner(BackendRunner):
             != Defaults.REDIS_PASSWORD
         ):
             warnings.warn(
-                f"`redis_password` isn't supported for {self.backend} backend, ignored.",
+                f"`redis_password` isn't supported for {self.backend} backend.",
                 RuntimeWarning,
             )
 

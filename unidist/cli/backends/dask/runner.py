@@ -9,7 +9,6 @@ import warnings
 
 from unidist.cli.base.runner import BackendRunner
 from unidist.cli.base.utils import Defaults, validate_num_cpus
-from unidist.core.base.common import BackendName
 
 
 class DaskRunner(BackendRunner):
@@ -23,7 +22,7 @@ class DaskRunner(BackendRunner):
     """
 
     def __init__(self, **cli_kwargs):
-        self.backend = BackendName.DASK
+        self.hosts = cli_kwargs.get("hosts", Defaults.HOSTS)
         super().__init__(**cli_kwargs)
 
     def check_kwargs_support(self, **kwargs):
@@ -46,7 +45,7 @@ class DaskRunner(BackendRunner):
             self.hosts = hosts[0]
             if isinstance(num_cpus, list):
                 warnings.warn(
-                    f"`num_cpus` isn't supported for existing {self.backend} cluster, ignored.",
+                    f"`num_cpus` isn't supported for existing {self.backend} cluster.",
                     RuntimeWarning,
                 )
             self.num_cpus = None
@@ -60,7 +59,7 @@ class DaskRunner(BackendRunner):
             != Defaults.REDIS_PASSWORD
         ):
             warnings.warn(
-                f"`redis_password` isn't supported for {self.backend} backend, ignored.",
+                f"`redis_password` isn't supported for {self.backend} backend.",
                 RuntimeWarning,
             )
 

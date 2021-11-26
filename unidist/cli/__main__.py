@@ -53,12 +53,12 @@ def main():
             BackendName.PY,
         ],
         default=Defaults.BACKEND,
-        help=f"specify an execution backend. Default is value from 'UNIDIST_BACKEND' environment variable, if 'UNIDIST_BACKEND' wasn't set '{BackendName.RAY}' backend is used",
+        help=f"specify an execution backend. Default value is taken from 'UNIDIST_BACKEND' environment variable. If 'UNIDIST_BACKEND' isn't set, '{BackendName.RAY}' backend is used",
     )
     parser.add_argument(
         "-m",
         "--module",
-        help="run library module as a script",
+        help="specify a python module to run your script with",
     )
     parser.add_argument(
         "-num_cpus",
@@ -69,7 +69,7 @@ def main():
             [
                 "specify a number of CPUs per node used by the backend in a cluster.",
                 "Can accept multiple values in the case of running in the cluster.",
-                "Default is value from 'UNIDIST_CPUS' environment variable, if 'UNIDIST_CPUS' wasn't set, value will be equal to the number of CPUs on a head node.",
+                "Default value is taken from 'UNIDIST_CPUS' environment variable. If 'UNIDIST_CPUS' isn't set, value is equal to the number of CPUs on a head node.",
             ]
         ),
     )
