@@ -7,13 +7,20 @@
 from packaging import version
 
 from unidist.config.parameter import EnvironmentVariable
+from unidist.core.base.common import BackendName
 
 
 class Backend(EnvironmentVariable, type=str):
     """Distribution backend to run queries by."""
 
     varname = "UNIDIST_BACKEND"
-    choices = ("Ray", "Dask", "Mpi", "Multiprocessing", "Python")
+    choices = (
+        BackendName.RAY,
+        BackendName.DASK,
+        BackendName.MPI,
+        BackendName.MP,
+        BackendName.PY,
+    )
 
     @classmethod
     def _get_default(cls):
@@ -34,7 +41,7 @@ class Backend(EnvironmentVariable, type=str):
                 raise ImportError(
                     "Please `pip install unidist[ray]` to install compatible Ray version."
                 )
-            return "Ray"
+            return BackendName.RAY
         try:
             import dask
             import distributed
@@ -48,7 +55,7 @@ class Backend(EnvironmentVariable, type=str):
                 raise ImportError(
                     "Please `pip install unidist[dask]` to install compatible Dask version."
                 )
-            return "Dask"
+            return BackendName.DASK
         try:
             import mpi4py
         except ImportError:
@@ -58,8 +65,8 @@ class Backend(EnvironmentVariable, type=str):
                 raise ImportError(
                     "Please `pip install unidist[mpi]` to install compatible MPI version."
                 )
-            return "Mpi"
-        return "Multiprocessing"
+            return BackendName.MPI
+        return BackendName.MP
 
 
 class CpuCount(EnvironmentVariable, type=int):

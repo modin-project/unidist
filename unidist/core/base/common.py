@@ -7,6 +7,16 @@
 from .object_ref import ObjectRef
 
 
+class BackendName:
+    """String representations of unidist backends."""
+
+    RAY = "ray"
+    MPI = "mpi"
+    DASK = "dask"
+    MP = "multiprocessing"
+    PY = "python"
+
+
 def filter_arguments(*args, **kwargs):
     """
     Filter `args` and `kwargs` so that a backend itself is able to materialize data.

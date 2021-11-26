@@ -38,8 +38,8 @@ class ExactStr(str):
 
 _TYPE_PARAMS = {
     str: TypeDescriptor(
-        decode=lambda value: value.strip().title(),
-        normalize=lambda value: value.strip().title(),
+        decode=lambda value: value.strip().lower(),
+        normalize=lambda value: value.strip().lower(),
         verify=lambda value: isinstance(value, str),
         help="a case-insensitive string",
     ),
@@ -174,7 +174,12 @@ class Parameter(object):
         """
         if not _TYPE_PARAMS[cls.type].verify(value):
             raise ValueError(f"Unsupported value: {value}")
-        cls._value = _TYPE_PARAMS[cls.type].normalize(value)
+
+        value = _TYPE_PARAMS[cls.type].normalize(value)
+        if cls.choices is not None and value in cls.choices:
+            cls._value = value
+        else:
+            raise ValueError(f"Unsupported value. Supported set is {cls.choices}.")
 
 
 class EnvironmentVariable(Parameter, type=str):
