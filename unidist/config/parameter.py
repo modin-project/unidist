@@ -160,6 +160,11 @@ class Parameter(object):
                 if not _TYPE_PARAMS[cls.type].verify(raw):
                     raise ValueError(f"Unsupported raw value: {raw}")
                 cls._value = _TYPE_PARAMS[cls.type].decode(raw)
+
+        if cls.choices is not None and cls._value not in cls.choices:
+            raise ValueError(
+                f"Unsupported value '{cls._value}'. Supported set of values is {cls.choices}."
+            )
         return cls._value
 
     @classmethod
