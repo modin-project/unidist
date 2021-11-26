@@ -5,6 +5,7 @@
 """Utilities used to initialize execution backend."""
 
 from unidist.config import Backend
+from unidist.core.base.common import BackendName
 from .backend import BackendProxy
 
 
@@ -20,13 +21,13 @@ def init_backend():
     """
     backend_name = Backend.get()
 
-    if backend_name == "Ray":
+    if backend_name == BackendName.RAY:
         from unidist.core.backends.ray.backend import RayBackend
         from unidist.core.backends.ray.utils import initialize_ray
 
         initialize_ray()
         backend_cls = RayBackend()
-    elif backend_name == "Dask":
+    elif backend_name == BackendName.DASK:
         import threading
 
         if threading.current_thread() is threading.main_thread():
@@ -35,13 +36,13 @@ def init_backend():
 
             initialize_dask()
             backend_cls = DaskBackend()
-    elif backend_name == "Mpi":
+    elif backend_name == BackendName.MPI:
         from unidist.core.backends.mpi.backend import MPIBackend
         from unidist.core.backends.mpi.utils import initialize_mpi
 
         initialize_mpi()
         backend_cls = MPIBackend()
-    elif backend_name == "Multiprocessing":
+    elif backend_name == BackendName.MP:
         from unidist.core.backends.multiprocessing.backend import MultiProcessingBackend
         from unidist.core.backends.multiprocessing.utils import (
             initialize_multiprocessing,
@@ -49,7 +50,7 @@ def init_backend():
 
         initialize_multiprocessing()
         backend_cls = MultiProcessingBackend()
-    elif backend_name == "Python":
+    elif backend_name == BackendName.PY:
         from unidist.core.backends.python.backend import PythonBackend
         from unidist.core.backends.python.utils import initialize_python
 
@@ -75,25 +76,25 @@ def get_backend_proxy():
     if backend is None:
 
         backend_name = Backend.get()
-        if backend_name == "Ray":
+        if backend_name == BackendName.RAY:
             from unidist.core.backends.ray.backend import RayBackend
 
             backend_cls = RayBackend()
-        elif backend_name == "Dask":
+        elif backend_name == BackendName.DASK:
             from unidist.core.backends.dask.backend import DaskBackend
 
             backend_cls = DaskBackend()
-        elif backend_name == "Mpi":
+        elif backend_name == BackendName.MPI:
             from unidist.core.backends.mpi.backend import MPIBackend
 
             backend_cls = MPIBackend()
-        elif backend_name == "Multiprocessing":
+        elif backend_name == BackendName.MP:
             from unidist.core.backends.multiprocessing.backend import (
                 MultiProcessingBackend,
             )
 
             backend_cls = MultiProcessingBackend()
-        elif backend_name == "Python":
+        elif backend_name == BackendName.PY:
             from unidist.core.backends.python.backend import PythonBackend
 
             backend_cls = PythonBackend()
