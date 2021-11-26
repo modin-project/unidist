@@ -38,8 +38,8 @@ class ExactStr(str):
 
 _TYPE_PARAMS = {
     str: TypeDescriptor(
-        decode=lambda value: value.strip().title(),
-        normalize=lambda value: value.strip().title(),
+        decode=lambda value: value.strip().lower(),
+        normalize=lambda value: value.strip().lower(),
         verify=lambda value: isinstance(value, str),
         help="a case-insensitive string",
     ),
