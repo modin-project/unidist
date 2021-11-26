@@ -7,7 +7,6 @@
 import os
 import ipaddress
 import socket
-import multiprocessing as mp
 
 from unidist.config import CpuCount, Backend
 
@@ -93,12 +92,9 @@ def validate_num_cpus(num_cpus):
             if value < 1:
                 raise RuntimeError(f"'num_cpus' must be more than 0, got '{num_cpus}'")
         except ValueError:
-            if value == "default":
-                return mp.cpu_count()
-            else:
-                raise TypeError(
-                    f"'num_cpus' must be integer or sequence of integers, got '{num_cpus}'"
-                )
+            raise TypeError(
+                f"'num_cpus' must be integer or sequence of integers, got '{num_cpus}'"
+            )
         else:
             return value
 
