@@ -9,6 +9,7 @@ import warnings
 
 from unidist.cli.base.runner import BackendRunner
 from unidist.cli.base.utils import Defaults, validate_num_cpus
+from unidist.core.base.common import BackendName
 
 
 class MultiProcessingRunner(BackendRunner):
@@ -22,6 +23,7 @@ class MultiProcessingRunner(BackendRunner):
     """
 
     def __init__(self, **cli_kwargs):
+        self.backend = BackendName.MP
         self.hosts = cli_kwargs.get("hosts", Defaults.HOSTS)
         super().__init__(**cli_kwargs)
 

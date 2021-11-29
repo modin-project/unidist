@@ -15,6 +15,7 @@ from unidist.cli.base.utils import (
     get_localhost_ip,
     get_unidist_root,
 )
+from unidist.core.base.common import BackendName
 
 
 class MPIRunner(BackendRunner):
@@ -28,6 +29,7 @@ class MPIRunner(BackendRunner):
     """
 
     def __init__(self, **cli_kwargs):
+        self.backend = BackendName.MPI
         self.hosts = cli_kwargs.get("hosts", Defaults.HOSTS)
         super().__init__(**cli_kwargs)
 

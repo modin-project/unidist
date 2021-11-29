@@ -8,6 +8,7 @@ import warnings
 
 from unidist.cli.base.runner import BackendRunner
 from unidist.cli.base.utils import Defaults
+from unidist.core.base.common import BackendName
 
 
 class PythonRunner(BackendRunner):
@@ -21,6 +22,7 @@ class PythonRunner(BackendRunner):
     """
 
     def __init__(self, **cli_kwargs):
+        self.backend = BackendName.PY
         super().__init__(**cli_kwargs)
 
     def check_kwargs_support(self, **kwargs):

@@ -24,7 +24,6 @@ class BackendRunner:
         self.script = cli_kwargs.get("script", "")
         self.script_args = cli_kwargs.get("script_args", [""])
         self.module = cli_kwargs.get("module", None)
-        self.backend = cli_kwargs.get("backend", Defaults.BACKEND)
         self.num_cpus = cli_kwargs.get("num_cpus", Defaults.NUM_CPUS)
         self.check_kwargs_support(**cli_kwargs)
 

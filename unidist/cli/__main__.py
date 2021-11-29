@@ -58,11 +58,13 @@ def main():
     parser.add_argument(
         "-m",
         "--module",
+        type=str,
         help="specify a python module to run your script with",
     )
     parser.add_argument(
         "-num_cpus",
         "--num_cpus",
+        type=int,
         default=Defaults.NUM_CPUS,
         nargs="+",
         help=" ".join(
@@ -76,9 +78,10 @@ def main():
     parser.add_argument(
         "-hosts",
         "--hosts",
+        type=str,
         default=Defaults.HOSTS,
         nargs="+",
-        help="specify node(s) IP address(es) to use by the backend. Can accept multiple values in the case of running in the cluster. Default is 'localhost'.",
+        help="specify node(s) IP address(es) to use by the backend. Can accept multiple values in the case of running in a cluster. Default is 'localhost'.",
     )
     ray_specific_args_group.add_argument(
         "-redis_pswd",
@@ -91,7 +94,7 @@ def main():
     kwargs = vars(args)
     kwargs["script_args"] = script_args
 
-    backend = kwargs.get("backend")
+    backend = kwargs.pop("backend", Defaults.BACKEND)
     if backend == BackendName.RAY:
         from unidist.cli.backends.ray.runner import RayRunner
 
