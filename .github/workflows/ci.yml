@@ -75,6 +75,6 @@ jobs:
         run: |
           conda info
           conda list
-      - run: unidist -m pytest unidist/test/test_general.py
-      - run: unidist -m pytest unidist/test/test_task.py
-      - run: unidist -m pytest unidist/test/test_actor.py
+      - run: python unidist/cli -m pytest unidist/test/test_general.py
+      - run: python unidist/cli -m pytest unidist/test/test_task.py
+      - run: python unidist/cli -m pytest unidist/test/test_actor.py
