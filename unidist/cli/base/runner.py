@@ -54,4 +54,4 @@ class BackendRunner:
         """Run a command in a subprocess."""
         self.prepare_env()
         command = self.get_command()
-        subprocess.run(command)
+        subprocess.run(command, check=True)
