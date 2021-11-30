@@ -47,3 +47,34 @@ jobs:
           architecture: "x64"
       - run: pip install flake8 flake8-print
       - run: flake8 --enable=T .
+
+  test-all:
+    needs: [lint-commit, lint-black, lint-flake8]
+    runs-on: ubuntu-latest
+    # defaults:
+    #   run:
+    #     shell: bash -l {0}
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8"]
+        backend: ["python"]
+    env:
+      UNIDIST_BACKEND: ${{matrix.engine}}
+    name: test-ubuntu (backend ${{matrix.backend}}, python ${{matrix.python-version}})
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: unidist
+          environment-file: environment.yml
+          python-version: ${{matrix.python-version}}
+          channel-priority: strict
+      - name: Conda environment
+        run: |
+          conda info
+          conda list
+      - run: unidist -m pytest unidist/test/test_general.py
+      - run: unidist -m pytest unidist/test/test_task.py
+      - run: unidist -m pytest unidist/test/test_actor.py
