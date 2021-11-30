@@ -6,6 +6,7 @@
 
 import os
 import subprocess
+from subprocess import PIPE
 
 from unidist.cli.base.utils import Defaults
 
