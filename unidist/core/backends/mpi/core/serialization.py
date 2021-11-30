@@ -57,6 +57,7 @@ def is_pickle5_serializable(data):
         getattr(data, "__reduce_ex__")
     )
 
+
 class MPISerializer:
     """
     Class for data serialization/de-serialization for MPI comminication.
