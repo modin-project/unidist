@@ -51,9 +51,9 @@ jobs:
   test-all:
     needs: [lint-commit, lint-black, lint-flake8]
     runs-on: ubuntu-latest
-    # defaults:
-    #   run:
-    #     shell: bash -l {0}
+    defaults:
+      run:
+        shell: bash -l {0}
     strategy:
       matrix:
         python-version: ["3.7", "3.8"]
