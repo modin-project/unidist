@@ -21,9 +21,6 @@ import cloudpickle as cpkl
 import msgpack
 import gc  # msgpack optimization
 
-# Handle special case
-import pandas as pd
-
 
 def is_cpkl_serializable(data):
     """
@@ -56,8 +53,9 @@ def is_pickle5_serializable(data):
     bool
         ``True`` if the data should be serialized with pickle using protocol 5 (out-of-band data).
     """
-    return isinstance(data, pd.DataFrame)
-
+    return hasattr(data, "__reduce_ex__") and inspect.ismethod(
+        getattr(data, "__reduce_ex__")
+    )
 
 class MPISerializer:
     """
