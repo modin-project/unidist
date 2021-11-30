@@ -7,6 +7,7 @@ import time
 
 import unidist
 from unidist.config import Backend, CpuCount
+from unidist.core.base.common import BackendName
 from .utils import assert_equal, task, TestActor
 
 unidist.init()
@@ -46,7 +47,7 @@ def test_get_ip():
 
 
 def test_num_cpus():
-    if Backend.get() == "Python":
+    if Backend.get() == BackendName.PY:
         assert_equal(unidist.num_cpus(), 1)
     else:
         assert_equal(unidist.num_cpus(), CpuCount.get())
