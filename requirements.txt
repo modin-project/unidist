@@ -5,7 +5,6 @@ distributed>=2.22.0
 mpi4py
 msgpack
 packaging
-pandas
 psutil
 pytest
 ray[default]
