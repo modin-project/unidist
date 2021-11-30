@@ -57,7 +57,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.7", "3.8"]
-        backend: ["python"]
+        backend: ["ray", "mpi", "dask", "multiprocessing", "python"]
     env:
       UNIDIST_BACKEND: ${{matrix.backend}}
     name: test-ubuntu (backend ${{matrix.backend}}, python ${{matrix.python-version}})
