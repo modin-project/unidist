@@ -5,6 +5,7 @@
 """Common classes and utilities."""
 
 import logging
+import sys
 
 from unidist.core.backends.common.data_id import DataID, is_data_id
 
@@ -126,6 +127,23 @@ def get_logger(logger_name, file_name, activate=False):
     logger.addHandler(f_handler)
 
     return logger
+
+
+def get_size(data):
+    """
+    Calculate the size of an object in bytes.
+
+    Parameters
+    ----------
+    data : object
+        Python object.
+
+    Returns
+    -------
+    int
+        Size of an object in bytes.
+    """
+    return sys.getsizeof(data)
 
 
 def unwrapped_data_ids_list(args):

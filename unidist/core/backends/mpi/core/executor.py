@@ -6,12 +6,14 @@
 
 import weakref
 import itertools
+import time
 from collections import defaultdict
 
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 
+from unidist.core.backends.mpi.core.serialization import SimpleSerializer
 from unidist.core.backends.common.data_id import is_data_id
 
 # MPI stuff
@@ -36,6 +38,8 @@ class ObjectStore:
         self._sent_data_map = defaultdict(set)
         # Data id generator
         self._data_id_counter = 0
+        # Data serialized cache
+        self._serialization_cache = {}
 
     def put(self, data_id, data):
         """
@@ -142,6 +146,7 @@ class ObjectStore:
         """
         for data_id in cleanup_list:
             self._sent_data_map.pop(data_id, None)
+        self._serialization_cache.clear()
 
     def generate_data_id(self, gc):
         """
@@ -225,6 +230,36 @@ class ObjectStore:
             rank in self._sent_data_map[data_id]
         )
 
+    def cache_serialization_info(self, data_id, data):
+        """
+        Save communication event for this `data_id` and rank.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.mpi.core.common.MasterDataID
+            An ``ID`` to data.
+        rank : int
+            Rank number where the data was sent.
+        """
+        self._serialization_cache[data_id] = data
+
+    def is_already_serialized(self, data_id):
+        """
+        Check if communication data on this `data_id` is already serialized.
+
+        Parameters
+        ----------
+        bool
+            ``True`` if communication data already serialized.
+        """
+        return data_id in self._serialization_cache
+
+    def get_serialized_data(self, data_id):
+        """
+        Get serialized data on this `data_id`.
+        """
+        return self._serialization_cache[data_id]
+
 
 class GarbageCollector:
     """
@@ -244,6 +279,8 @@ class GarbageCollector:
         # Cleanup frequency settings
         self._cleanup_counter = 1
         self._cleanup_threshold = 5
+        self._time_threshold = 1  # seconds
+        self._timestamp = 0  # seconds
         # Cleanup list of DataIDs
         self._cleanup_list = []
         self._cleanup_list_threshold = 10
@@ -266,9 +303,11 @@ class GarbageCollector:
                 common.unwrapped_data_ids_list(cleanup_list)
             )
         )
+        # Cache serialized list of data IDs
+        s_cleanup_list = SimpleSerializer().serialize_pickle(cleanup_list)
         for rank_id in range(2, world_size):
-            communication.send_simple_operation(
-                comm, common.Operation.CLEANUP, cleanup_list, rank_id
+            communication.send_serialized_operation(
+                comm, common.Operation.CLEANUP, s_cleanup_list, rank_id
             )
 
     def increment_task_counter(self):
@@ -300,37 +339,42 @@ class GarbageCollector:
 
         Cleanup triggers based on internal threshold settings.
         """
-        e_logger.debug("Cleaunup list len - {}".format(len(self._cleanup_list)))
+        e_logger.debug("Cleanup list len - {}".format(len(self._cleanup_list)))
         e_logger.debug(
             "Cleanup counter {}, threshold reached - {}".format(
                 self._cleanup_counter,
                 (self._cleanup_counter % self._cleanup_threshold) == 0,
             )
         )
-
         if len(self._cleanup_list) > self._cleanup_list_threshold:
             if self._cleanup_counter % self._cleanup_threshold == 0:
-                e_logger.debug("Cleanup counter {}".format(self._cleanup_counter))
 
-                # Compare submitted and executed tasks
-                communication.mpi_send_object(
-                    comm, common.Operation.GET_TASK_COUNT, communication.MPIRank.MONITOR
-                )
-                executed_task_counter = communication.recv_simple_operation(
-                    comm, communication.MPIRank.MONITOR
-                )
+                timestamp_snapshot = time.perf_counter()
+                if (timestamp_snapshot - self._timestamp) > self._time_threshold:
+                    e_logger.debug("Cleanup counter {}".format(self._cleanup_counter))
 
-                e_logger.debug(
-                    "Local task count {} vs global task count {}".format(
-                        self._task_counter, executed_task_counter
+                    # Compare submitted and executed tasks
+                    communication.mpi_send_object(
+                        comm,
+                        common.Operation.GET_TASK_COUNT,
+                        communication.MPIRank.MONITOR,
                     )
-                )
-                if executed_task_counter == self._task_counter:
-                    self._send_cleanup_request(self._cleanup_list)
-                    # Clear the remaining references
-                    self._object_store.clear(self._cleanup_list)
-                    self._cleanup_list.clear()
-                    self._cleanup_counter += 1
+                    executed_task_counter = communication.recv_simple_operation(
+                        comm, communication.MPIRank.MONITOR
+                    )
+
+                    e_logger.debug(
+                        "Local task count {} vs global task count {}".format(
+                            self._task_counter, executed_task_counter
+                        )
+                    )
+                    if executed_task_counter == self._task_counter:
+                        self._send_cleanup_request(self._cleanup_list)
+                        # Clear the remaining references
+                        self._object_store.clear(self._cleanup_list)
+                        self._cleanup_list.clear()
+                        self._cleanup_counter += 1
+                        self._timestamp = time.perf_counter()
             else:
                 self._cleanup_counter += 1
 
@@ -386,7 +430,7 @@ def request_worker_data(data_id):
     )
 
     # Blocking get
-    data = communication.recv_complex_operation(comm, owner_rank)
+    data = communication.recv_complex_data(comm, owner_rank)
 
     # Caching the result, check the protocol correctness here
     object_store.put(data_id, data)
@@ -411,14 +455,17 @@ def push_local_data(dest_rank, data_id):
 
         # Push the local master data to the target worker directly
         operation_type = common.Operation.PUT_DATA
-        operation_data = {
-            "id": data_id,
-            "source": rank,
-            "data": object_store.get(data_id),
-        }
-        communication.send_complex_operation(
-            comm, operation_type, operation_data, dest_rank
-        )
+        if object_store.is_already_serialized(data_id):
+            operation_data = object_store.get_serialized_data(data_id)
+            communication.send_operation(
+                comm, operation_type, operation_data, dest_rank, True
+            )
+        else:
+            operation_data = {"id": data_id, "data": object_store.get(data_id)}
+            serialized_data = communication.send_operation(
+                comm, operation_type, operation_data, dest_rank, False
+            )
+            object_store.cache_serialization_info(data_id, serialized_data)
         #  Remember pushed id
         object_store.cache_send_info(data_id, dest_rank)
 
@@ -688,7 +735,7 @@ def remote(task, *args, num_returns=1, **kwargs):
         "kwargs": unwrapped_kwargs,
         "output": common.master_data_ids_to_base(output_ids),
     }
-    communication.send_complex_operation(
+    communication.send_remote_task_operation(
         comm, operation_type, operation_data, dest_rank
     )
 

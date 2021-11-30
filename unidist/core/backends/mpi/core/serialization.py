@@ -72,7 +72,7 @@ def is_pickle5_serializable(data):
     return is_serializable
 
 
-class MPISerializer:
+class ComplexSerializer:
     """
     Class for data serialization/de-serialization for MPI comminication.
 
@@ -85,7 +85,7 @@ class MPISerializer:
 
     Notes
     -----
-    Uses msgpack, cloudpickle and pickle libraries
+    Uses a combination of msgpack, cloudpickle and pickle libraries
     """
 
     def __init__(self, buffers=None, len_buffers=None):
@@ -108,12 +108,12 @@ class MPISerializer:
 
     def _dataframe_encode(self, frame):
         """
-        Encode ``pandas.DataFrame`` with pickle library using protocol 5.
+        Encode with pickle library using protocol 5.
 
         Parameters
         ----------
-        frame : pandas.DataFrame
-            Pandas ``DataFrame`` object.
+        frame : object
+            Pickle 5 serializable object (ex. pandas data frame).
 
         Returns
         -------
@@ -123,7 +123,7 @@ class MPISerializer:
         s_frame = pkl.dumps(frame, protocol=5, buffer_callback=self._buffer_callback)
         self.len_buffers.append(self._callback_counter)
         self._callback_counter = 0
-        return {"__dataframe_custom__": True, "as_bytes": s_frame}
+        return {"__pickle5_custom__": True, "as_bytes": s_frame}
 
     def _cpkl_encode(self, obj):
         """
@@ -205,7 +205,7 @@ class MPISerializer:
             return cpkl.loads(obj["as_bytes"])
         elif "__pickle_custom__" in obj:
             return pkl.loads(obj["as_bytes"])
-        elif "__dataframe_custom__" in obj:
+        elif "__pickle5_custom__" in obj:
             frame = pkl.loads(obj["as_bytes"], buffers=self.buffers)
             del self.buffers[: self.len_buffers.pop(0)]
             return frame
@@ -229,3 +229,67 @@ class MPISerializer:
         unpacked_data = msgpack.unpackb(s_data, object_hook=self._decode_custom)
         gc.enable()
         return unpacked_data
+
+
+class SimpleSerializer:
+    """
+    Class for simple data serialization/de-serialization for MPI comminication.
+
+    Notes
+    -----
+    Uses cloudpickle and pickle libraries as a separate APIs
+    """
+
+    def serialize(self, data):
+        """
+        Encode with a cloudpickle library.
+
+        Parameters
+        ----------
+        obj : object
+            Python object.
+
+        Returns
+        -------
+        bytearray
+            Array of serialized bytes.
+        """
+        return cpkl.dumps(data)
+
+    def serialize_pickle(self, data):
+        """
+        Encode with a pickle library.
+
+        Parameters
+        ----------
+        obj : object
+            Python object.
+
+        Returns
+        -------
+        bytearray
+            Array of serialized bytes.
+        """
+        return pkl.dumps(data)
+
+    def deserialize(self, data):
+        """
+        De-serialization with cloudpickle library.
+
+        Parameters
+        ----------
+        obj : object
+            Python object.
+        """
+        return cpkl.loads(data)
+
+    def deserialize_pickle(self, data):
+        """
+        De-serialization with pickle library.
+
+        Parameters
+        ----------
+        obj : object
+            Python object.
+        """
+        return pkl.loads(data)
