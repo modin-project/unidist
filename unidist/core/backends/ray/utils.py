@@ -17,6 +17,7 @@ from unidist.config import (
     RayRedisAddress,
     RayRedisPassword,
     RayObjectStoreMemory,
+    ValueSource,
 )
 
 
@@ -32,7 +33,15 @@ def initialize_ray():
     if not ray.is_initialized() or IsRayCluster.get():
         cluster = IsRayCluster.get()
         redis_address = RayRedisAddress.get()
-        redis_password = RayRedisPassword.get()
+        redis_password = (
+            (
+                ray.ray_constants.REDIS_DEFAULT_PASSWORD
+                if cluster
+                else RayRedisPassword.get()
+            )
+            if RayRedisPassword.get_value_source() == ValueSource.DEFAULT
+            else RayRedisPassword.get()
+        )
 
         if cluster:
             # We only start ray in a cluster setting for the head node.
