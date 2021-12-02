@@ -13,9 +13,10 @@ from .utils import assert_equal, task, TestActor
 unidist.init()
 
 
-# FIXME: If we run all tests (i.e. pytest unidist/test), the tests are hanging.
-# However, if we remove third argument, the tests will be passed. This is true for MultiProcessing backend and
-# requires an investigation.
+@pytest.mark.skipif(
+    Backend.get() == BackendName.MP,
+    reason="Hangs on `multiprocessing` backend. Details are in https://github.com/modin-project/unidist/issues/64.",
+)
 @pytest.mark.parametrize(
     "object_ref",
     [unidist.put(1), task.remote(3), TestActor.remote().task.remote(1)],
@@ -25,6 +26,10 @@ def test_is_object_ref(object_ref):
     assert_equal(unidist.is_object_ref(object_ref), True)
 
 
+@pytest.mark.skipif(
+    Backend.get() == BackendName.MP,
+    reason="Hangs on `multiprocessing` backend. Details are in https://github.com/modin-project/unidist/issues/64.",
+)
 def test_wait():
     @unidist.remote
     def foo():

@@ -5,6 +5,8 @@
 import pytest
 
 import unidist
+from unidist.config import Backend
+from unidist.core.base.common import BackendName
 from .utils import assert_equal, TestActor
 
 unidist.init()
@@ -29,6 +31,10 @@ def test_num_returns():
     assert_equal(object_ref1, 7)
 
 
+@pytest.mark.skipif(
+    Backend.get() == BackendName.MP,
+    reason="`multiprocessing` backend incorrectly frees grabbed actors. Details are in https://github.com/modin-project/unidist/issues/65.",
+)
 @pytest.mark.parametrize("is_use_options", [True, False])
 def test_address_space(is_use_options):
     actor0 = TestActor.options().remote(0) if is_use_options else TestActor.remote(0)
