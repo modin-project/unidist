@@ -76,5 +76,6 @@ jobs:
           conda info
           conda list
       - run: python unidist/cli -m pytest unidist/test/test_general.py
+        if: matrix.backend != 'multiprocessing' # Hangs on `multiprocessing` backend. More details in https://github.com/modin-project/unidist/issues/64.
       - run: python unidist/cli -m pytest unidist/test/test_task.py
       - run: python unidist/cli -m pytest unidist/test/test_actor.py
