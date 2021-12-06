@@ -11,11 +11,12 @@ dependencies:
   - packaging
   - psutil
   - pytest
-  - python=3.8
-  - ray-default
+  # - ray-default
   # for downloading packages from PyPI
   - pip
   - pip:
+      # for development
+      - ray-default
       # for building the documentation
       - sphinx
       - sphinx_rtd_theme
