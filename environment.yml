@@ -16,7 +16,7 @@ dependencies:
   - pip
   - pip:
       # for development
-      - ray-default
+      - ray[default]
       # for building the documentation
       - sphinx
       - sphinx_rtd_theme
