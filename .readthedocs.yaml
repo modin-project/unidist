@@ -9,4 +9,5 @@ sphinx:
   configuration: docs/conf.py
 
 conda:
+  python: 3.8
   environment: environment.yml
