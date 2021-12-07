@@ -48,7 +48,7 @@ jobs:
       - run: pip install flake8 flake8-print
       - run: flake8 --enable=T .
 
-  test-all:
+  test-ubuntu:
     needs: [lint-commit, lint-black, lint-flake8]
     runs-on: ubuntu-latest
     defaults:
@@ -88,7 +88,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.7", "3.8"]
-        backend: ["ray", "mpi", "dask", "multiprocessing", "python"]
+        backend: ["ray", "dask", "multiprocessing", "python"]
     env:
       UNIDIST_BACKEND: ${{matrix.backend}}
     name: test-windows (backend ${{matrix.backend}}, python ${{matrix.python-version}})
@@ -101,7 +101,7 @@ jobs:
           activate-environment: unidist
           environment-file: environment.yml
           python-version: ${{matrix.python-version}}
-          # channel-priority: strict
+          channel-priority: strict
           use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly
           auto-update-conda: true # this enable `use-only-tar-bz2` feature on Windows
           # Miniconda setup sometimes fails because of an http error. retry
@@ -110,8 +110,6 @@ jobs:
           # setup on http errors.
           max_attempts: 2
           retry_on: error
-      - run: conda install mpi4py -c intel
-        if: matrix.backend == 'mpi'
       - name: Conda environment
         run: |
           conda info
