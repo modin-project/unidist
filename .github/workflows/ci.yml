@@ -88,7 +88,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.7", "3.8"]
-        backend: ["python"]
+        backend: ["ray", "mpi", "dask", "multiprocessing", "python"]
     env:
       UNIDIST_BACKEND: ${{matrix.backend}}
     name: test-windows (backend ${{matrix.backend}}, python ${{matrix.python-version}})
@@ -102,7 +102,7 @@ jobs:
           environment-file: environment.yml
           python-version: ${{matrix.python-version}}
           channel-priority: strict
-          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
+          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly
           auto-update-conda: true # this enable `use-only-tar-bz2` feature on Windows
           # Miniconda setup sometimes fails because of an http error. retry
           # it once if it fails. todo(https://github.com/conda-incubator/setup-miniconda/issues/129):
