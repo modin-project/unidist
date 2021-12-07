@@ -13,18 +13,30 @@ from .utils import assert_equal, TestActor
 unidist.init()
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32" and Backend.get() == BackendName.MP,
+    reason="",
+)
 @pytest.mark.parametrize("is_default_constructor", [True, False])
 def test_actor_constructor(is_default_constructor):
     actor = TestActor.remote() if is_default_constructor else TestActor.remote(5)
     assert_equal(actor.get_accumulator.remote(), 0 if is_default_constructor else 5)
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32" and Backend.get() == BackendName.MP,
+    reason="",
+)
 def test_chaining():
     object_ref = unidist.put(7)
     actor = TestActor.remote()
     assert_equal(actor.task.remote(object_ref), 8)
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32" and Backend.get() == BackendName.MP,
+    reason="",
+)
 def test_num_returns():
     actor = TestActor.remote(7)
     object_ref0, object_ref1 = actor.multiple_returns.options(num_returns=2).remote(3)
