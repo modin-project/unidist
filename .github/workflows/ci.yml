@@ -89,13 +89,9 @@ jobs:
       matrix:
         python-version: ["3.7", "3.8"]
         backend: ["python"]
-        test-task:
-          - unidist/test/test_general.py
-          - unidist/test/test_task.py
-          - unidist/test/test_actor.py
     env:
       UNIDIST_BACKEND: ${{matrix.backend}}
-    name: test-windows
+    name: test-windows (backend ${{matrix.backend}}, python ${{matrix.python-version}})
     steps:
       - uses: actions/checkout@v2
         with:
@@ -118,4 +114,6 @@ jobs:
         run: |
           conda info
           conda list
-      - run: python unidist/cli -m pytest ${{matrix.test-task}}
+      - run: python unidist/cli -m pytest unidist/test/test_general.py
+      - run: python unidist/cli -m pytest unidist/test/test_task.py
+      - run: python unidist/cli -m pytest unidist/test/test_actor.py
