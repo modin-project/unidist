@@ -23,11 +23,16 @@ unidist.init()
     reason="",
 )
 @pytest.mark.parametrize(
-    "object_ref",
-    [unidist.put(1), task.remote(3), TestActor.remote().task.remote(1)],
-    ids=["put", "task", "actor"],
+    "source",
+    ["put", "task", "actor"],
 )
-def test_is_object_ref(object_ref):
+def test_is_object_ref(source):
+    if source == "put":
+        object_ref = unidist.put(1)
+    elif source == "task":
+        object_ref = task.remote(3)
+    else:
+        object_ref = TestActor.remote().task.remote(1)
     assert_equal(unidist.is_object_ref(object_ref), True)
 
 
