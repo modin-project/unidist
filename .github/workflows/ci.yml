@@ -111,6 +111,7 @@ jobs:
           max_attempts: 2
           retry_on: error
       - run: conda install mpi4py -c intel
+        if: matrix.backend == "mpi"
       - name: Conda environment
         run: |
           conda info
