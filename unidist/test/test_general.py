@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import sys
 import pytest
 import time
 
@@ -16,6 +17,10 @@ unidist.init()
 @pytest.mark.skipif(
     Backend.get() == BackendName.MP,
     reason="Hangs on `multiprocessing` backend. Details are in https://github.com/modin-project/unidist/issues/64.",
+)
+@pytest.mark.skipif(
+    sys.platform == "win32" and Backend.get() == BackendName.MP,
+    reason="",
 )
 @pytest.mark.parametrize(
     "object_ref",
