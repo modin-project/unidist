@@ -110,6 +110,7 @@ jobs:
           # setup on http errors.
           max_attempts: 2
           retry_on: error
+      - run: conda install mpi4py -c intel
       - name: Conda environment
         run: |
           conda info
