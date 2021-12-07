@@ -78,3 +78,44 @@ jobs:
       - run: python unidist/cli -m pytest unidist/test/test_general.py
       - run: python unidist/cli -m pytest unidist/test/test_task.py
       - run: python unidist/cli -m pytest unidist/test/test_actor.py
+
+  test-windows:
+    needs: [lint-commit, lint-black, lint-flake8]
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8"]
+        backend: ["python"]
+        test-task:
+          - unidist/test/test_general.py
+          - unidist/test/test_task.py
+          - unidist/test/test_actor.py
+    env:
+      UNIDIST_BACKEND: ${{matrix.backend}}
+    name: test-windows
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: unidist
+          environment-file: environment.yml
+          python-version: ${{matrix.python-version}}
+          channel-priority: strict
+          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
+          auto-update-conda: true # this enable `use-only-tar-bz2` feature on Windows
+          # Miniconda setup sometimes fails because of an http error. retry
+          # it once if it fails. todo(https://github.com/conda-incubator/setup-miniconda/issues/129):
+          # get rid of this once setup-miniconda can be configured to retry
+          # setup on http errors.
+          max_attempts: 2
+          retry_on: error
+      - name: Conda environment
+        run: |
+          conda info
+          conda list
+      - run: ppython unidist/cli -m pytest ${{matrix.test-task}}
