@@ -101,7 +101,7 @@ jobs:
           activate-environment: unidist
           environment-file: environment.yml
           python-version: ${{matrix.python-version}}
-          channel-priority: strict
+          # channel-priority: strict
           use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly
           auto-update-conda: true # this enable `use-only-tar-bz2` feature on Windows
           # Miniconda setup sometimes fails because of an http error. retry
