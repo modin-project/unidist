@@ -15,7 +15,7 @@ unidist.init()
 
 @pytest.mark.skipif(
     sys.platform == "win32" and Backend.get() == BackendName.MP,
-    reason="",
+    reason="Details are in https://github.com/modin-project/unidist/issues/70.",
 )
 @pytest.mark.parametrize("is_default_constructor", [True, False])
 def test_actor_constructor(is_default_constructor):
@@ -25,7 +25,7 @@ def test_actor_constructor(is_default_constructor):
 
 @pytest.mark.skipif(
     sys.platform == "win32" and Backend.get() == BackendName.MP,
-    reason="",
+    reason="Details are in https://github.com/modin-project/unidist/issues/70.",
 )
 def test_chaining():
     object_ref = unidist.put(7)
@@ -35,7 +35,7 @@ def test_chaining():
 
 @pytest.mark.skipif(
     sys.platform == "win32" and Backend.get() == BackendName.MP,
-    reason="",
+    reason="Details are in https://github.com/modin-project/unidist/issues/70.",
 )
 def test_num_returns():
     actor = TestActor.remote(7)
@@ -50,7 +50,7 @@ def test_num_returns():
 )
 @pytest.mark.skipif(
     sys.platform == "win32" and Backend.get() == BackendName.MP,
-    reason="",
+    reason="Details are in https://github.com/modin-project/unidist/issues/70.",
 )
 @pytest.mark.parametrize("is_use_options", [True, False])
 def test_address_space(is_use_options):

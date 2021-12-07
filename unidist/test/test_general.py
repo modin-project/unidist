@@ -20,7 +20,7 @@ unidist.init()
 )
 @pytest.mark.skipif(
     sys.platform == "win32" and Backend.get() == BackendName.MP,
-    reason="",
+    reason="Details are in https://github.com/modin-project/unidist/issues/70.",
 )
 @pytest.mark.parametrize(
     "source",
