@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import sys
 import pytest
 
 import unidist
@@ -34,6 +35,10 @@ def test_num_returns():
 @pytest.mark.skipif(
     Backend.get() == BackendName.MP,
     reason="`multiprocessing` backend incorrectly frees grabbed actors. Details are in https://github.com/modin-project/unidist/issues/65.",
+)
+@pytest.mark.skipif(
+    sys.platform == "win32" and Backend.get() == BackendName.MP,
+    reason="",
 )
 @pytest.mark.parametrize("is_use_options", [True, False])
 def test_address_space(is_use_options):
