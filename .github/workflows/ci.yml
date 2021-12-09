@@ -75,9 +75,7 @@ jobs:
         run: |
           conda info
           conda list
-      - run: python unidist/cli -m pytest unidist/test/test_general.py
-      - run: python unidist/cli -m pytest unidist/test/test_task.py
-      - run: python unidist/cli -m pytest unidist/test/test_actor.py
+      - run: python unidist/cli -m pytest unidist/test/
 
   test-windows:
     needs: [lint-commit, lint-black, lint-flake8]
@@ -114,6 +112,4 @@ jobs:
         run: |
           conda info
           conda list
-      - run: python unidist/cli -m pytest unidist/test/test_general.py
-      - run: python unidist/cli -m pytest unidist/test/test_task.py
-      - run: python unidist/cli -m pytest unidist/test/test_actor.py
+      - run: python unidist/cli -m pytest unidist/test/
