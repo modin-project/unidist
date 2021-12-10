@@ -71,6 +71,13 @@ jobs:
           environment-file: environment.yml
           python-version: ${{matrix.python-version}}
           channel-priority: strict
+          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
+          # Miniconda setup sometimes fails because of an http error. retry
+          # it once if it fails. todo(https://github.com/conda-incubator/setup-miniconda/issues/129):
+          # get rid of this once setup-miniconda can be configured to retry
+          # setup on http errors.
+          max_attempts: 2
+          retry_on: error
       - name: Conda environment
         run: |
           conda info
