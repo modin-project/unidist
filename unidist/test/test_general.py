@@ -2,28 +2,44 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import sys
 import pytest
 import time
 
 import unidist
 from unidist.config import Backend, CpuCount
+from unidist.core.base.common import BackendName
 from .utils import assert_equal, task, TestActor
 
 unidist.init()
 
 
-# FIXME: If we run all tests (i.e. pytest unidist/test), the tests are hanging.
-# However, if we remove third argument, the tests will be passed. This is true for MultiProcessing backend and
-# requires an investigation.
-@pytest.mark.parametrize(
-    "object_ref",
-    [unidist.put(1), task.remote(3), TestActor.remote().task.remote(1)],
-    ids=["put", "task", "actor"],
+@pytest.mark.skipif(
+    Backend.get() == BackendName.MP,
+    reason="Hangs on `multiprocessing` backend. Details are in https://github.com/modin-project/unidist/issues/64.",
 )
-def test_is_object_ref(object_ref):
+@pytest.mark.skipif(
+    sys.platform == "win32" and Backend.get() == BackendName.MP,
+    reason="Details are in https://github.com/modin-project/unidist/issues/70.",
+)
+@pytest.mark.parametrize(
+    "source",
+    ["put", "task", "actor"],
+)
+def test_is_object_ref(source):
+    if source == "put":
+        object_ref = unidist.put(1)
+    elif source == "task":
+        object_ref = task.remote(3)
+    else:
+        object_ref = TestActor.remote().task.remote(1)
     assert_equal(unidist.is_object_ref(object_ref), True)
 
 
+@pytest.mark.skipif(
+    Backend.get() == BackendName.MP,
+    reason="Hangs on `multiprocessing` backend. Details are in https://github.com/modin-project/unidist/issues/64.",
+)
 def test_wait():
     @unidist.remote
     def foo():
@@ -46,7 +62,7 @@ def test_get_ip():
 
 
 def test_num_cpus():
-    if Backend.get() == "Python":
+    if Backend.get() == BackendName.PY:
         assert_equal(unidist.num_cpus(), 1)
     else:
         assert_equal(unidist.num_cpus(), CpuCount.get())
