@@ -53,8 +53,10 @@ def is_pickle5_serializable(data):
     bool
         ``True`` if the data should be serialized with pickle using protocol 5 (out-of-band data).
     """
-    return hasattr(data, "__reduce_ex__") and inspect.isroutine(
-        getattr(data, "__reduce_ex__")
+    return (
+        not (inspect.isfunction(data) or inspect.isbuiltin(data))
+        and hasattr(data, "__reduce_ex__")
+        and inspect.isroutine(getattr(data, "__reduce_ex__"))
     )
 
 
