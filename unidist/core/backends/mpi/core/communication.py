@@ -611,9 +611,6 @@ def send_remote_task_operation(comm, operation_type, operation_data, dest_rank):
     """
     Send operation and data that consist of different user provided complex types, lambdas and buffers.
 
-    The data is serialized with ``unidist.core.backends.mpi.core.ComplexSerializer``
-    or ``unidist.core.backends.mpi.core.SimpleSerializer`` depending on the data size.
-
     Parameters
     ----------
     comm : object
@@ -627,47 +624,8 @@ def send_remote_task_operation(comm, operation_type, operation_data, dest_rank):
     """
     # Send operation type
     mpi_send_object(comm, operation_type, dest_rank)
-
-    # Check the message size and decide on serialization scheme
-    if common.get_size(operation_data) < 256 * 1024:
-        # Send the data type for serialization (simple or complex)
-        mpi_send_object(comm, True, dest_rank)
-        # Serialize and send the simple data
-        s_operation_data = SimpleSerializer().serialize(operation_data)
-        mpi_send_buffer(comm, len(s_operation_data), s_operation_data, dest_rank)
-    else:
-        mpi_send_object(comm, False, dest_rank)
-        # Serialize and send the complex data
-        send_complex_data(comm, operation_data, dest_rank)
-
-
-def recv_remote_task_data(comm, source_rank):
-    """
-    Receive the data for remote operation.
-
-    The data is de-serialized with ``unidist.core.backends.mpi.core.ComplexSerializer``
-    or ``unidist.core.backends.mpi.core.SimpleSerializer`` depending on the data size.
-
-    Parameters
-    ----------
-    comm : object
-        MPI communicator object.
-    source_rank : int
-        Source MPI process to receive data from.
-
-    Returns
-    -------
-    object
-        Received data object from another MPI process.
-    """
-    # Decide what deserialization scheme to use
-    # TODO: check busy wait
-    is_simple = comm.recv(source=source_rank)
-    if is_simple:
-        s_buffer = mpi_recv_buffer(comm, source_rank)
-        return SimpleSerializer().deserialize(s_buffer)
-    else:
-        return recv_complex_data(comm, source_rank)
+    # Serialize and send the complex data
+    send_complex_data(comm, operation_data, dest_rank)
 
 
 def send_serialized_operation(comm, operation_type, operation_data, dest_rank):

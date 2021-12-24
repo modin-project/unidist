@@ -696,7 +696,7 @@ def event_loop():
 
         # Proceed the request
         if operation_type == common.Operation.EXECUTE:
-            request = communication.recv_remote_task_data(comm, source_rank)
+            request = communication.recv_complex_data(comm, source_rank)
 
             # Execute the task if possible
             pending_request = process_task_request(request)
@@ -711,7 +711,6 @@ def event_loop():
             process_get_request(request["source"], request["id"])
 
         elif operation_type == common.Operation.PUT_DATA:
-            #  request = communication.recv_complex_operation(comm, source_rank)
             request = communication.recv_complex_data(comm, source_rank)
             w_logger.debug(
                 "PUT (RECV) {} id from {} rank".format(request["id"]._id, source_rank)
