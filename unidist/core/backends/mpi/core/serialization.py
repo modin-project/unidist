@@ -113,8 +113,8 @@ class ComplexSerializer:
 
         Parameters
         ----------
-        frame : object
-            Pickle 5 serializable object (ex. pandas data frame).
+        data : object
+            Pickle 5 serializable object (e.g. pandas DataFrame or NumPy array).
 
         Returns
         -------

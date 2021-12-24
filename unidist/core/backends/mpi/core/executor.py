@@ -232,7 +232,7 @@ class ObjectStore:
 
     def cache_serialization_info(self, data_id, data):
         """
-        Save communication event for this `data_id` and rank.
+        Save communication event for this `data_id` and `data`.
 
         Parameters
         ----------
