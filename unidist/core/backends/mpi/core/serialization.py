@@ -238,7 +238,7 @@ class SimpleSerializer:
 
     Notes
     -----
-    Uses cloudpickle and pickle libraries as a separate APIs
+    Uses cloudpickle and pickle libraries as a separate APIs.
     """
 
     def serialize(self, data):

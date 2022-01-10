@@ -238,8 +238,8 @@ class ObjectStore:
         ----------
         data_id : unidist.core.backends.mpi.core.common.MasterDataID
             An ``ID`` to data.
-        rank : int
-            Rank number where the data was sent.
+        data : object
+            Serialization information to cache.
         """
         self._serialization_cache[data_id] = data
 
@@ -249,6 +249,11 @@ class ObjectStore:
 
         Parameters
         ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+            An ``ID`` to data.
+
+        Returns
+        -------
         bool
             ``True`` if communication data already serialized.
         """
@@ -257,6 +262,16 @@ class ObjectStore:
     def get_serialized_data(self, data_id):
         """
         Get serialized data on this `data_id`.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+            An ``ID`` to data.
+
+        Returns
+        -------
+        object
+            Cached serialized data associated with `data_id`.
         """
         return self._serialization_cache[data_id]
 
@@ -446,7 +461,7 @@ def push_local_data(dest_rank, data_id):
     ----------
     dest_rank : int
         Target rank.
-    value : unidist.core.backends.mpi.core.common.MasterDataID
+    data_id : unidist.core.backends.mpi.core.common.MasterDataID
         An ID to data.
     """
     # Check if data was already pushed
