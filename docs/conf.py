@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 # -- Project information -----------------------------------------------------
 
 project = "unidist"
-copyright = "2021, unidist"
+copyright = "2021-2022, unidist"
 author = "unidist contributors"
 
 # The full version, including alpha/beta/rc tags
