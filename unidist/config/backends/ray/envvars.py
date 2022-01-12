@@ -37,4 +37,4 @@ class RayRedisPassword(EnvironmentVariable, type=ExactStr):
 class RayObjectStoreMemory(EnvironmentVariable, type=int):
     """How many bytes of memory to start the Ray object store with."""
 
-    varname = "UNIDIST_OBJECT_STORE_MEMORY"
+    varname = "UNIDIST_RAY_OBJECT_STORE_MEMORY"
