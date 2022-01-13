@@ -20,13 +20,13 @@ In a case of using unidist from sources, the applications can be run by the next
 
 .. code-block:: bash
 
-   $ python unidist/cli script.py  # The running is happen from a unidist's root directory.
+   $ python unidist/cli script.py  # The running is happened from a unidist's root directory.
 
 
 CLI Options
------------
+===========
 
-Unidist behavior can be changed via CLI options. All actual supported options can always be obtained using ``--help``:
+Unidist behavior can be tuned via CLI options. All actual supported options can always be obtained using ``--help``:
 
 .. code-block::
 
@@ -66,3 +66,59 @@ Unidist behavior can be changed via CLI options. All actual supported options ca
    Ray backend-specific arguments:
    -redis_pswd REDIS_PASSWORD, --redis_password REDIS_PASSWORD
                            specify redis password to connect to existing Ray cluster.
+
+
+Usage Examples
+==============
+
+Suppose that user has file ``script.py`` with unidist functionality. Consider several cases of running this script with
+different options/environment variables combinations.
+
+* Default is running in a single node mode on Ray backend:
+
+  .. code-block:: bash
+
+      $ unidist script.py
+
+* Running ``pytest`` on Dask backend with a pytest-specific option:
+
+  .. code-block:: bash
+
+      $ unidist -m pytest script.py -b dask --verbose  # --verbose is pytest-specific option
+
+  or (use ``UNIDIST_BACKEND`` environment variable instead of ``-b`` option):
+
+  .. code-block:: bash
+
+      $ export UNIDIST_BACKEND=Dask
+      $ unidist -m pytest script.py --verbose  # --verbose is pytest-specific option
+
+* Running in a single node mode on MPI backend using 8 workers:
+
+  .. code-block:: bash
+
+      $ unidist script.py --backend mpi --num_cpus 8
+
+* Running the script on two nodes using MPI backend. Nodes will have 16 and 32 workers, respectively:
+
+  .. code-block:: bash
+
+      $ export UNIDIST_BACKEND=MPI
+      $ unidist script.py -hosts localhost x.x.x.1 --num_cpus 16 32
+
+* Running the script on a Ray pre-initialized cluster:
+
+  .. code-block:: bash
+
+      $ unidist script.py -hosts x.x.x.1 -redis_pswd 123456 # x.x.x.1 is IP-address of a head node of Ray cluster
+
+* Running the script on a Dask pre-initialized cluster:
+
+  .. code-block:: bash
+
+      $ unidist script.py -b dask -hosts x.x.x.1:port # x.x.x.1:port is IP-address with port of a Dask-scheduler
+
+.. note:: 
+    Currently, to use unidist with Ray and Dask backends on cluster, need to pre-initialize Dask/Ray cluster
+    using their own documentation (`Ray Guide <https://docs.ray.io/en/latest/starting-ray.html#starting-ray-via-the-cli-ray-start>`_
+    and `Dask Guide <https://docs.dask.org/en/latest/how-to/deploy-dask-clusters.html>`_).
