@@ -353,7 +353,9 @@ def _isend_complex_data(comm, data, dest_rank):
     len_buffers = serializer.len_buffers
 
     # Send message pack bytestring
-    handlers.extend(_isend_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank))
+    handlers.extend(
+        _isend_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank)
+    )
 
     return handlers, s_data, raw_buffers, len_buffers
 
