@@ -22,7 +22,6 @@ import cloudpickle as cpkl
 import msgpack
 import gc  # msgpack optimization
 
-
 # Pickle 5 protocol compatible types check
 compatible_modules = ("pandas", "numpy")
 available_modules = []
