@@ -42,7 +42,7 @@ Unidist Configuration Settings List
 Usage Guide
 '''''''''''
 
-See example of interation with unidist configs below, as it can be seen config
+See example of interaction with unidist configs below, as it can be seen config
 value can be set either by setting the environment variable or by using config
 API.
 
