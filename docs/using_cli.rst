@@ -20,7 +20,7 @@ In the case of using unidist sources, the application can be run as follows:
 
 .. code-block:: bash
 
-   $ python unidist/cli script.py  # The running is happened from a unidist's root directory.
+   $ python unidist/cli script.py  # The running is happened from the unidist's root directory
 
 CLI Options
 ===========
@@ -65,7 +65,6 @@ unidist behavior can be tuned via CLI options. All actual supported options can 
    Ray backend-specific arguments:
    -redis_pswd REDIS_PASSWORD, --redis_password REDIS_PASSWORD
                            specify redis password to connect to existing Ray cluster.
-
 
 Usage Examples
 ==============
