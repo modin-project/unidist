@@ -7,7 +7,7 @@ Unidist Command Line Interface
 """"""""""""""""""""""""""""""
 
 unidist provides its own command line interface (CLI) for running python applications.
-The CLI is a recommended way for executing programs with unidist. 
+The CLI is a recommended way for executing programs with unidist.
 
 The CLI can be used in two ways. If unidist is installed in user's environment (from conda, pip or sources) the user
 has *unidist* executable binary. In this case a recommended way to run an application is the following:
@@ -25,7 +25,7 @@ In the case of using unidist sources, the application can be run as follows:
 CLI Options
 ===========
 
-unidist behavior can be tuned via CLI options. All actual supported options can got using ``--help``:
+unidist behavior can be tuned via CLI options. All actual supported options can be got using ``--help``:
 
 .. code-block::
 
