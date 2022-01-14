@@ -6,27 +6,26 @@
 Unidist Command Line Interface
 """"""""""""""""""""""""""""""
 
-Unidist provides its own command line interface (CLI) for running applications.
-The CLI is recommended for an executing unidist programs. 
+unidist provides its own command line interface (CLI) for running python applications.
+The CLI is a recommended way for executing program with unidist. 
 
-The CLI can be used in two ways. If unidist is installed in user's environment (from conda, pip or sources) user will have
-*unidist* executable binary. In this case a recommended way to run applications is the next:
+The CLI can be used in two ways. If unidist is installed in user's environment (from conda, pip or sources) the user
+will have *unidist* executable binary. In this case a recommended way to run an application is the following:
 
 .. code-block:: bash
 
    $ unidist script.py
 
-In a case of using unidist from sources, the applications can be run by the next way:
+In the case of using unidist sources, the application can be run as follows:
 
 .. code-block:: bash
 
    $ python unidist/cli script.py  # The running is happened from a unidist's root directory.
 
-
 CLI Options
 ===========
 
-Unidist behavior can be tuned via CLI options. All actual supported options can always be obtained using ``--help``:
+unidist behavior can be tuned via CLI options. All actual supported options can always be obtained using ``--help``:
 
 .. code-block::
 
@@ -71,16 +70,13 @@ Unidist behavior can be tuned via CLI options. All actual supported options can 
 Usage Examples
 ==============
 
-Suppose that user has file ``script.py`` with unidist functionality. Consider several cases of running this script with
-different options/environment variables combinations.
-
-* Default is running in a single node mode on Ray backend:
+* Default is running the script with unidist on Ray backend in a single node:
 
   .. code-block:: bash
 
       $ unidist script.py
 
-* Running ``pytest`` on Dask backend with a pytest-specific option:
+* Running the script with unidist on Dask backend via ``pytest`` with a pytest-specific option:
 
   .. code-block:: bash
 
@@ -91,34 +87,34 @@ different options/environment variables combinations.
   .. code-block:: bash
 
       $ export UNIDIST_BACKEND=Dask
-      $ unidist -m pytest script.py --verbose  # --verbose is pytest-specific option
+      $ unidist -m pytest script.py --verbose  # --verbose is the pytest-specific option
 
-* Running in a single node mode on MPI backend using 8 workers:
+* Running the script with unidist on MPI backend using 8 workers in a single node:
 
   .. code-block:: bash
 
       $ unidist script.py --backend mpi --num_cpus 8
 
-* Running the script on two nodes using MPI backend. Nodes will have 16 and 32 workers, respectively:
+* Running the script with unidist on MPI backend on two nodes. The nodes have 16 and 32 workers, respectively:
 
   .. code-block:: bash
 
       $ export UNIDIST_BACKEND=MPI
       $ unidist script.py -hosts localhost x.x.x.1 --num_cpus 16 32
 
-* Running the script on a Ray pre-initialized cluster:
+* Running the script with unidist on Ray backend with a pre-initialized Ray cluster:
 
   .. code-block:: bash
 
-      $ unidist script.py -hosts x.x.x.1 -redis_pswd 123456 # x.x.x.1 is IP-address of a head node of Ray cluster
+      $ unidist script.py -hosts x.x.x.1 -redis_pswd 123456 # x.x.x.1 is the IP-address of a head node of the Ray cluster
 
-* Running the script on a Dask pre-initialized cluster:
+* Running the script with unidist on Dask backend with a pre-initialized Dask cluster:
 
   .. code-block:: bash
 
-      $ unidist script.py -b dask -hosts x.x.x.1:port # x.x.x.1:port is IP-address with port of a Dask-scheduler
+      $ unidist script.py -b dask -hosts x.x.x.1:port # x.x.x.1:port is the IP-address with the port of a dask-scheduler
 
 .. note:: 
-    Currently, to use unidist with Ray and Dask backends on cluster, need to pre-initialize Dask/Ray cluster
-    using their own documentation (`Ray Guide <https://docs.ray.io/en/latest/starting-ray.html#starting-ray-via-the-cli-ray-start>`_
-    and `Dask Guide <https://docs.dask.org/en/latest/how-to/deploy-dask-clusters.html>`_).
+    Currently, in order to use unidist with Ray or Dask backend on a cluster, Ray/Dask cluster needs to be pre-initialized
+    using its own documentation (`Ray Guide <https://docs.ray.io/en/latest/cluster/cloud.html#manual-ray-cluster-setup>`_
+    and `Dask Guide <https://docs.dask.org/en/latest/how-to/deploy-dask/cli.html>`_).
