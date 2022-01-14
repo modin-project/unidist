@@ -24,6 +24,7 @@ The unidist is designed to work in a `task-based parallel model`_.
    :hidden:
 
    getting_started
+   using_cli
    developer/architecture
    developer/contributing
 
