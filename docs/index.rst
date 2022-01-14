@@ -25,6 +25,7 @@ The unidist is designed to work in a `task-based parallel model`_.
 
    getting_started
    developer/architecture
+   developer/contributing
 
 To get started with unidist refer to the getting started page.
 
