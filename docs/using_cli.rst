@@ -7,7 +7,7 @@ Unidist Command Line Interface
 """"""""""""""""""""""""""""""
 
 unidist provides its own command line interface (CLI) for running python applications.
-The CLI is a recommended way for executing program with unidist. 
+The CLI is a recommended way for executing programs with unidist. 
 
 The CLI can be used in two ways. If unidist is installed in user's environment (from conda, pip or sources) the user
 has *unidist* executable binary. In this case a recommended way to run an application is the following:
@@ -20,12 +20,12 @@ In the case of using unidist sources, the application can be run as follows:
 
 .. code-block:: bash
 
-   $ python unidist/cli script.py  # The running is happened from the unidist's root directory
+   $ python unidist/cli script.py  # It is supposed the run happens from the unidist's root directory
 
 CLI Options
 ===========
 
-unidist behavior can be tuned via CLI options. All actual supported options can always be obtained using ``--help``:
+unidist behavior can be tuned via CLI options. All actual supported options can got using ``--help``:
 
 .. code-block::
 
@@ -79,7 +79,7 @@ Usage Examples
 
   .. code-block:: bash
 
-      $ unidist -m pytest script.py -b dask --verbose  # --verbose is pytest-specific option
+      $ unidist -m pytest script.py -b dask --verbose  # --verbose is the pytest-specific option
 
   or (use ``UNIDIST_BACKEND`` environment variable instead of ``-b`` option):
 
