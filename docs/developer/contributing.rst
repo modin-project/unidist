@@ -160,7 +160,7 @@ some subset of the test suite. In order to run a specific test run:
 
 The entire test suite is automatically run for each pull request.
 
-Refer to full documentation on how to run a python program with unidist using its CLI.
+Refer to :doc:`full documentation </using_cli>` on how to run a python program with unidist using its CLI.
 
 ..
       Add a link to unidist CLI when #83 is merged
