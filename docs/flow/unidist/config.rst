@@ -71,7 +71,7 @@ by using config API.
    (:py:func:`~unidist.api.init` call)! Otherwise, unidist will opt for the default settings.
 
 Note that unidist also supports its own command line interface (CLI) though which a config value can be set.
-Wherein, strongly recommended do not mix setting a config value with multiple ways, use only one!
+Wherein, **strongly recommended do not mix setting a config value with multiple ways, use only one!**
 
 .. code-block:: bash
 
