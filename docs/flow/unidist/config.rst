@@ -42,9 +42,8 @@ Unidist Configuration Settings List
 Usage Guide
 '''''''''''
 
-See example of interaction with unidist configs below, as it can be seen config
-value can be set either by setting the environment variable or by using config
-API.
+As it can be seen below a config value can be set either by setting the environment variable or
+by using config API.
 
 .. code-block:: python
 
@@ -52,13 +51,13 @@ API.
 
     # Setting `UNIDIST_BACKEND` environment variable.
     # Also can be set outside the script.
-    os.environ["UNIDIST_BACKEND"] = "Mpi"
+    os.environ["UNIDIST_BACKEND"] = "mpi"
 
     import unidist.config as cfg
 
     # Checking initially set `Backend` config,
     # which corresponds to `UNIDIST_BACKEND` environment variable
-    print(cfg.Backend.get()) # prints 'Mpi'
+    print(cfg.Backend.get()) # prints 'mpi'
 
     # Checking default value of `CpuCount`
     print(cfg.CpuCount.get()) # prints the number of CPUs on your machine
@@ -66,3 +65,18 @@ API.
     # Changing value of `CpuCount`
     cfg.CpuCount.put(16)
     print(cfg.CpuCount.get()) # prints '16'
+
+.. note::
+   Make sure that setting configuration values happens before unidist initialization
+   (:py:func:`~unidist.api.init` call)! Otherwise, unidist will opt for the default settings.
+
+Note that unidist also supports its own command line interface (CLI) though which a config value can be set.
+Wherein, strongly recommended do not mix setting a config value with multiple ways, use only one!
+
+.. code-block:: bash
+
+    # Running the script with unidist in a single node with `Backend` and
+    # `CpuCount` config values set to `mpi` and `8`, respectively:
+    $ unidist script.py --backend mpi --num_cpus 8
+
+Refer to :doc:`full documentation </using_cli>` on how to run a python program with unidist using its CLI.
