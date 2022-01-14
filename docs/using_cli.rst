@@ -10,7 +10,7 @@ unidist provides its own command line interface (CLI) for running python applica
 The CLI is a recommended way for executing program with unidist. 
 
 The CLI can be used in two ways. If unidist is installed in user's environment (from conda, pip or sources) the user
-will have *unidist* executable binary. In this case a recommended way to run an application is the following:
+has *unidist* executable binary. In this case a recommended way to run an application is the following:
 
 .. code-block:: bash
 
