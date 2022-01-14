@@ -50,6 +50,7 @@ details just pick module you are interested in.
 .. parsed-literal::
    └───unidist
        ├─── :doc:`api </flow/unidist/api>`
+       ├─── :doc:`config </flow/unidist/config>`
        └───core
            ├───backends
            |   ├───common
