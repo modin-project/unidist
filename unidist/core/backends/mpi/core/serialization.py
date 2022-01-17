@@ -4,6 +4,7 @@
 
 """Serialization interface"""
 
+import importlib
 import inspect
 import sys
 
@@ -20,6 +21,15 @@ else:
 import cloudpickle as cpkl
 import msgpack
 import gc  # msgpack optimization
+
+# Pickle 5 protocol compatible types check
+compatible_modules = ("pandas", "numpy")
+available_modules = {}
+for mod_name in compatible_modules:
+    try:
+        available_modules[mod_name] = importlib.import_module(mod_name)
+    except ModuleNotFoundError:
+        pass
 
 
 def is_cpkl_serializable(data):
@@ -53,11 +63,14 @@ def is_pickle5_serializable(data):
     bool
         ``True`` if the data should be serialized with pickle using protocol 5 (out-of-band data).
     """
-    return (
-        not (inspect.isfunction(data) or inspect.isbuiltin(data))
-        and hasattr(data, "__reduce_ex__")
-        and inspect.isroutine(getattr(data, "__reduce_ex__"))
-    )
+    is_pandas_instance = False
+    is_numpy_instance = False
+    for mod_name in available_modules:
+        if mod_name == "pandas":
+            is_pandas_instance = isinstance(data, available_modules[mod_name].DataFrame)
+        elif mod_name == "numpy":
+            is_numpy_instance = isinstance(data, available_modules[mod_name].ndarray)
+    return is_pandas_instance or is_numpy_instance
 
 
 class MPISerializer:
