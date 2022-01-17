@@ -24,10 +24,10 @@ import gc  # msgpack optimization
 
 # Pickle 5 protocol compatible types check
 compatible_modules = ("pandas", "numpy")
-available_modules = {}
-for mod_name in compatible_modules:
+available_modules = []
+for module_name in compatible_modules:
     try:
-        available_modules[mod_name] = importlib.import_module(mod_name)
+        available_modules.append(importlib.import_module(module_name))
     except ModuleNotFoundError:
         pass
 
@@ -63,14 +63,13 @@ def is_pickle5_serializable(data):
     bool
         ``True`` if the data should be serialized with pickle using protocol 5 (out-of-band data).
     """
-    is_pandas_instance = False
-    is_numpy_instance = False
-    for mod_name in available_modules:
-        if mod_name == "pandas":
-            is_pandas_instance = isinstance(data, available_modules[mod_name].DataFrame)
-        elif mod_name == "numpy":
-            is_numpy_instance = isinstance(data, available_modules[mod_name].ndarray)
-    return is_pandas_instance or is_numpy_instance
+    is_serializable = False
+    for module in available_modules:
+        if module.__name__== "pandas":
+            is_serializable = isinstance(data, module.DataFrame)
+        elif module.__name__ == "numpy":
+            is_serializable= isinstance(data, module.ndarray)
+    return is_serializable
 
 
 class MPISerializer:
