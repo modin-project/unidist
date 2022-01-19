@@ -6,8 +6,7 @@
 
 ### What is unidist?
 
-unidist is a framework that is intended to provide the unified API for distributed execution by supporting various performant execution backends and utilizing all of your CPUs cores. At the moment the following backends
-are supported underneath the hood:
+unidist is a framework that is intended to provide the unified API for distributed execution by supporting various performant execution backends. At the moment the following backends are supported under the hood:
 
 * [Ray](https://docs.ray.io/en/master/index.html)
 * [MPI](https://www.mpi-forum.org/)
@@ -73,7 +72,7 @@ unidist.init() # Ray backend is used by default
 def foo(x):
     return x * x
 
-# This will run `foo` in parallel in workers;
+# This will run `foo` on a pool of workers in parallel;
 # `refs` will contain object references to actual data
 refs = [foo.remote(i) for i in range(5)]
 # To get the data call `unidist.get(...)`
