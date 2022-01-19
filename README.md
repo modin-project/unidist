@@ -22,7 +22,12 @@ Also, the framework provides a sequential ``Python`` backend, that can be used f
 Currently, unidist can be installed from sources using ``pip``:
 
 ```bash
+# Dependencies for `MultiProcessing` and `Python` backends will be installed as these are supported by default
 $ pip install git+https://github.com/modin-project/unidist
+# Dependencies for all the execution backends will be installed
+$ pip install git+https://github.com/modin-project/unidist#egg=unidist[all]
+# Dependencies for `Ray` execution backend will be installed
+$ pip install git+https://github.com/modin-project/unidist#egg=unidist[ray]
 ```
 
 This will install unidist directly from the repo without you having to manually clone it! Please be aware that the latest changes have not made it into a release and may not be completely stable.
