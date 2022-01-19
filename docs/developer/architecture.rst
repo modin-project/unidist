@@ -11,7 +11,7 @@ High-Level Execution View
 
 The diagram below outlines the high-level view to the execution flow of unidist.
 
-.. image:: /img/execution_flow.png
+.. image:: /img/execution_flow.svg
    :align: center
 
 .. toctree::
@@ -24,7 +24,7 @@ the :py:class:`~unidist.core.base.backend.BackendProxy` object that dispatches t
 the concrete backend class instance (:py:class:`~unidist.core.backends.ray.backend.RayBackend`,
 :py:class:`~unidist.core.backends.dask.backend.DaskBackend`,
 :py:class:`~unidist.core.backends.multiprocessing.backend.MultiProcessingBackend`,
-:py:class:`~unidist.core.backends.python.backend.PythonBackend` or ``MPIBackend``).
+:py:class:`~unidist.core.backends.python.backend.PythonBackend` or :py:class:`~unidist.core.backends.mpi.backend.MPIBackend`).
 These classes are childs of the :py:class:`~unidist.core.base.backend.Backend` interface and should override
 operations declared in it. Then, the concrete backend performs passed operation and hands over the result back to
 the :py:class:`~unidist.core.base.backend.BackendProxy` that postprocesses it if necessary and returns it to the user.
