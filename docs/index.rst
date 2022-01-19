@@ -3,22 +3,66 @@
 
       SPDX-License-Identifier: Apache-2.0
 
-Welcome to Unidist's documentation!
-===================================
+What is unidist?
+""""""""""""""""
 
-The framework is intended to provide the unified API for distributed execution
-by supporting various distributed task schedulers. At the moment the following schedulers
-are supported under the hood:
+unidist (`Unified Distributed Execution`) provides the unified API for distributed execution by supporting various performant execution backends.
+At the moment the following backends are supported under the hood:
 
 * `Ray`_
+* `MPI`_
 * `Dask Distributed`_
 * `Python Multiprocessing`_
-* `MPI`_
 
 Also, the framework provides a sequential :doc:`Python backend <flow/unidist/core/backends/python/backend>`,
-that can be used for debug purposes.
+that can be used for debugging.
 
-The unidist is designed to work in a `task-based parallel model`_.
+unidist is designed to work in a `task-based parallel model`_. The framework mimics `Ray`_ API and expands the existing frameworks
+(Ray and Dask Distributed) with additional features.
+
+Installation
+============
+
+unidist can be installed from sources using ``pip``:
+
+.. code-block:: bash
+
+   # Dependencies for all the execution backends will be installed
+   $ pip install git+https://github.com/modin-project/unidist#egg=unidist[all]
+
+For more information about installation and supported OS platforms see the installation page.
+
+Usage
+=====
+
+An example below describes squaring the numbers from a list using unidist:
+
+.. code-block:: python
+
+   # script.py
+   if __name__ == "__main__":
+      import unidist
+
+      unidist.init() # Initialize unidist's backend.
+
+      @unidist.remote # Apply a decorator to make `foo` remote function.
+      def foo(x):
+         return x * x
+
+      # This will run `foo` on a pool of workers in parallel;
+      # `refs` will contain object references to actual data
+      refs = [foo.remote(i) for i in range(4)]
+
+      # Get materialized result.
+      print(unidist.get(refs)) # [0, 1, 4, 9]
+
+To run the `script.py` use :doc:`unidist CLI </using_cli>`:
+
+.. code-block:: bash
+
+    # Running the script in a single node with `mpi` backend on `4` workers:
+    $ unidist script.py --backend mpi --num_cpus 4
+
 
 .. toctree::
    :hidden:
@@ -28,13 +72,9 @@ The unidist is designed to work in a `task-based parallel model`_.
    developer/architecture
    developer/contributing
 
-To get started with unidist refer to the getting started page.
+To get started with unidist refer to the :doc:`getting started <getting_started>` page.
 
-* :doc:`Getting Started <getting_started>`
-
-To dipe dive into unidist internals refer to the framework architecture.
-
-* :doc:`unidist Architecture </developer/architecture>`
+To dipe dive into unidist internals refer to :doc:`the framework architecture </developer/architecture>`.
 
 .. _`Ray`: https://docs.ray.io/en/master/index.html
 .. _`Dask Distributed`: https://distributed.dask.org/en/latest/

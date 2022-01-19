@@ -6,59 +6,94 @@
 Getting Started
 """""""""""""""
 
-Using Unidist
-=============
+unidist provides :doc:`a high-level API</flow/unidist/api>` to make distributed applications. To tune
+unidist's behavior user has several methods described in :doc:`unidist configuration setting</flow/unidist/config>`
+section.
+
+Using unidist API
+=================
+
+A short example below describes how to use unidist API to organize a parallel execution for
+functions (tasks) and classes (actors).
 
 .. code-block:: python
 
+   # script.py
    if __name__ == "__main__":
+      import unidist.config as cfg
       import unidist
 
       # Initialize unidist's backend. The Ray backend is used by default.
       unidist.init()
 
-      # Apply decorator to make `f` remote function.
+      # Apply decorator to make `square` remote function.
       @unidist.remote
-      def f(x):
+      def square(x):
          return x * x
 
       # Asynchronously execute remote function.
-      refs = [f.remote(i) for i in range(4)]
-
-      # Get materialized data.
-      print(unidist.get(refs)) # [0, 1, 4, 9]
+      square_refs = [square.remote(i) for i in range(4)]
 
       # Apply decorator to make `Counter` actor class.
       @unidist.remote
-      class Counter:
+      class Cube:
          def __init__(self):
-               self.n = 0
+               self.volume = None
 
-         def increment(self):
-               self.n += 1
+         def compute_volume(self, square):
+               self.volume = square ** 1.5
 
          def read(self):
-               return self.n
+               return self.volume
 
       # Create instances of the actor class.
-      counters = [Counter.remote() for i in range(4)]
+      cubes = [Cube.remote() for _ in range(len(square_refs))]
       # Asynchronously execute methods of the actor class.
-      [c.increment.remote() for c in counters]
-      refs = [c.read.remote() for c in counters]
+      [cube.compute_volume.remote(square) for cube, square in zip(cubes, square_refs)]
+      refs = [cube.read.remote() for cube in cubes]
 
-      # Get materialized data.
-      print(unidist.get(refs)) # [1, 1, 1, 1]
+      # Get materialized results.
+      print(unidist.get(refs)) # [0.0, 1.0, 8.0, 27.0]
 
 Choosing unidist's backend
 ===========================
 
-If you want to choose a specific unidist's backend to run on, you can set the environment variable
-``UNIDIST_BACKEND``. unidist will perform execution with that backend:
+There are several ways to choose an execution backend for distributed computations.
+First, the recommended way is to use :doc:`unidist CLI </using_cli>` options:
 
 .. code-block:: bash
 
-   export UNIDIST_BACKEND=Ray  # unidist will use Ray
-   export UNIDIST_BACKEND=Dask  # unidist will use Dask
-   export UNIDIST_BACKEND=MPI  # unidist will use MPI
-   export UNIDIST_BACKEND=MultiProcessing  # unidist will use MultiProcessing
-   export UNIDIST_BACKEND=Python  # unidist will use Python
+    # Running the script with unidist on Ray backend
+    $ unidist script.py --backend ray
+    # Running the script with unidist on Dask backend
+    $ unidist script.py --backend dask
+
+Second, setting the environment variable:
+
+.. code-block:: bash
+
+    # unidist will use Ray backend to distribute computations
+    export UNIDIST_BACKEND=ray
+    # unidist will use Dask backend to distribute computations
+    export UNIDIST_BACKEND=dask
+
+Third, using :doc:`config API </flow/unidist/config>` directly in your script:
+
+.. code-block:: python
+
+    import unidist.config as cfg
+    cfg.Backend.put("ray") # unidist will use Ray backend to distribute computations
+    import unidist.config as cfg
+    cfg.Backend.put("dask") # unidist will use Dask backend to distribute computations
+
+Running unidist application
+===========================
+
+To run the script described above need to use `unidist` command line interface:
+
+.. code-block:: bash
+
+    # Running the script in a single node with `Ray` backend on `4` workers:
+    $ unidist script.py -num_cpus 4
+
+To find more options for running refer to :doc:`unidist CLI </using_cli>` documentation page.
