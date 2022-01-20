@@ -101,12 +101,12 @@ def mpi_send_buffer(comm, data_size, data, dest_rank):
     ----------
     comm : object
         MPI communicator object.
-    data_size : buffer size
-        Buffer object size in bytes.
-    data : object
+    buffer_size : int
+        Buffer size in bytes.
+    buffer : object
         Buffer object to send.
     dest_rank : int
-        Target MPI process to transfer data.
+        Target MPI process to transfer buffer.
     """
     comm.send(data_size, dest=dest_rank)
     comm.Send([data, MPI.CHAR], dest=dest_rank)
@@ -114,7 +114,7 @@ def mpi_send_buffer(comm, data_size, data, dest_rank):
 
 def mpi_recv_buffer(comm, source_rank):
     """
-    Receive buffer data.
+    Receive data buffer.
 
     Parameters
     ----------
@@ -126,7 +126,7 @@ def mpi_recv_buffer(comm, source_rank):
     Returns
     -------
     object
-        Buffer array or serialized object.
+        Array buffer or serialized object.
     """
     buf_size = comm.recv(source=source_rank)
     s_buffer = bytearray(buf_size)
@@ -215,7 +215,7 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
     ----------
     comm : object
         MPI communicator object.
-    s_data : object
+    s_data : bytearray
         Serialized data as bytearray.
     raw_buffers : list
         Pickle buffers list, out-of-band data collected with pickle 5 protocol.
@@ -280,7 +280,7 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
     ----------
     comm : object
         MPI communicator object.
-    s_data: object
+    s_data : object
         A serialized msgpack data.
     raw_buffers : list
         A list of pickle buffers.
@@ -433,7 +433,7 @@ def send_complex_operation(comm, operation_type, operation_data, dest_rank):
 
 def send_simple_operation(comm, operation_type, operation_data, dest_rank):
     """
-    Send operation and Python standard data types.
+    Send an operation and standard Python data types.
 
     Parameters
     ----------
@@ -579,7 +579,7 @@ def isend_complex_operation(
 
     Returns
     -------
-    dict or None
+    dict and dict or dict and None
         Serialization data for caching purpose.
     """
     # Send operation type

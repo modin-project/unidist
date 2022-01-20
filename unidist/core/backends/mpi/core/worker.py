@@ -146,32 +146,32 @@ class ObjectStore:
             if data_id in self._serialization_cache:
                 del self._serialization_cache[data_id]
 
-    def cache_serialization_info(self, data_id, data):
+    def cache_serialized_data(self, data_id, data):
         """
         Save communication event for this `data_id` and rank.
 
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
-            An ``ID`` to data.
+            An ID to data.
         data : object
-            Serialization information to cache.
+            Serialized data to cache.
         """
         self._serialization_cache[data_id] = data
 
     def is_already_serialized(self, data_id):
         """
-        Check if communication data on this `data_id` is already serialized.
+        Check if the data on this `data_id` is already serialized.
 
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
-            An ``ID`` to data.
+            An ID to data.
 
         Returns
         -------
         bool
-            ``True`` if communication data already serialized.
+            ``True`` if the data is already serialized.
         """
         return data_id in self._serialization_cache
 
@@ -182,7 +182,7 @@ class ObjectStore:
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
-            An ``ID`` to data.
+            An ID to data.
 
         Returns
         -------

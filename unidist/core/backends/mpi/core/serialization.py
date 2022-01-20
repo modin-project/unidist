@@ -233,14 +233,14 @@ class ComplexSerializer:
 
 class SimpleSerializer:
     """
-    Class for simple data serialization/de-serialization for MPI comminication.
+    Class for simple data serialization/de-serialization for MPI communication.
 
     Notes
     -----
-    Uses cloudpickle and pickle libraries as a separate APIs.
+    Uses cloudpickle and pickle libraries as separate APIs.
     """
 
-    def serialize(self, data):
+    def serialize_cloudpickle(self, data):
         """
         Encode with a cloudpickle library.
 
@@ -272,13 +272,13 @@ class SimpleSerializer:
         """
         return pkl.dumps(data)
 
-    def deserialize(self, data):
+    def deserialize_cloudpickle(self, data):
         """
         De-serialization with cloudpickle library.
 
         Parameters
         ----------
-        obj : object
+        obj : bytearray
             Python object.
         """
         return cpkl.loads(data)
@@ -289,7 +289,7 @@ class SimpleSerializer:
 
         Parameters
         ----------
-        obj : object
+        obj : bytearray
             Python object.
         """
         return pkl.loads(data)
