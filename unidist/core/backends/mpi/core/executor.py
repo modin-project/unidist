@@ -13,7 +13,7 @@ from collections import defaultdict
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 
-from unidist.core.backends.mpi.core.serialization import SimpleSerializer
+from unidist.core.backends.mpi.core.serialization import SimpleDataSerializer
 from unidist.core.backends.common.data_id import is_data_id
 
 # MPI stuff
@@ -306,7 +306,7 @@ class GarbageCollector:
 
     def _send_cleanup_request(self, cleanup_list):
         """
-        Send a list of deleted IDs for each worker to cleanup local storages.
+        Send a list of data IDs to be deleted for each worker to cleanup local storages.
 
         Parameters
         ----------
@@ -319,7 +319,7 @@ class GarbageCollector:
             )
         )
         # Cache serialized list of data IDs
-        s_cleanup_list = SimpleSerializer().serialize_pickle(cleanup_list)
+        s_cleanup_list = SimpleDataSerializer().serialize_pickle(cleanup_list)
         for rank_id in range(2, world_size):
             communication.send_serialized_operation(
                 comm, common.Operation.CLEANUP, s_cleanup_list, rank_id
@@ -480,7 +480,7 @@ def push_local_data(dest_rank, data_id):
             serialized_data = communication.send_operation(
                 comm, operation_type, operation_data, dest_rank, False
             )
-            object_store.cache_serialization_info(data_id, serialized_data)
+            object_store.cache_serialized_data(data_id, serialized_data)
         #  Remember pushed id
         object_store.cache_send_info(data_id, dest_rank)
 

@@ -506,7 +506,7 @@ def process_get_request(source_rank, data_id):
                     comm, operation_type, operation_data, source_rank, False
                 )
                 async_operations.extend(h_list)
-                object_store.cache_serialization_info(data_id, serialized_data)
+                object_store.cache_serialized_data(data_id, serialized_data)
 
         w_logger.debug(
             "Send requested {} id to {} rank - PROCESSED".format(

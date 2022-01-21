@@ -14,8 +14,8 @@ except ImportError:
     ) from None
 
 from unidist.core.backends.mpi.core.serialization import (
-    ComplexSerializer,
-    SimpleSerializer,
+    ComplexDataSerializer,
+    SimpleDataSerializer,
 )
 
 # TODO: Find a way to move this after all imports
@@ -256,7 +256,7 @@ def send_complex_data(comm, data, dest_rank):
     list
         A list of buffers amount for each object.
     """
-    serializer = ComplexSerializer()
+    serializer = ComplexDataSerializer()
     # Main job
     s_data = serializer.serialize(data)
     # Retrive the metadata
@@ -345,7 +345,7 @@ def _isend_complex_data(comm, data, dest_rank):
     """
     handlers = []
 
-    serializer = ComplexSerializer()
+    serializer = ComplexDataSerializer()
     # Main job
     s_data = serializer.serialize(data)
     # Retrive the metadata
@@ -398,7 +398,7 @@ def recv_complex_data(comm, source_rank):
     len_buffers = comm.recv(source=source_rank)
 
     # Set the necessary metadata for unpacking
-    deserializer = ComplexSerializer(raw_buffers, len_buffers)
+    deserializer = ComplexDataSerializer(raw_buffers, len_buffers)
 
     # Start unpacking
     return deserializer.deserialize(msgpack_buffer)
@@ -412,7 +412,7 @@ def send_complex_operation(comm, operation_type, operation_data, dest_rank):
     """
     Send operation and data that consist of different user provided complex types, lambdas and buffers.
 
-    The data is serialized with ``unidist.core.backends.mpi.core.ComplexSerializer``.
+    The data is serialized with ``unidist.core.backends.mpi.core.ComplexDataSerializer``.
 
     Parameters
     ----------
@@ -483,7 +483,7 @@ def send_operation_data(comm, operation_data, dest_rank, is_serialized=False):
     """
     Send data that consist of different user provided complex types, lambdas and buffers.
 
-    The data is serialized with ``unidist.core.backends.mpi.core.ComplexSerializer``.
+    The data is serialized with ``unidist.core.backends.mpi.core.ComplexDataSerializer``.
     Function works with already serialized data.
 
     Parameters
@@ -500,7 +500,7 @@ def send_operation_data(comm, operation_data, dest_rank, is_serialized=False):
     Returns
     -------
     dict or None
-        Serialization data for caching purpose.
+        Serialization data for caching purpose or nothing.
     """
     if is_serialized:
         # Send already serialized data
@@ -527,7 +527,7 @@ def send_operation(
     """
     Send operation and data that consist of different user provided complex types, lambdas and buffers.
 
-    The data is serialized with ``unidist.core.backends.mpi.core.ComplexSerializer``.
+    The data is serialized with ``unidist.core.backends.mpi.core.ComplexDataSerializer``.
     Function works with already serialized data.
 
     Parameters
@@ -561,7 +561,7 @@ def isend_complex_operation(
     Send operation and data that consist of different user provided complex types, lambdas and buffers.
 
     Non-blocking asynchronous interface.
-    The data is serialized with ``unidist.core.backends.mpi.core.ComplexSerializer``.
+    The data is serialized with ``unidist.core.backends.mpi.core.ComplexDataSerializer``.
     Function works with already serialized data.
 
     Parameters
@@ -580,7 +580,7 @@ def isend_complex_operation(
     Returns
     -------
     dict and dict or dict and None
-        Serialization data for caching purpose.
+        Async handlers and serialization data for caching purpose.
     """
     # Send operation type
     handlers = []
@@ -659,7 +659,7 @@ def recv_serialized_data(comm, source_rank):
     """
     Receive serialized data buffer.
 
-    The data is de-serialized with ``unidist.core.backends.mpi.core.SimpleSerializer``.
+    The data is de-serialized with ``unidist.core.backends.mpi.core.SimpleDataSerializer``.
 
     Parameters
     ----------
@@ -674,4 +674,4 @@ def recv_serialized_data(comm, source_rank):
         Received de-serialized data object from another MPI process.
     """
     s_buffer = mpi_recv_buffer(comm, source_rank)
-    return SimpleSerializer().deserialize_pickle(s_buffer)
+    return SimpleDataSerializer().deserialize_pickle(s_buffer)

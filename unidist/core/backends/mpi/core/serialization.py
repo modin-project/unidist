@@ -72,7 +72,7 @@ def is_pickle5_serializable(data):
     return is_serializable
 
 
-class ComplexSerializer:
+class ComplexDataSerializer:
     """
     Class for data serialization/de-serialization for MPI comminication.
 
@@ -231,7 +231,7 @@ class ComplexSerializer:
         return unpacked_data
 
 
-class SimpleSerializer:
+class SimpleDataSerializer:
     """
     Class for simple data serialization/de-serialization for MPI communication.
 
