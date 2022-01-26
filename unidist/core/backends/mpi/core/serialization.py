@@ -280,6 +280,11 @@ class SimpleDataSerializer:
         ----------
         obj : bytearray
             Python object.
+
+        Returns
+        -------
+        object
+            Original reconstructed object.
         """
         return cpkl.loads(data)
 
@@ -291,5 +296,10 @@ class SimpleDataSerializer:
         ----------
         obj : bytearray
             Python object.
+
+        Returns
+        -------
+        object
+            Original reconstructed object.
         """
         return pkl.loads(data)
