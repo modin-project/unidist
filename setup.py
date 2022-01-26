@@ -1,6 +1,6 @@
 import pathlib
 from setuptools import setup, find_packages
-import sys
+
 
 here = pathlib.Path(__file__).parent.resolve()
 
@@ -10,8 +10,6 @@ long_description = (here / "README.md").read_text(encoding="utf-8")
 ray_deps = ["ray[default]"]
 dask_deps = ["dask[complete]>=2.22.0", "distributed>=2.22.0"]
 mpi_deps = ["mpi4py-mpich", "msgpack"]
-if sys.version_info[1] < 8:
-    mpi_deps += "pickle5"
 all_deps = ray_deps + dask_deps + mpi_deps
 
 setup(
@@ -32,5 +30,5 @@ setup(
         "all": all_deps,
     },
     entry_points={"console_scripts": ["unidist = unidist.cli.__main__:main"]},
-    python_requires=">=3.7.1",
+    python_requires=">=3.8",
 )
