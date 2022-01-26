@@ -379,7 +379,7 @@ class GarbageCollector:
                     )
 
                     e_logger.debug(
-                        "Local task count {} vs global task count {}".format(
+                        "Submitted task count {} vs executed task count {}".format(
                             self._task_counter, executed_task_counter
                         )
                     )
@@ -471,14 +471,14 @@ def push_local_data(dest_rank, data_id):
         # Push the local master data to the target worker directly
         operation_type = common.Operation.PUT_DATA
         if object_store.is_already_serialized(data_id):
-            operation_data = object_store.get_serialized_data(data_id)
+            serialized_data = object_store.get_serialized_data(data_id)
             communication.send_operation(
-                comm, operation_type, operation_data, dest_rank, is_serialized=True
+                comm, operation_type, serialized_data, dest_rank, is_serialized=True
             )
         else:
             operation_data = {"id": data_id, "data": object_store.get(data_id)}
             serialized_data = communication.send_operation(
-                comm, operation_type, operation_data, dest_rank, False
+                comm, operation_type, operation_data, dest_rank, is_serialized=False
             )
             object_store.cache_serialized_data(data_id, serialized_data)
         #  Remember pushed id

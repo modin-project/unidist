@@ -93,7 +93,7 @@ def mpi_isend_object(comm, data, dest_rank):
     return comm.isend(data, dest=dest_rank)
 
 
-def mpi_send_buffer(comm, data_size, data, dest_rank):
+def mpi_send_buffer(comm, buffer_size, buffer, dest_rank):
     """
     Send buffer object to another MPI rank in a blocking way.
 
@@ -108,8 +108,8 @@ def mpi_send_buffer(comm, data_size, data, dest_rank):
     dest_rank : int
         Target MPI process to transfer buffer.
     """
-    comm.send(data_size, dest=dest_rank)
-    comm.Send([data, MPI.CHAR], dest=dest_rank)
+    comm.send(buffer_size, dest=dest_rank)
+    comm.Send([buffer, MPI.CHAR], dest=dest_rank)
 
 
 def mpi_recv_buffer(comm, source_rank):
@@ -481,7 +481,7 @@ def recv_simple_operation(comm, source_rank):
 
 def send_operation_data(comm, operation_data, dest_rank, is_serialized=False):
     """
-    Send data that consist of different user provided complex types, lambdas and buffers.
+    Send data that consists of different user provided complex types, lambdas and buffers.
 
     The data is serialized with ``unidist.core.backends.mpi.core.ComplexDataSerializer``.
     Function works with already serialized data.
@@ -525,7 +525,7 @@ def send_operation(
     comm, operation_type, operation_data, dest_rank, is_serialized=False
 ):
     """
-    Send operation and data that consist of different user provided complex types, lambdas and buffers.
+    Send operation and data that consists of different user provided complex types, lambdas and buffers.
 
     The data is serialized with ``unidist.core.backends.mpi.core.ComplexDataSerializer``.
     Function works with already serialized data.
@@ -558,7 +558,7 @@ def isend_complex_operation(
     comm, operation_type, operation_data, dest_rank, is_serialized=False
 ):
     """
-    Send operation and data that consist of different user provided complex types, lambdas and buffers.
+    Send operation and data that consists of different user provided complex types, lambdas and buffers.
 
     Non-blocking asynchronous interface.
     The data is serialized with ``unidist.core.backends.mpi.core.ComplexDataSerializer``.

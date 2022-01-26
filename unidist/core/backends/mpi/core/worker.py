@@ -496,14 +496,14 @@ def process_get_request(source_rank, data_id):
                 operation_data = object_store.get_serialized_data(data_id)
                 # Async send to avoid possible dead-lock between workers
                 h_list, _ = communication.isend_complex_operation(
-                    comm, operation_type, operation_data, source_rank, True
+                    comm, operation_type, operation_data, source_rank, is_serialized=True
                 )
                 async_operations.extend(h_list)
             else:
                 operation_data = {"id": data_id, "data": object_store.get(data_id)}
                 # Async send to avoid possible dead-lock between workers
                 h_list, serialized_data = communication.isend_complex_operation(
-                    comm, operation_type, operation_data, source_rank, False
+                    comm, operation_type, operation_data, source_rank, is_serialized=False
                 )
                 async_operations.extend(h_list)
                 object_store.cache_serialized_data(data_id, serialized_data)
