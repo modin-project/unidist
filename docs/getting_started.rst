@@ -53,6 +53,7 @@ functions (tasks) and classes (actors).
       cube_refs = [cube.read.remote() for cube in cubes]
 
       # Get materialized results.
+      print(unidist.get(square_refs)) # [0, 1, 4, 9]
       print(unidist.get(cube_refs)) # [0.0, 1.0, 8.0, 27.0]
 
 Choosing unidist's backend
