@@ -56,7 +56,7 @@ jobs:
         shell: bash -l {0}
     strategy:
       matrix:
-        python-version: ["3.7", "3.8"]
+        python-version: ["3.8"]
         backend: ["ray", "mpi", "dask", "multiprocessing", "python"]
     env:
       UNIDIST_BACKEND: ${{matrix.backend}}
@@ -92,7 +92,7 @@ jobs:
         shell: bash -l {0}
     strategy:
       matrix:
-        python-version: ["3.7", "3.8"]
+        python-version: ["3.8"]
         backend: ["ray", "dask", "multiprocessing", "python"]
     env:
       UNIDIST_BACKEND: ${{matrix.backend}}

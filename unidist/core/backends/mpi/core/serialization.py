@@ -6,18 +6,9 @@
 
 import importlib
 import inspect
-import sys
 
 # Serialization libraries
-if sys.version_info[1] < 8:  # check the minor Python version
-    try:
-        import pickle5 as pkl
-    except ImportError:
-        raise ImportError(
-            "Missing dependency 'pickle5'. Use pip or conda to install it."
-        ) from None
-else:
-    import pickle as pkl
+import pickle as pkl
 import cloudpickle as cpkl
 import msgpack
 import gc  # msgpack optimization
