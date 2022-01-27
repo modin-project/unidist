@@ -504,7 +504,7 @@ def send_operation_data(comm, operation_data, dest_rank, is_serialized=False):
 
     Notes
     -----
-    ``None`` is returned if `operation_data` is already serialized,
+    Function returns ``None`` if `operation_data` is already serialized,
     otherwise ``dict`` containing data serialized in this function.
     """
     if is_serialized:
@@ -556,7 +556,7 @@ def send_operation(
     Notes
     -----
     Function returns ``None`` if `operation_data` is already serialized,
-    and the ``dict`` in case the data was serialized and packed in a dictionary.
+    otherwise ``dict`` containing data serialized in this function.
     """
     # Send operation type
     mpi_send_object(comm, operation_type, dest_rank)
@@ -595,8 +595,8 @@ def isend_complex_operation(
     Notes
     -----
     Function always returns a ``dict`` containing async handlers to the sent MPI operations.
-    In additions, function returns ``None`` if `operation_data` is already serialized,
-    and the ``dict`` in case the data was serialized and packed in a dictionary.
+    In addition, ``None`` is returned if `operation_data` is already serialized,
+    otherwise ``dict`` containing data serialized in this function.
     """
     # Send operation type
     handlers = []
