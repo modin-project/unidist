@@ -504,8 +504,8 @@ def send_operation_data(comm, operation_data, dest_rank, is_serialized=False):
 
     Notes
     -----
-    Function returns ``None`` if `operation_data` is already serialized,
-    and the ``dict`` in case the data was serialized and packed in a dictionary.
+    ``None`` is returned if `operation_data` is already serialized,
+    otherwise ``dict`` containing data serialized in this function.
     """
     if is_serialized:
         # Send already serialized data
