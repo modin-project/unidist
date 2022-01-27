@@ -53,7 +53,7 @@ The example below describes squaring the numbers from a list using unidist:
       # `refs` will contain object references to actual data.
       refs = [foo.remote(i) for i in range(4)]
 
-      # Get materialized result.
+      # Get materialized data.
       print(unidist.get(refs)) # [0, 1, 4, 9]
 
 To run the `script.py` use :doc:`unidist CLI </using_cli>`:
