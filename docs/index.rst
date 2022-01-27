@@ -6,8 +6,8 @@
 What is unidist?
 """"""""""""""""
 
-unidist (`Unified Distributed Execution`) provides the unified API for distributed execution by supporting various performant execution backends.
-At the moment the following backends are supported under the hood:
+unidist (`Unified Distributed Execution`) is a framework that is intended to provide the unified API for distributed
+execution by supporting various performant execution backends. At the moment the following backends are supported under the hood:
 
 * `Ray`_
 * `MPI`_
@@ -29,8 +29,6 @@ unidist can be installed from sources using ``pip``:
 
    # Dependencies for all the execution backends will be installed
    $ pip install git+https://github.com/modin-project/unidist#egg=unidist[all]
-
-For more information about installation and supported OS platforms see the installation page.
 
 Usage
 =====
