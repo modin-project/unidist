@@ -123,14 +123,14 @@ that you run the following from the project root:
 
 .. code-block:: bash
 
-  black .
+  black unidist/
 
 We also use flake8_ to check linting errors. Running the following from the project root
 will ensure that it passes the lint checks on Github Actions:
 
 .. code-block:: bash
 
-  flake8 .
+  flake8 unidist/
 
 We test that this has been run on our `Github Actions`_ test suite. If you do this and find
 that the tests are still failing, try updating your version of black and flake8.
