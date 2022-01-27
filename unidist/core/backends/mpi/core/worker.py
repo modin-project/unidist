@@ -34,6 +34,8 @@ class ObjectStore:
         self._data_map = {}
         # Data owner {DataId : Rank}
         self._data_owner_map = {}
+        # Data serialized cache
+        self._serialization_cache = {}
 
     def put(self, data_id, data):
         """
@@ -141,6 +143,53 @@ class ObjectStore:
             if data_id in self._data_owner_map:
                 w_logger.debug("CLEANUP DataOwnerMap id {}".format(data_id._id))
                 del self._data_owner_map[data_id]
+            if data_id in self._serialization_cache:
+                del self._serialization_cache[data_id]
+
+    def cache_serialized_data(self, data_id, data):
+        """
+        Save serialized object for this `data_id` and rank.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+            An ID to data.
+        data : object
+            Serialized data to cache.
+        """
+        self._serialization_cache[data_id] = data
+
+    def is_already_serialized(self, data_id):
+        """
+        Check if the data on this `data_id` is already serialized.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+            An ID to data.
+
+        Returns
+        -------
+        bool
+            ``True`` if the data is already serialized.
+        """
+        return data_id in self._serialization_cache
+
+    def get_serialized_data(self, data_id):
+        """
+        Get serialized data on this `data_id`.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+            An ID to data.
+
+        Returns
+        -------
+        object
+            Cached serialized data associated with `data_id`.
+        """
+        return self._serialization_cache[data_id]
 
 
 class RequestStore:
@@ -443,16 +492,29 @@ def process_get_request(source_rank, data_id):
             communication.send_complex_data(comm, operation_data, source_rank)
         else:
             operation_type = common.Operation.PUT_DATA
-            operation_data = {
-                "id": data_id,
-                "source": rank,
-                "data": object_store.get(data_id),
-            }
-            # Async send to avoid possible dead-lock between workers
-            h_list = communication.isend_complex_operation(
-                comm, operation_type, operation_data, source_rank
-            )
-            async_operations.extend(h_list)
+            if object_store.is_already_serialized(data_id):
+                operation_data = object_store.get_serialized_data(data_id)
+                # Async send to avoid possible dead-lock between workers
+                h_list, _ = communication.isend_complex_operation(
+                    comm,
+                    operation_type,
+                    operation_data,
+                    source_rank,
+                    is_serialized=True,
+                )
+                async_operations.extend(h_list)
+            else:
+                operation_data = {"id": data_id, "data": object_store.get(data_id)}
+                # Async send to avoid possible dead-lock between workers
+                h_list, serialized_data = communication.isend_complex_operation(
+                    comm,
+                    operation_type,
+                    operation_data,
+                    source_rank,
+                    is_serialized=False,
+                )
+                async_operations.extend(h_list)
+                object_store.cache_serialized_data(data_id, serialized_data)
 
         w_logger.debug(
             "Send requested {} id to {} rank - PROCESSED".format(
@@ -657,7 +719,7 @@ def event_loop():
 
         # Proceed the request
         if operation_type == common.Operation.EXECUTE:
-            request = communication.recv_complex_operation(comm, source_rank)
+            request = communication.recv_complex_data(comm, source_rank)
 
             # Execute the task if possible
             pending_request = process_task_request(request)
@@ -672,11 +734,9 @@ def event_loop():
             process_get_request(request["source"], request["id"])
 
         elif operation_type == common.Operation.PUT_DATA:
-            request = communication.recv_complex_operation(comm, source_rank)
+            request = communication.recv_complex_data(comm, source_rank)
             w_logger.debug(
-                "PUT (RECV) {} id from {} rank".format(
-                    request["id"]._id, request["source"]
-                )
+                "PUT (RECV) {} id from {} rank".format(request["id"]._id, source_rank)
             )
             object_store.put(request["id"], request["data"])
 
@@ -704,7 +764,7 @@ def event_loop():
             process_wait_request(request["id"])
 
         elif operation_type == common.Operation.ACTOR_CREATE:
-            request = communication.recv_complex_operation(comm, source_rank)
+            request = communication.recv_complex_data(comm, source_rank)
             cls = request["class"]
             args = request["args"]
             kwargs = request["kwargs"]
@@ -713,7 +773,7 @@ def event_loop():
             ActorsMap[handler] = cls(*args, **kwargs)
 
         elif operation_type == common.Operation.ACTOR_EXECUTE:
-            request = communication.recv_complex_operation(comm, source_rank)
+            request = communication.recv_complex_data(comm, source_rank)
 
             # Prepare the data
             method_name = request["task"]
@@ -730,7 +790,7 @@ def event_loop():
                 pending_store.check_pending_actor_tasks()
 
         elif operation_type == common.Operation.CLEANUP:
-            cleanup_list = communication.recv_simple_operation(comm, source_rank)
+            cleanup_list = communication.recv_serialized_data(comm, source_rank)
             object_store.clear(cleanup_list)
 
         elif operation_type == common.Operation.CANCEL:
