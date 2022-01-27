@@ -1,5 +1,6 @@
 import pathlib
 from setuptools import setup, find_packages
+import versioneer
 
 
 here = pathlib.Path(__file__).parent.resolve()
@@ -14,7 +15,8 @@ all_deps = ray_deps + dask_deps + mpi_deps
 
 setup(
     name="unidist",
-    version="0.0.1",
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     description="Unified Distributed Execution",
     long_description=long_description,
     long_description_content_type="text/markdown",

@@ -1,0 +1,2 @@
+include versioneer.py
+include unidist/_version.py
