@@ -18,7 +18,7 @@ Also, the framework provides a sequential :doc:`Python backend <flow/unidist/cor
 that can be used for debugging.
 
 unidist is designed to work in a `task-based parallel model`_. The framework mimics `Ray`_ API and expands the existing frameworks
-(Ray and Dask Distributed) with additional features.
+(`Ray`_ and `Dask Distributed`_) with additional features.
 
 Installation
 ============
@@ -35,7 +35,7 @@ For more information about installation and supported OS platforms see the insta
 Usage
 =====
 
-An example below describes squaring the numbers from a list using unidist:
+The example below describes squaring the numbers from a list using unidist:
 
 .. code-block:: python
 
@@ -45,12 +45,12 @@ An example below describes squaring the numbers from a list using unidist:
 
       unidist.init() # Initialize unidist's backend.
 
-      @unidist.remote # Apply a decorator to make `foo` remote function.
+      @unidist.remote # Apply a decorator to make `foo` a remote function.
       def foo(x):
          return x * x
 
       # This will run `foo` on a pool of workers in parallel;
-      # `refs` will contain object references to actual data
+      # `refs` will contain object references to actual data.
       refs = [foo.remote(i) for i in range(4)]
 
       # Get materialized result.
@@ -74,7 +74,7 @@ To run the `script.py` use :doc:`unidist CLI </using_cli>`:
 
 To get started with unidist refer to the :doc:`getting started <getting_started>` page.
 
-To dipe dive into unidist internals refer to :doc:`the framework architecture </developer/architecture>`.
+To deep dive into unidist internals refer to :doc:`the framework architecture </developer/architecture>`.
 
 .. _`Ray`: https://docs.ray.io/en/master/index.html
 .. _`Dask Distributed`: https://distributed.dask.org/en/latest/

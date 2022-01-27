@@ -6,14 +6,14 @@
 Getting Started
 """""""""""""""
 
-unidist provides :doc:`a high-level API</flow/unidist/api>` to make distributed applications. To tune
-unidist's behavior user has several methods described in :doc:`unidist configuration setting</flow/unidist/config>`
+unidist provides :doc:`the high-level API</flow/unidist/api>` to make distributed applications. To tune
+unidist's behavior the user has several methods described in :doc:`unidist configuration settings</flow/unidist/config>`
 section.
 
 Using unidist API
 =================
 
-A short example below describes how to use unidist API to organize a parallel execution for
+The example below shows how to use unidist API to make parallel execution for
 functions (tasks) and classes (actors).
 
 .. code-block:: python
@@ -26,7 +26,7 @@ functions (tasks) and classes (actors).
       # Initialize unidist's backend. The Ray backend is used by default.
       unidist.init()
 
-      # Apply decorator to make `square` remote function.
+      # Apply decorator to make `square` a remote function.
       @unidist.remote
       def square(x):
          return x * x
@@ -50,10 +50,10 @@ functions (tasks) and classes (actors).
       cubes = [Cube.remote() for _ in range(len(square_refs))]
       # Asynchronously execute methods of the actor class.
       [cube.compute_volume.remote(square) for cube, square in zip(cubes, square_refs)]
-      refs = [cube.read.remote() for cube in cubes]
+      cube_refs = [cube.read.remote() for cube in cubes]
 
       # Get materialized results.
-      print(unidist.get(refs)) # [0.0, 1.0, 8.0, 27.0]
+      print(unidist.get(cube_refs)) # [0.0, 1.0, 8.0, 27.0]
 
 Choosing unidist's backend
 ===========================
@@ -89,7 +89,7 @@ Third, using :doc:`config API </flow/unidist/config>` directly in your script:
 Running unidist application
 ===========================
 
-To run the script described above need to use `unidist` command line interface:
+To run the script mentioned above the unidist CLI should be used:
 
 .. code-block:: bash
 
