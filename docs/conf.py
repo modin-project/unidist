@@ -15,7 +15,7 @@ copyright = "2021-2022, Modin Authors"
 author = "unidist contributors"
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-import unidist
+import unidist  # noqa: E402
 
 # The short project version like 1.1
 version = f"{unidist.__version__}"
