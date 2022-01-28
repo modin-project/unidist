@@ -75,7 +75,7 @@ class MPIRunner(BackendRunner):
         """
         unidist_root = get_unidist_root()
         workers_dir = "/tmp"
-        command = ["mpiexec", "-hosts"]
+        command = ["mpiexec", "-host"]
         hosts_str = f"{get_localhost_ip()}:1,{get_localhost_ip()}:1,"
         for host, n in zip(self.hosts, self.num_cpus):
             hosts_str += host + ":" + n + ","
