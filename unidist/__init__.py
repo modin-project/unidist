@@ -15,6 +15,7 @@ from .api import (
     get_ip,
     num_cpus,
 )
+from ._version import get_versions
 
 __all__ = [
     "init",
@@ -27,3 +28,6 @@ __all__ = [
     "get_ip",
     "num_cpus",
 ]
+
+__version__ = get_versions()["version"]
+del get_versions
