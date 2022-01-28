@@ -1,1 +1,2 @@
+* text=auto
 unidist/_version.py export-subst
