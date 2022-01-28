@@ -1,3 +1,6 @@
+<p align="center">
+    <a href="https://unidist.readthedocs.io"><img alt="" src="docs/img/unidist-logo-simple-628x128.png?raw=true"></a>
+</p>
 <h2 align="center">Unified Distributed Execution</h2>
 
 <p align="center">
