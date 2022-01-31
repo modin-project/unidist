@@ -95,4 +95,3 @@ html_sidebars = {
 html_favicon = "img/unidist-icon-simple-32x32.png"
 
 html_logo = "img/unidist-logo-simple-628x128.png"
-
