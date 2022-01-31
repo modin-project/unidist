@@ -3,6 +3,10 @@
 
       SPDX-License-Identifier: Apache-2.0
 
+.. image:: img/unidist-logo-simple-628x128.png
+   :alt: unidist logo
+   :align: center
+
 What is unidist?
 """"""""""""""""
 

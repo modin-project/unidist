@@ -92,3 +92,7 @@ html_theme_options = {
 html_sidebars = {
     "**": ["globaltoc.html", "relations.html", "sourcelink.html", "searchbox.html"]
 }
+
+html_favicon = "img/unidist-icon-simple-32x32.png"
+
+html_logo = "img/unidist-logo-simple-628x128.png"
