@@ -24,9 +24,16 @@ Several levels of serialization handle this case, including `msgpack`, `cloudpic
 `pickle` library uses protocol 5 for out-of-band buffers serialization for performance reasons.
 :py:func:`~unidist.core.backends.mpi.core.communication.isend_complex_operation` is an asynchronous interface for sending data.
 
-.. autofunction:: unidist.core.backends.mpi.core.communication.recv_complex_operation
+.. autofunction:: unidist.core.backends.mpi.core.communication.send_complex_data
+.. autofunction:: unidist.core.backends.mpi.core.communication.recv_complex_data
 .. autofunction:: unidist.core.backends.mpi.core.communication.send_complex_operation
 .. autofunction:: unidist.core.backends.mpi.core.communication.isend_complex_operation
+.. autofunction:: unidist.core.backends.mpi.core.communication.send_remote_task_operation
+
+Complex operations as above, but operating with a bytearray of already serialized data.
+
+.. autofunction:: unidist.core.backends.mpi.core.communication.send_serialized_operation
+.. autofunction:: unidist.core.backends.mpi.core.communication.recv_serialized_data
 
 To reduce possible contention, MPI communication module supports custom receive data functions with a busy-wait loop underneath.
 
