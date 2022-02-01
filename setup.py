@@ -39,6 +39,8 @@ class UnidistDistribution(Distribution):
 ray_deps = ["ray[default]"]
 dask_deps = ["dask[complete]>=2.22.0", "distributed>=2.22.0"]
 mpi_deps = ["mpi4py-mpich", "msgpack"]
+if sys.version_info[1] < 8:
+    mpi_deps += "pickle5"
 
 if "SETUP_PLAT_NAME" in os.environ:
     if "macos" in os.environ["SETUP_PLAT_NAME"]:
@@ -77,5 +79,5 @@ setup(
         "all": all_deps,
     },
     entry_points={"console_scripts": ["unidist = unidist.cli.__main__:main"]},
-    python_requires=">=3.8",
+    python_requires=">=3.7.1",
 )
