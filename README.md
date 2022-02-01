@@ -1,5 +1,5 @@
 <p align="center">
-    <a href="https://unidist.readthedocs.io"><img alt="" src="docs/img/unidist-logo-simple-628x128.png?raw=true"></a>
+    <a href="https://unidist.readthedocs.io"><img alt="" src="https://github.com/modin-project/unidist/blob/d17f0da551846277c9d56a7f5e7d8f244c09d660/docs/img/unidist-logo-simple-628x128.png?raw=true"></a>
 </p>
 <h2 align="center">Unified Distributed Execution</h2>
 
