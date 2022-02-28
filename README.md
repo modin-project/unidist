@@ -23,18 +23,54 @@ Also, the framework provides a sequential ``Python`` backend, that can be used f
 
 ### Installation
 
-Currently, unidist can be installed from sources using ``pip``:
+#### From PyPI
+
+unidist can be installed with `pip` on Linux, Windows and MacOS:
 
 ```bash
-# Dependencies for `MultiProcessing` and `Python` backends will be installed as these are supported by default
-$ pip install git+https://github.com/modin-project/unidist
-# Dependencies for all the execution backends will be installed
-$ pip install git+https://github.com/modin-project/unidist#egg=unidist[all]
-# Dependencies for `Ray` execution backend will be installed
-$ pip install git+https://github.com/modin-project/unidist#egg=unidist[ray]
+pip install unidist # Install unidist dependencies for Multiprocessing and sequential Python backends
 ```
 
-This will install unidist directly from the repo without you having to manually clone it! Please be aware that the latest changes have not made it into a release and may not be completely stable.
+unidist can also be used with Dask, MPI or Ray execution backend.
+If you don't have Dask, MPI or Ray installed, you will need to install unidist with one of the targets:
+
+```bash
+pip install unidist[all] # Install unidist dependencies for all the backends
+pip install unidist[dask] # Install unidist dependencies for Dask backend
+pip install unidist[mpi] # Install unidist dependencies for MPI backend
+pip install unidist[ray] # Install unidist dependencies for Ray backend
+```
+
+unidist automatically detects which execution backend(s) you have installed and uses that for scheduling computation.
+
+#### From conda-forge
+
+Installing unidist packages from the conda-forge channel can be achieved by adding conda-forge to your channels with:
+
+```bash
+conda config --add channels conda-forge
+conda config --set channel_priority strict
+```
+
+For installing unidist with Dask and MPI execution backends into a conda environment the following command should be used:
+
+```bash
+conda install unidist-dask unidist-mpi -c conda-forge
+```
+
+All set of backends could be available in a conda environment by specifying:
+
+```bash
+conda install unidist-all -c conda-forge
+```
+
+or explicitly:
+
+```bash
+conda install unidist-dask unidist-mpi unidist-ray -c conda-forge
+```
+
+For more information refer to [Installation](https://unidist.readthedocs.io/en/latest/installation.html) section.
 
 #### Choosing an execution backend
 

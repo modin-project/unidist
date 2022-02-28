@@ -8,7 +8,7 @@
    :align: center
 
 What is unidist?
-""""""""""""""""
+''''''''''''''''
 
 unidist (`Unified Distributed Execution`) is a framework that is intended to provide the unified API for distributed
 execution by supporting various performant execution backends. At the moment the following backends are supported under the hood:
@@ -24,18 +24,23 @@ that can be used for debugging.
 unidist is designed to work in a `task-based parallel model`_. The framework mimics `Ray`_ API and expands the existing frameworks
 (`Ray`_ and `Dask Distributed`_) with additional features.
 
-Installation
-============
+Quick Start Guide
+'''''''''''''''''
 
-unidist can be installed from sources using ``pip``:
+Installation
+""""""""""""
+
+To install the most recent stable release for unidist run the following:
 
 .. code-block:: bash
 
-   # Dependencies for all the execution backends will be installed
-   $ pip install git+https://github.com/modin-project/unidist#egg=unidist[all]
+  pip install unidist[all] # Install unidist dependencies for all the backends
+
+For further instructions on how to install unidist with ``conda`` or for specific platforms
+or execution backends, see our :doc:`Installation <installation>` section.
 
 Usage
-=====
+"""""
 
 The example below describes squaring the numbers from a list using unidist:
 
@@ -69,6 +74,7 @@ To run the `script.py` use :doc:`unidist CLI </using_cli>`:
 .. toctree::
    :hidden:
 
+   installation
    getting_started
    using_cli
    developer/architecture
