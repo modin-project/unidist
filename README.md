@@ -28,20 +28,20 @@ Also, the framework provides a sequential ``Python`` backend, that can be used f
 unidist can be installed with `pip` on Linux, Windows and MacOS:
 
 ```bash
-pip install unidist # Install unidist dependencies for Multiprocessing and sequential Python backends
+pip install unidist # Install unidist with dependencies for Multiprocessing and sequential Python backends
 ```
 
 unidist can also be used with Dask, MPI or Ray execution backend.
 If you don't have Dask, MPI or Ray installed, you will need to install unidist with one of the targets:
 
 ```bash
-pip install unidist[all] # Install unidist dependencies for all the backends
-pip install unidist[dask] # Install unidist dependencies for Dask backend
-pip install unidist[mpi] # Install unidist dependencies for MPI backend
-pip install unidist[ray] # Install unidist dependencies for Ray backend
+pip install unidist[all] # Install unidist with dependencies for all the backends
+pip install unidist[dask] # Install unidist with dependencies for Dask backend
+pip install unidist[mpi] # Install unidist with dependencies for MPI backend
+pip install unidist[ray] # Install unidist with dependencies for Ray backend
 ```
 
-unidist automatically detects which execution backend(s) you have installed and uses that for scheduling computation.
+unidist automatically detects which execution backends are installed and uses that for scheduling computation.
 
 #### From conda-forge
 
@@ -52,7 +52,8 @@ conda config --add channels conda-forge
 conda config --set channel_priority strict
 ```
 
-For installing unidist with Dask and MPI execution backends into a conda environment the following command should be used:
+For installing unidist with dependencies for Dask and MPI execution backends into a conda environment
+the following command should be used:
 
 ```bash
 conda install unidist-dask unidist-mpi -c conda-forge

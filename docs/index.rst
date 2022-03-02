@@ -34,7 +34,7 @@ To install the most recent stable release for unidist run the following:
 
 .. code-block:: bash
 
-  pip install unidist[all] # Install unidist dependencies for all the backends
+  pip install unidist[all] # Install unidist with dependencies for all the backends
 
 For further instructions on how to install unidist with ``conda`` or for specific platforms
 or execution backends, see our :doc:`Installation <installation>` section.

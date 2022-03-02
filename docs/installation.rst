@@ -23,19 +23,19 @@ To install the most recent stable release run the following:
 
 .. code-block:: bash
 
-  pip install unidist # Install unidist dependencies for Multiprocessing and sequential Python backends
+  pip install unidist # Install unidist with dependencies for Multiprocessing and sequential Python backends
 
 unidist can also be used with Dask, MPI or Ray execution backend.
 If you don't have Dask_, MPI_ or Ray_ installed, you will need to install unidist with one of the targets:
 
 .. code-block:: bash
 
-  pip install unidist[all] # Install unidist dependencies for all the backends
-  pip install unidist[dask] # Install unidist dependencies for Dask backend
-  pip install unidist[mpi] # Install unidist dependencies for MPI backend
-  pip install unidist[ray] # Install unidist dependencies for Multiprocessing and sequential Python backends
+  pip install unidist[all] # Install unidist with dependencies for all the backends
+  pip install unidist[dask] # Install unidist with dependencies for Dask backend
+  pip install unidist[mpi] # Install unidist with dependencies for MPI backend
+  pip install unidist[ray] # Install unidist with dependencies for Multiprocessing and sequential Python backends
 
-unidist will automatically detect which execution backend you have installed and use that for
+unidist automatically detects which execution backends are installed and use that for
 scheduling computation!
 
 Release candidates
@@ -82,7 +82,8 @@ Installing unidist packages from the conda-forge channel can be achieved by addi
   conda config --add channels conda-forge
   conda config --set channel_priority strict
 
-For installing unidist with Dask and MPI execution backends into a conda environment the following command should be used:
+For installing unidist with dependencies for Dask and MPI execution backends into a conda environment
+the following command should be used:
 
 .. code-block:: bash
 
@@ -116,10 +117,10 @@ that these changes have not made it into a release and may not be completely sta
 Building unidist from Source
 ''''''''''''''''''''''''''''
 
-If you're planning on :doc:`contributing </developer/contributing>` to unidist, you will need to ensure that you are
-building unidist from the local repository that you are working off of. Occasionally,
+If you're planning to :doc:`contribute </developer/contributing>` to unidist, you need to ensure that you are
+building unidist from the local repository that you are working of. Occasionally,
 there are issues in overlapping unidist installs from PyPI and from source. To avoid these
-issues, we recommend uninstalling unidist before you install from source:
+issues, we recommend uninstalling unidist before installation from source:
 
 .. code-block:: bash
 
