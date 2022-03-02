@@ -75,13 +75,6 @@ it is possible to install unidist with chosen execution backend(s) alongside. Cu
 | unidist-ray                     | `Ray`_                                              | Linux, Windows              |
 +---------------------------------+-----------------------------------------------------+-----------------------------+
 
-Installing unidist packages from the conda-forge channel can be achieved by adding conda-forge to your channels with:
-
-.. code-block:: bash
-
-  conda config --add channels conda-forge
-  conda config --set channel_priority strict
-
 For installing unidist with dependencies for Dask and MPI execution backends into a conda environment
 the following command should be used:
 

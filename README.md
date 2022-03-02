@@ -45,13 +45,6 @@ unidist automatically detects which execution backends are installed and uses th
 
 #### From conda-forge
 
-Installing unidist packages from the conda-forge channel can be achieved by adding conda-forge to your channels with:
-
-```bash
-conda config --add channels conda-forge
-conda config --set channel_priority strict
-```
-
 For installing unidist with dependencies for Dask and MPI execution backends into a conda environment
 the following command should be used:
 
