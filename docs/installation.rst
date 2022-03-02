@@ -35,7 +35,7 @@ If you don't have Dask_, MPI_ or Ray_ installed, you will need to install unidis
   pip install unidist[mpi] # Install unidist with dependencies for MPI backend
   pip install unidist[ray] # Install unidist with dependencies for Multiprocessing and sequential Python backends
 
-unidist automatically detects which execution backends are installed and use that for
+unidist automatically detects which execution backends are installed and uses that for
 scheduling computation!
 
 Release candidates
@@ -109,7 +109,12 @@ also use ``pip``.
 
 .. code-block:: bash
 
+  # Install unidist with dependencies for Multiprocessing and sequential Python backends
   pip install git+https://github.com/modin-project/unidist
+  # Install unidist with dependencies for all the backends
+  pip install git+https://github.com/modin-project/unidist#egg=unidist[all]
+  # Install unidist with dependencies for Ray backend
+  pip install git+https://github.com/modin-project/unidist#egg=unidist[ray]
 
 This will install directly from the repo without you having to manually clone it! Please be aware
 that these changes have not made it into a release and may not be completely stable.
@@ -138,7 +143,12 @@ Once cloned, ``cd`` into the ``unidist`` directory and use ``pip`` to install:
 .. code-block:: bash
 
   cd unidist
+  # Install unidist with dependencies for Multiprocessing and sequential Python backends
   pip install -e .
+  # Install unidist with dependencies for all the backends
+  pip install -e .[all]
+  # Install unidist with dependencies for Ray backend
+  pip install -e .[ray]
 
 .. _`GitHub repo`: https://github.com/modin-project/unidist/tree/master
 .. _`issue`: https://github.com/modin-project/unidist/issues
