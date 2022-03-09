@@ -5,6 +5,7 @@
 """``MPIRunner`` class functionality."""
 
 import os
+import sys
 import warnings
 
 from unidist.cli.base.runner import BackendRunner
@@ -74,11 +75,12 @@ class MPIRunner(BackendRunner):
             List of strings with the command representation.
         """
         unidist_root = get_unidist_root()
-        workers_dir = "/tmp"
-        command = ["mpiexec", "-host"]
+        workers_dir = "C:\\Temp" if sys.platform == "win32" else "/tmp"
+        command = ["mpiexec"]
         hosts_str = f"{get_localhost_ip()}:1,{get_localhost_ip()}:1,"
         for host, n in zip(self.hosts, self.num_cpus):
             hosts_str += host + ":" + n + ","
+        hosts = ["-host", hosts_str]
         command_executor = ["-n", "1"] + super().get_command()
         command_monitor = [
             "-n",
@@ -109,7 +111,21 @@ class MPIRunner(BackendRunner):
                 ),
             ]
 
-        command += [hosts_str] + command_executor + [":"] + command_monitor
+        if sys.platform == "win32":
+            import mpi4py
+
+            if mpi4py.get_config()["libraries"] == "impi":
+                command += hosts + command_executor + [":"] + command_monitor
+            else:
+                if len(self.hosts) == 1 and self.hosts[0] == get_localhost_ip():
+                    command += command_executor + [":"] + command_monitor
+                else:
+                    raise RuntimeError(
+                        "Only single-node mode on localhost is supported by default. "
+                        + "Use Intel MPI for multi-node mode: conda install mpi4py -c intel."
+                    )
+        else:
+            command += hosts + command_executor + [":"] + command_monitor
         for n in self.num_cpus:
             command += [":"] + get_worker_command(n)
         return command

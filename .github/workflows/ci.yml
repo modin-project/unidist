@@ -93,7 +93,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.7", "3.8", "3.9"]
-        backend: ["ray", "dask", "multiprocessing", "python"]
+        backend: ["ray", "dask", "multiprocessing", "python", "mpi"]
     env:
       UNIDIST_BACKEND: ${{matrix.backend}}
     name: test-windows (backend ${{matrix.backend}}, python ${{matrix.python-version}})
