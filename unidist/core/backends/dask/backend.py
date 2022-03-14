@@ -175,4 +175,6 @@ class DaskBackend(Backend):
         for worker_info in client.scheduler_info()["workers"].values():
             cluster_resources[worker_info["host"]]["CPU"] += 1
 
+        if "127.0.0.1" in cluster_resources:
+            cluster_resources[get_ip()] = cluster_resources.pop("127.0.0.1")
         return dict(cluster_resources)
