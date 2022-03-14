@@ -154,12 +154,6 @@ class DaskBackend(Backend):
         return len(get_client().ncores())
 
     @staticmethod
-    def shutdown():
-        """Shutdown Dask execution backend."""
-        client = get_client()
-        client.shutdown()
-
-    @staticmethod
     def cluster_resources():
         """
         Get resources of Dask cluster.
@@ -167,7 +161,7 @@ class DaskBackend(Backend):
         Returns
         -------
         dict
-            Dictionary with cluster nodes info in the style '{node_ip0: {CPU: x0},
+            Dictionary with cluster nodes info in the form '{node_ip0: {CPU: x0},
             node_ip1: {CPU: x1}, ..}'.
         """
         client = get_client()
@@ -178,3 +172,9 @@ class DaskBackend(Backend):
         if "127.0.0.1" in cluster_resources:
             cluster_resources[get_ip()] = cluster_resources.pop("127.0.0.1")
         return dict(cluster_resources)
+
+    @staticmethod
+    def shutdown():
+        """Shutdown Dask execution backend."""
+        client = get_client()
+        client.shutdown()

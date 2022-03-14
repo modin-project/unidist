@@ -159,11 +159,6 @@ class Backend(ABC):
         pass
 
     @staticmethod
-    def shutdown():
-        """Shutdown an execution backend."""
-        pass
-
-    @staticmethod
     def cluster_resources():
         """
         Get resources of the cluster.
@@ -171,9 +166,14 @@ class Backend(ABC):
         Returns
         -------
         dict
-            Dictionary with cluster nodes info in the style '{node_ip0: {CPU: x0},
+            Dictionary with cluster nodes info in the form '{node_ip0: {CPU: x0},
             node_ip1: {CPU: x1}, ..}'.
         """
+        pass
+
+    @staticmethod
+    def shutdown():
+        """Shutdown an execution backend."""
         pass
 
 
@@ -360,10 +360,6 @@ class BackendProxy(Backend):
         """
         return self._backend_cls.num_cpus()
 
-    def shutdown(self):
-        """Shutdown an execution backend."""
-        self._backend_cls.shutdown()
-
     def cluster_resources(self):
         """
         Get resources of the cluster.
@@ -371,7 +367,11 @@ class BackendProxy(Backend):
         Returns
         -------
         dict
-            Dictionary with cluster nodes info in the style '{node_ip0: {CPU: x0},
+            Dictionary with cluster nodes info in the form '{node_ip0: {CPU: x0},
             node_ip1: {CPU: x1}, ..}'.
         """
         return self._backend_cls.cluster_resources()
+
+    def shutdown(self):
+        """Shutdown an execution backend."""
+        self._backend_cls.shutdown()
