@@ -145,12 +145,13 @@ class RayBackend(Backend):
     @staticmethod
     def cluster_resources():
         """
-        Get resources of the Ray cluster.
+        Get resources of Ray cluster.
 
         Returns
         -------
         dict
-            Dictionary with cluster nodes info in the style '{node_ip: {CPU: xx, ...}, ..}'.
+            Dictionary with cluster nodes info in the style '{node_ip0: {CPU: x0},
+            node_ip1: {CPU: x1}, ..}'.
         """
         node_resources = {
             node_info["NodeManagerAddress"]: {

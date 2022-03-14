@@ -157,12 +157,12 @@ class MultiProcessingBackend(Backend):
     @staticmethod
     def cluster_resources():
         """
-        Get resources of the cluster.
+        Get resources of MultiProcessing cluster.
 
         Returns
         -------
         dict
-            Dictionary with cluster nodes info in the style '{head_node_ip: {CPU: xx, ...}}'.
+            Dictionary with node info in the style '{node_ip: {CPU: x}}'.
         """
         node_resources = {
             MultiProcessingBackend.get_ip(): {"CPU": MultiProcessingBackend.num_cpus()}

@@ -162,12 +162,13 @@ class DaskBackend(Backend):
     @staticmethod
     def cluster_resources():
         """
-        Get resources of the Dask cluster.
+        Get resources of Dask cluster.
 
         Returns
         -------
         dict
-            Dictionary with cluster nodes info in the style '{head_node_ip: {CPU: xx, ...}}'.
+            Dictionary with cluster nodes info in the style '{node_ip0: {CPU: x0},
+            node_ip1: {CPU: x1}, ..}'.
         """
         client = get_client()
         cluster_resources = defaultdict(lambda: {"CPU": 0})

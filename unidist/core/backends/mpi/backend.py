@@ -158,7 +158,7 @@ class MPIBackend(Backend):
         Returns
         -------
         dict
-            Dictionary with cluster nodes info in the style '{head_node_ip: {CPU: xx, ...}}'.
+            Dictionary with cluster nodes info in the style '{node_ip0: {CPU: x0},
+            node_ip1: {CPU: x1}, ..}'.
         """
-
-        return "test"
+        return mpi.cluster_resources()

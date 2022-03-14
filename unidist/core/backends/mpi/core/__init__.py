@@ -2,6 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from .executor import put, get, remote, wait, init, shutdown, Actor
+from .executor import put, get, remote, wait, init, shutdown, Actor, cluster_resources
 
-__all__ = ["put", "get", "remote", "wait", "init", "shutdown", "Actor"]
+__all__ = [
+    "put",
+    "get",
+    "remote",
+    "wait",
+    "init",
+    "shutdown",
+    "Actor",
+    "cluster_resources",
+]

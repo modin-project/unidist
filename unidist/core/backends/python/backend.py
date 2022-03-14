@@ -152,7 +152,7 @@ class PythonBackend(Backend):
         Returns
         -------
         dict
-            Dictionary with cluster nodes info in the style '{head_node_ip: {CPU: xx, ...}}'.
+            Dictionary with node info in the style '{node_ip: {CPU: x}}'.
         """
         node_resources = {PythonBackend.get_ip(): {"CPU": PythonBackend.num_cpus()}}
 
