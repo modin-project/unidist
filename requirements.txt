@@ -3,7 +3,7 @@ cloudpickle
 dask[complete]>=2.22.0
 distributed>=2.22.0
 mpi4py-mpich
-msgpack
+msgpack>=1.0.0
 packaging
 psutil
 pytest
