@@ -164,8 +164,6 @@ class MultiProcessingBackend(Backend):
         dict
             Dictionary with node info in the style '{node_ip: {CPU: x}}'.
         """
-        node_resources = {
+        return {
             MultiProcessingBackend.get_ip(): {"CPU": MultiProcessingBackend.num_cpus()}
         }
-
-        return node_resources

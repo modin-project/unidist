@@ -171,7 +171,8 @@ class Backend(ABC):
         Returns
         -------
         dict
-            Dictionary with cluster nodes info in the style '{node_ip: {CPU: xx, ...}, ..}'.
+            Dictionary with cluster nodes info in the style '{node_ip0: {CPU: x0},
+            node_ip1: {CPU: x1}, ..}'.
         """
         pass
 

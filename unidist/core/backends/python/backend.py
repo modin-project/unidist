@@ -154,6 +154,4 @@ class PythonBackend(Backend):
         dict
             Dictionary with node info in the style '{node_ip: {CPU: x}}'.
         """
-        node_resources = {PythonBackend.get_ip(): {"CPU": PythonBackend.num_cpus()}}
-
-        return node_resources
+        return {PythonBackend.get_ip(): {"CPU": PythonBackend.num_cpus()}}
