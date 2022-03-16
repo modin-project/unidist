@@ -60,7 +60,7 @@ def get_topology(is_call_from_worker=False):
 
     Parameters
     ----------
-    is_call_from_worker : bool
+    is_call_from_worker : bool, default: False
         Is function called from worker or not.
 
     Returns
