@@ -545,7 +545,8 @@ def init():
     -----
     Currently does nothing.
     """
-    pass
+    global topology
+    topology = communication.get_topology()
 
 
 # TODO: cleanup before shutdown?
@@ -573,44 +574,9 @@ def cluster_resources():
         Dictionary with cluster nodes info in the form '{node_ip0: {CPU: x0},
         node_ip1: {CPU: x1}, ..}'.
     """
-    garbage_collector.regular_cleanup()
-
-    def get_worker_resources():
-        import socket
-
-        hostname = socket.gethostname()
-        host = socket.gethostbyname(hostname)
-        return host
-
-    output_ids = [
-        object_store.generate_output_data_id(
-            dest_rank, garbage_collector, num_returns=1
-        )
-        for dest_rank in range(2, world_size)
-    ]
-
-    operation_type = common.Operation.EXECUTE
-    operations_data = [
-        {
-            "task": get_worker_resources,
-            "args": [],
-            "kwargs": {},
-            "output": common.master_data_ids_to_base(output_ids[idx]),
-        }
-        for idx in range(len(output_ids))
-    ]
-
-    for idx, dest_rank in enumerate(range(2, world_size)):
-        communication.send_remote_task_operation(
-            comm, operation_type, operations_data[idx], dest_rank
-        )
-        garbage_collector.increment_task_counter()
-
-    hosts = get(output_ids)
-
-    cluster_resources = defaultdict(lambda: {"CPU": 0})
-    for host in hosts:
-        cluster_resources[host]["CPU"] += 1
+    cluster_resources = defaultdict(dict)
+    for host, num_workers in topology.items():
+        cluster_resources[host]["CPU"] = num_workers
 
     return dict(cluster_resources)
 

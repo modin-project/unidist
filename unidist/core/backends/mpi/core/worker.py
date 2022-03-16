@@ -14,6 +14,7 @@ import unidist.core.backends.mpi.core.communication as communication
 
 # MPI stuff
 comm, rank, world_size = communication.get_mpi_state()
+communication.get_topology(is_call_from_worker=True)
 
 # Logger configuration
 log_file = "worker_{}.log".format(rank)
