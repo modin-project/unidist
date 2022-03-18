@@ -18,6 +18,7 @@ from unidist.core.backends.common.data_id import is_data_id
 
 # MPI stuff
 comm, rank, world_size = communication.get_mpi_state()
+topology = dict()
 
 
 class ObjectStore:
@@ -538,9 +539,16 @@ def push_data(dest_rank, value):
 
 
 def init():
-    """Initialize MPI processes."""
+    """
+    Initialize MPI processes.
+
+    Notes
+    -----
+    Only collects the MPI cluster topology.
+    """
     global topology
-    topology = communication.get_topology()
+    if len(topology) == 0:
+        topology = communication.get_topology()
 
 
 # TODO: cleanup before shutdown?
