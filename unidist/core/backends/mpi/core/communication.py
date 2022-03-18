@@ -62,7 +62,7 @@ def get_topology():
     -------
     dict
         Dictionary, containing workers ranks assignments by IP-addresses in
-        the form: {host_ip0: [rank_2, rank_3, ..], host_ip1: [rank_i, ..], ..}.
+        the form: {hode_ip0: [rank_2, rank_3, ..], node_ip1: [rank_i, ..], ..}.
     """
     import socket
 
