@@ -547,7 +547,7 @@ def init():
     Only collects the MPI cluster topology.
     """
     global topology
-    if len(topology) == 0:
+    if not topology:
         topology = communication.get_topology()
 
 
