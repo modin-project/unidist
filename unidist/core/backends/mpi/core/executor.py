@@ -536,15 +536,9 @@ def push_data(dest_rank, value):
 # Control API
 # -----------------------------------------------------------------------------
 
-# TODO: implement
-def init():
-    """
-    Initialize MPI processes.
 
-    Notes
-    -----
-    Currently does nothing.
-    """
+def init():
+    """Initialize MPI processes."""
     global topology
     topology = communication.get_topology()
 
@@ -575,8 +569,8 @@ def cluster_resources():
         node_ip1: {CPU: x1}, ..}'.
     """
     cluster_resources = defaultdict(dict)
-    for host, num_workers in topology.items():
-        cluster_resources[host]["CPU"] = num_workers
+    for host, ranks_list in topology.items():
+        cluster_resources[host]["CPU"] = len(ranks_list)
 
     return dict(cluster_resources)
 

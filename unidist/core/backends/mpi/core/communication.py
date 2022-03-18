@@ -54,33 +54,29 @@ def get_mpi_state():
     return comm, rank, world_size
 
 
-def get_topology(is_call_from_worker=False):
+def get_topology():
     """
     Get topology of MPI cluster.
 
-    Parameters
-    ----------
-    is_call_from_worker : bool, default: False
-        Is function called from worker or not.
-
     Returns
     -------
-    dict or None
-        Dict in the form {host_ip0: num_workers, ..} in case rank is 0.
+    dict
+        Dictionary, containing workers ranks assignments by IP-addresses in
+        the form: {host_ip0: [rank_2, rank_3, ..], host_ip1: [rank_i, ..], ..}.
     """
     import socket
 
-    topology = defaultdict(lambda: 0)
+    topology = defaultdict(list)
     comm, rank, _ = get_mpi_state()
     hostname = socket.gethostname()
     host = socket.gethostbyname(hostname)
-    nodes_list = comm.allgather((host, is_call_from_worker))
-    if rank == 0:
-        for host, is_worker in nodes_list:
-            if is_worker:
-                topology[host] += 1
+    cluster_info = comm.allgather((host, rank))
 
-        return dict(topology)
+    for host, rank in cluster_info:
+        if rank not in [MPIRank.ROOT, MPIRank.MONITOR]:
+            topology[host].append(rank)
+
+    return dict(topology)
 
 
 # Main communication utilities
