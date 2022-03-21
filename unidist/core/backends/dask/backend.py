@@ -167,7 +167,7 @@ class DaskBackend(Backend):
         client = get_client()
         cluster_resources = defaultdict(lambda: {"CPU": 0})
         for worker_info in client.scheduler_info()["workers"].values():
-            cluster_resources[worker_info["host"]]["CPU"] += 1
+            cluster_resources[worker_info["host"]]["CPU"] += worker_info["nthreads"]
 
         localhost = "127.0.0.1"
         if localhost in cluster_resources:
