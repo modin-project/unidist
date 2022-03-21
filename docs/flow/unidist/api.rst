@@ -49,3 +49,8 @@ num_cpus
 --------
 
 .. autofunction:: unidist.api.num_cpus
+
+cluster_resources
+-----------------
+
+.. autofunction:: unidist.api.cluster_resources

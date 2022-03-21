@@ -161,16 +161,17 @@ class DaskBackend(Backend):
         Returns
         -------
         dict
-            Dictionary with cluster nodes info in the form '{node_ip0: {CPU: x0},
-            node_ip1: {CPU: x1}, ..}'.
+            Dictionary with cluster nodes info in the form
+            `{"node_ip0": {"CPU": x0}, "node_ip1": {"CPU": x1}, ...}`.
         """
         client = get_client()
         cluster_resources = defaultdict(lambda: {"CPU": 0})
         for worker_info in client.scheduler_info()["workers"].values():
             cluster_resources[worker_info["host"]]["CPU"] += 1
 
-        if "127.0.0.1" in cluster_resources:
-            cluster_resources[get_ip()] = cluster_resources.pop("127.0.0.1")
+        localhost = "127.0.0.1"
+        if localhost in cluster_resources:
+            cluster_resources[get_ip()] = cluster_resources.pop(localhost)
         return dict(cluster_resources)
 
     @staticmethod

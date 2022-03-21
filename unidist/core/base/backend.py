@@ -166,8 +166,8 @@ class Backend(ABC):
         Returns
         -------
         dict
-            Dictionary with cluster nodes info in the form '{node_ip0: {CPU: x0},
-            node_ip1: {CPU: x1}, ..}'.
+            Dictionary with cluster nodes info in the form
+            `{"node_ip0": {"CPU": x0}, "node_ip1": {"CPU": x1}, ...}`.
         """
         pass
 
@@ -367,8 +367,8 @@ class BackendProxy(Backend):
         Returns
         -------
         dict
-            Dictionary with cluster nodes info in the form '{node_ip0: {CPU: x0},
-            node_ip1: {CPU: x1}, ..}'.
+            Dictionary with cluster nodes info in the form
+            `{"node_ip0": {"CPU": x0}, "node_ip1": {"CPU": x1}, ...}`.
         """
         return self._backend_cls.cluster_resources()
 

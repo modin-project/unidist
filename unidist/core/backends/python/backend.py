@@ -152,6 +152,6 @@ class PythonBackend(Backend):
         Returns
         -------
         dict
-            Dictionary with node info in the form '{node_ip: {CPU: x}}'.
+            Dictionary with node info in the form `{"node_ip": {"CPU": x}}`.
         """
         return {PythonBackend.get_ip(): {"CPU": PythonBackend.num_cpus()}}

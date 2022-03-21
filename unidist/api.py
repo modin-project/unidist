@@ -239,8 +239,8 @@ def cluster_resources():
     Returns
     -------
     dict
-        Dictionary with cluster nodes info in the form '{node_ip0: {CPU: x0},
-        node_ip1: {CPU: x1}, ..}'.
+        Dictionary with cluster nodes info in the form
+        `{"node_ip0": {"CPU": x0}, "node_ip1": {"CPU": x1}, ...}`.
     """
     execution_backend = get_backend_proxy()
     return execution_backend.cluster_resources()
