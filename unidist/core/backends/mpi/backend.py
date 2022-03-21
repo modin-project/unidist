@@ -146,6 +146,19 @@ class MPIBackend(Backend):
         return CpuCount.get()
 
     @staticmethod
+    def cluster_resources():
+        """
+        Get resources of MPI cluster.
+
+        Returns
+        -------
+        dict
+            Dictionary with cluster nodes info in the form
+            `{"node_ip0": {"CPU": x0}, "node_ip1": {"CPU": x1}, ...}`.
+        """
+        return mpi.cluster_resources()
+
+    @staticmethod
     def shutdown():
         """Shutdown MPI execution backend."""
         mpi.shutdown()

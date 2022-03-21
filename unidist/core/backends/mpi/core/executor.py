@@ -18,6 +18,7 @@ from unidist.core.backends.common.data_id import is_data_id
 
 # MPI stuff
 comm, rank, world_size = communication.get_mpi_state()
+topology = dict()
 
 
 class ObjectStore:
@@ -536,16 +537,18 @@ def push_data(dest_rank, value):
 # Control API
 # -----------------------------------------------------------------------------
 
-# TODO: implement
+
 def init():
     """
     Initialize MPI processes.
 
     Notes
     -----
-    Currently does nothing.
+    Only collects the MPI cluster topology.
     """
-    pass
+    global topology
+    if not topology:
+        topology = communication.get_topology()
 
 
 # TODO: cleanup before shutdown?
@@ -561,6 +564,23 @@ def shutdown():
     for rank_id in range(1, world_size):
         communication.mpi_send_object(comm, common.Operation.CANCEL, rank_id)
         e_logger.debug("Shutdown rank {}".format(rank_id))
+
+
+def cluster_resources():
+    """
+    Get resources of MPI cluster.
+
+    Returns
+    -------
+    dict
+        Dictionary with cluster nodes info in the form
+        `{"node_ip0": {"CPU": x0}, "node_ip1": {"CPU": x1}, ...}`.
+    """
+    cluster_resources = defaultdict(dict)
+    for host, ranks_list in topology.items():
+        cluster_resources[host]["CPU"] = len(ranks_list)
+
+    return dict(cluster_resources)
 
 
 # Data API

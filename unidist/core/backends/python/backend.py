@@ -143,3 +143,15 @@ class PythonBackend(Backend):
         int
         """
         return 1
+
+    @staticmethod
+    def cluster_resources():
+        """
+        Get resources of the cluster.
+
+        Returns
+        -------
+        dict
+            Dictionary with node info in the form `{"node_ip": {"CPU": x}}`.
+        """
+        return {PythonBackend.get_ip(): {"CPU": PythonBackend.num_cpus()}}

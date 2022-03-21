@@ -9,6 +9,7 @@ import unidist.core.backends.mpi.core.communication as communication
 
 # MPI stuff
 comm, rank, world_size = communication.get_mpi_state()
+topology = communication.get_topology()
 
 # Global counter of executed task
 task_counter = 0

@@ -5,6 +5,7 @@
 """MPI communication interfaces."""
 
 import time
+from collections import defaultdict
 
 try:
     import mpi4py
@@ -51,6 +52,31 @@ def get_mpi_state():
     rank = comm.Get_rank()
     world_size = comm.Get_size()
     return comm, rank, world_size
+
+
+def get_topology():
+    """
+    Get topology of MPI cluster.
+
+    Returns
+    -------
+    dict
+        Dictionary, containing workers ranks assignments by IP-addresses in
+        the form: `{"node_ip0": [rank_2, rank_3, ...], "node_ip1": [rank_i, ...], ...}`.
+    """
+    import socket
+
+    topology = defaultdict(list)
+    comm, rank, _ = get_mpi_state()
+    hostname = socket.gethostname()
+    host = socket.gethostbyname(hostname)
+    cluster_info = comm.allgather((host, rank))
+
+    for host, rank in cluster_info:
+        if rank not in [MPIRank.ROOT, MPIRank.MONITOR]:
+            topology[host].append(rank)
+
+    return dict(topology)
 
 
 # Main communication utilities

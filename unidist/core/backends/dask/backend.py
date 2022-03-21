@@ -4,6 +4,8 @@
 
 """An implementation of ``Backend`` interface using Dask."""
 
+from collections import defaultdict
+
 from distributed.client import get_client, wait
 from distributed.utils import get_ip
 
@@ -150,6 +152,27 @@ class DaskBackend(Backend):
         int
         """
         return len(get_client().ncores())
+
+    @staticmethod
+    def cluster_resources():
+        """
+        Get resources of Dask cluster.
+
+        Returns
+        -------
+        dict
+            Dictionary with cluster nodes info in the form
+            `{"node_ip0": {"CPU": x0}, "node_ip1": {"CPU": x1}, ...}`.
+        """
+        client = get_client()
+        cluster_resources = defaultdict(lambda: {"CPU": 0})
+        for worker_info in client.scheduler_info()["workers"].values():
+            cluster_resources[worker_info["host"]]["CPU"] += worker_info["nthreads"]
+
+        localhost = "127.0.0.1"
+        if localhost in cluster_resources:
+            cluster_resources[get_ip()] = cluster_resources.pop(localhost)
+        return dict(cluster_resources)
 
     @staticmethod
     def shutdown():

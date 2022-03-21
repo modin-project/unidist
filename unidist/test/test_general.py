@@ -70,3 +70,9 @@ def test_num_cpus():
         assert_equal(unidist.num_cpus(), 1)
     else:
         assert_equal(unidist.num_cpus(), CpuCount.get())
+
+
+def test_cluster_resources():
+    assert_equal(
+        unidist.cluster_resources(), {unidist.get_ip(): {"CPU": unidist.num_cpus()}}
+    )
