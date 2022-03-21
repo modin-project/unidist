@@ -36,8 +36,4 @@ def initialize_dask():
         if is_cluster:
             Client(address=scheduler_address)
         else:
-            Client(
-                n_workers=num_cpus,
-                threads_per_worker=1,
-                memory_limit=worker_memory_limit,
-            )
+            Client(n_workers=num_cpus, memory_limit=worker_memory_limit)
