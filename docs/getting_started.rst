@@ -57,35 +57,26 @@ functions (tasks) and classes (actors).
       print(unidist.get(cube_refs)) # [0.0, 1.0, 8.0, 27.0]
 
 Choosing unidist's backend
-===========================
+==========================
 
-There are several ways to choose an execution backend for distributed computations.
-First, the recommended way is to use :doc:`unidist CLI </using_cli>` options:
+The recommended way to choose a concrete execution backend is to use the argument of :doc:`unidist CLI </using_cli>`
+when running your python script:
 
 .. code-block:: bash
 
     # Running the script with unidist on Ray backend
     $ unidist script.py --backend ray
+    # Running the script with unidist on MPI backend
+    $ unidist script.py --backend mpi
     # Running the script with unidist on Dask backend
     $ unidist script.py --backend dask
+    # Running the script with unidist on Python Multiprocessing backend
+    $ unidist script.py --backend multiprocessing
+    # Running the script with unidist on sequential Python backend
+    $ unidist script.py --backend python
 
-Second, setting the environment variable:
-
-.. code-block:: bash
-
-    # unidist will use Ray backend to distribute computations
-    export UNIDIST_BACKEND=ray
-    # unidist will use Dask backend to distribute computations
-    export UNIDIST_BACKEND=dask
-
-Third, using :doc:`config API </flow/unidist/config>` directly in your script:
-
-.. code-block:: python
-
-    import unidist.config as cfg
-    cfg.Backend.put("ray") # unidist will use Ray backend to distribute computations
-    import unidist.config as cfg
-    cfg.Backend.put("dask") # unidist will use Dask backend to distribute computations
+For more options on how to choose a concrete execution backend
+see :doc:`Using Unidist </using_unidist/index>` section.
 
 Running unidist application
 ===========================
