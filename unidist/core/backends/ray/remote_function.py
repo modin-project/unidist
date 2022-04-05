@@ -66,7 +66,10 @@ class RayRemoteFunction(RemoteFunction):
             resources = self._resources
 
         obj_ref = self._remote_function.options(
-            num_cpus=num_cpus, num_returns=num_returns, resources=resources
+            num_cpus=num_cpus,
+            num_returns=num_returns,
+            resources=resources,
+            max_retries=0,
         ).remote(*args, **kwargs)
 
         if num_returns == 1:
