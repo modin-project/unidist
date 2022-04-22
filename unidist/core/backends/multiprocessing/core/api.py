@@ -4,6 +4,8 @@
 
 """High-level API of MultiProcessing backend."""
 
+import atexit
+import signal
 import cloudpickle as pkl
 
 from unidist.config import CpuCount
@@ -11,6 +13,7 @@ from unidist.core.backends.multiprocessing.core.object_store import ObjectStore,
 from unidist.core.backends.multiprocessing.core.process_manager import (
     ProcessManager,
     Task,
+    Operation,
 )
 
 
@@ -30,6 +33,10 @@ def init(num_workers=CpuCount.get()):
     """
     ObjectStore.get_instance()
     ProcessManager.get_instance(num_workers=num_workers)
+
+    atexit.register(shutdown)
+    signal.signal(signal.SIGTERM, shutdown)
+    signal.signal(signal.SIGINT, shutdown)
 
 
 def put(data):
@@ -122,8 +129,13 @@ def submit(func, *args, num_returns=1, **kwargs):
     else:
         data_ids = obj_store.put(Delayed())
 
-    task = Task(func, data_ids, obj_store, *args, **kwargs)
+    task = Task(func, Operation.EXECUTE, obj_store, *args, data_ids=data_ids, **kwargs)
 
     ProcessManager.get_instance().submit(pkl.dumps(task))
 
     return data_ids
+
+
+def shutdown():
+    """Shutdown MultiProcessing execution backend."""
+    ProcessManager.get_instance().shutdown()

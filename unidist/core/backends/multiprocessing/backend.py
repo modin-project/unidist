@@ -164,6 +164,4 @@ class MultiProcessingBackend(Backend):
         ----
         Not supported yet.
         """
-        raise NotImplementedError(
-            "'shutdown' is not supported yet by MultiProcessing backend."
-        )
+        mp.shutdown()
