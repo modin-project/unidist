@@ -184,7 +184,6 @@ class ProcessManager:
             raise RuntimeError("Actor can`t be run, no available workers.")
 
         self.workers[worker_id].add_task(pkl.dumps(task))
-        print(f"create actor on: {worker_id}")
         return worker_id
 
     def remove_actor(self, idx):
