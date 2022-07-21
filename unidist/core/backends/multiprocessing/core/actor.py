@@ -5,12 +5,12 @@
 """Actor specific functionality implemented using Python multiprocessing."""
 
 import cloudpickle as pkl
-from multiprocessing.managers import BaseManager
 
 from unidist.core.backends.multiprocessing.core.object_store import ObjectStore, Delayed
 from unidist.core.backends.multiprocessing.core.process_manager import (
     ProcessManager,
     Task,
+    Operation,
 )
 
 
@@ -31,8 +31,7 @@ class ActorMethod:
         Object storage to share data between workers.
     """
 
-    def __init__(self, cls_obj, actor, method_name, obj_store):
-        self._cls_obj = cls_obj
+    def __init__(self, actor, method_name, obj_store):
         self._method_name = method_name
         self._actor = actor
         self._obj_store = obj_store
@@ -66,9 +65,14 @@ class ActorMethod:
         else:
             data_ids = self._obj_store.put(Delayed())
 
-        cls_method = getattr(self._cls_obj, self._method_name)
-
-        task = Task(cls_method, data_ids, self._obj_store, *args, **kwargs)
+        task = Task(
+            self._method_name,
+            Operation.EXECUTE_ACTOR_METHOD,
+            self._obj_store,
+            *args,
+            data_ids=data_ids,
+            **kwargs,
+        )
         self._actor.submit(task)
 
         return data_ids
@@ -97,17 +101,10 @@ class Actor:
     """
 
     def __init__(self, cls, *args, **kwargs):
-        self._worker = None
-        self._worker_id = None
         self._obj_store = ObjectStore.get_instance()
 
-        # FIXME : Change "WrappedClass" -> cls.__name__ + "Manager", for example.
-        BaseManager.register("WrappedClass", cls)
-        manager = BaseManager()
-        manager.start()
-
-        self._cls_obj = manager.WrappedClass(*args, **kwargs)
-        self._worker, self._worker_id = ProcessManager.get_instance().grab_worker()
+        task = Task(cls, Operation.CREATE_ACTOR, self._obj_store, *args, **kwargs)
+        self._worker_id = ProcessManager.get_instance().create_actor(task)
 
     def __getattr__(self, name):
         """
@@ -125,7 +122,7 @@ class Actor:
         -------
         ActorMethod
         """
-        return ActorMethod(self._cls_obj, self, name, self._obj_store)
+        return ActorMethod(self, name, self._obj_store)
 
     def submit(self, task):
         """
@@ -136,7 +133,9 @@ class Actor:
         task : unidist.core.backends.multiprocessing.core.process_manager.Task
             Task object holding callable function.
         """
-        self._worker.add_task(pkl.dumps(task))
+        ProcessManager.get_instance().submit(
+            pkl.dumps(task), target_worker_id=self._worker_id
+        )
 
     def __del__(self):
         """
@@ -145,4 +144,4 @@ class Actor:
         Free worker, grabbed from the workers pool.
         """
         if self._worker_id is not None:
-            ProcessManager.get_instance().free_worker(self._worker_id)
+            ProcessManager.get_instance().remove_actor(self._worker_id)

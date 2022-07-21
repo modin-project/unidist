@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import sys
 import pytest
 import time
 
@@ -14,14 +13,6 @@ from .utils import assert_equal, task, TestActor
 unidist.init()
 
 
-@pytest.mark.skipif(
-    Backend.get() == BackendName.MP,
-    reason="Hangs on `multiprocessing` backend. Details are in https://github.com/modin-project/unidist/issues/64.",
-)
-@pytest.mark.skipif(
-    sys.platform == "win32" and Backend.get() == BackendName.MP,
-    reason="Details are in https://github.com/modin-project/unidist/issues/70.",
-)
 @pytest.mark.parametrize(
     "source",
     ["put", "task", "actor"],
@@ -36,10 +27,6 @@ def test_is_object_ref(source):
     assert_equal(unidist.is_object_ref(object_ref), True)
 
 
-@pytest.mark.skipif(
-    Backend.get() == BackendName.MP,
-    reason="Hangs on `multiprocessing` backend. Details are in https://github.com/modin-project/unidist/issues/64.",
-)
 def test_wait():
     @unidist.remote
     def foo():
