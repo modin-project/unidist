@@ -68,36 +68,27 @@ For more information refer to [Installation](https://unidist.readthedocs.io/en/l
 
 #### Choosing an execution backend
 
-There are several ways to choose the execution backend for distributed computation.
-First, the recommended way is to use
-[unidist CLI](https://unidist.readthedocs.io/en/latest/using_cli.html) options:
+The recommended way to choose a concrete execution backend is to use
+the argument of [unidist CLI](https://unidist.readthedocs.io/en/latest/using_cli.html)
+when running your python script:
 
 ```bash
 # Running the script with unidist on Ray backend
 $ unidist script.py --backend ray
+# Running the script with unidist on MPI backend
+$ unidist script.py --backend mpi
 # Running the script with unidist on Dask backend
 $ unidist script.py --backend dask
+# Running the script with unidist on Python Multiprocessing backend
+$ unidist script.py --backend multiprocessing
+# Running the script with unidist on sequential Python backend
+$ unidist script.py --backend python
 ```
 
-Second, setting the environment variable:
+If you have installed all the execution backends, Ray is used by default.
 
-```bash
-# unidist will use Ray backend to distribute computations
-export UNIDIST_BACKEND=ray
-# unidist will use Dask backend to distribute computations
-export UNIDIST_BACKEND=dask
-```
-
-Third, using [config API](https://unidist.readthedocs.io/en/latest/flow/unidist/config.html) directly in your script:
-
-```python
-import unidist.config as cfg
-cfg.Backend.put("ray") # unidist will use Ray backend to distribute computations
-import unidist.config as cfg
-cfg.Backend.put("dask") # unidist will use Dask backend to distribute computations
-```
-
-Default execution backend for unidist is Ray.
+For more options on how to choose a concrete execution backend
+see [Using Unidist](https://unidist.readthedocs.io/en/latest/using_unidist/index.html) section.
 
 #### Usage
 

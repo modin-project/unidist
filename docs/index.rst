@@ -77,6 +77,7 @@ To run the `script.py` use :doc:`unidist CLI </using_cli>`:
    installation
    getting_started
    using_cli
+   using_unidist/index
    developer/architecture
    developer/contributing
 
