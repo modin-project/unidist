@@ -8,10 +8,8 @@ Using Unidist
 
 This page contains information on how to run unidist on different execution backends.
 
-- :doc:`unidist on Ray <unidist_on_ray>`
-- :doc:`unidist on MPI <unidist_on_mpi>`
-- :doc:`unidist on Dask <unidist_on_dask>`
-- :doc:`unidist on Python Multiprocessing <unidist_on_python_multiprocessing>`
-- :doc:`unidist on Python <unidist_on_python>`
-
-.. _directory-tree:
+- :doc:`Unidist on Ray <unidist_on_ray>`
+- :doc:`Unidist on MPI <unidist_on_mpi>`
+- :doc:`Unidist on Dask <unidist_on_dask>`
+- :doc:`Unidist on Python Multiprocessing <unidist_on_python_multiprocessing>`
+- :doc:`Unidist on Python <unidist_on_python>`

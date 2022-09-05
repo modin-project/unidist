@@ -5,7 +5,7 @@
 
 :orphan:
 
-unidist on Python
+Unidist on Python
 '''''''''''''''''
 
 This section describes the use of unidist with the sequential Python execution backend,

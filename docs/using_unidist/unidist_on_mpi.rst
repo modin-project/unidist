@@ -5,7 +5,7 @@
 
 :orphan:
 
-unidist on MPI
+Unidist on MPI
 ''''''''''''''
 
 This section describes the use of unidist with the MPI execution backend.
@@ -32,6 +32,7 @@ For more information on the environment variables and associated configs specifi
 see :doc:`config API </flow/unidist/config>` section.
 
 .. note::
-   Note that the config ``Backend`` object associated with the ``UNIDIST_BACKEND`` environment variable
-   doesn't make sense to use in your code to set the execution backend since the environment variable and
-   the argument of unidist CLI supersede that value.
+   Note that the config ``Backend`` and ``CpuCount`` objects associated with the ``UNIDIST_BACKEND`` and
+   ``UNIDIST_CPUS`` environment variables, respectively, do not make sense to use in your code
+   to set the execution backend and number of CPUs since the environment variables and
+   the arguments of unidist CLI supersede that value.

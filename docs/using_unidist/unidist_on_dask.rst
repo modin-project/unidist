@@ -5,7 +5,7 @@
 
 :orphan:
 
-unidist on Dask
+Unidist on Dask
 '''''''''''''''
 
 This section describes the use of unidist with the Dask execution backend.

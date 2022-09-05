@@ -5,7 +5,7 @@
 
 :orphan:
 
-unidist on Ray
+Unidist on Ray
 ''''''''''''''
 
 This section describes the use of unidist with the Ray execution backend.

@@ -5,7 +5,7 @@
 
 :orphan:
 
-unidist on Python Multiprocessing
+Unidist on Python Multiprocessing
 '''''''''''''''''''''''''''''''''
 
 This section describes the use of unidist with the Python Multiprocessing execution backend.
