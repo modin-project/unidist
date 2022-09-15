@@ -82,7 +82,10 @@ jobs:
         run: |
           conda info
           conda list
-      - run: python unidist/cli -m pytest unidist/test/
+      - run: python -m pytest unidist/test/
+        if: matrix.backend != 'mpi'
+      - run: mpiexec -n 1 python -m pytest unidist/test/
+        if: matrix.backend == 'mpi'
 
   test-windows:
     needs: [lint-commit, lint-black, lint-flake8]
@@ -119,4 +122,7 @@ jobs:
         run: |
           conda info
           conda list
-      - run: python unidist/cli -m pytest unidist/test/
+      - run: python -m pytest unidist/test/
+        if: matrix.backend != 'mpi'
+      - run: mpiexec -n 1 python -m pytest unidist/test/
+        if: matrix.backend == 'mpi'

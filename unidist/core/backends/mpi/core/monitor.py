@@ -4,15 +4,49 @@
 
 """Monitoring process."""
 
+try:
+    import mpi4py
+except ImportError:
+    raise ImportError(
+        "Missing dependency 'mpi4py'. Use pip or conda to install it."
+    ) from None
+
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 
-# MPI stuff
-comm, rank, world_size = communication.get_mpi_state()
-topology = communication.get_topology()
+# TODO: Find a way to move this after all imports
+mpi4py.rc(recv_mprobe=False, initialize=False)
+from mpi4py import MPI  # noqa: E402
 
-# Global counter of executed task
-task_counter = 0
+
+class TaskCounter:
+    __instance = None
+
+    def __init__(self):
+        self.task_counter = 0
+
+    @classmethod
+    def get_instance(cls):
+        """
+        Get instance of ``ObjectStore``.
+
+        Returns
+        -------
+        unidist.core.backends.mpi.core.controller.object_store.ObjectStore
+        """
+        if cls.__instance is None:
+            cls.__instance = TaskCounter()
+        return cls.__instance
+
+    def add(self):
+        """
+        Get instance of ``ObjectStore``.
+
+        Returns
+        -------
+        unidist.core.backends.mpi.core.controller.object_store.ObjectStore
+        """
+        self.task_counter += 1
 
 
 def monitor_loop():
@@ -26,22 +60,25 @@ def monitor_loop():
     The loop exits on special cancelation operation.
     ``unidist.core.backends.mpi.core.common.Operations`` defines a set of supported operations.
     """
-    global task_counter
+    task_counter = TaskCounter.get_instance()
+    mpi_state = communication.MPIState.get_instance()
 
     while True:
         # Listen receive operation from any source
-        operation_type, source_rank = communication.recv_operation_type(comm)
+        operation_type, source_rank = communication.recv_operation_type(mpi_state.comm)
+
         # Proceed the request
         if operation_type == common.Operation.TASK_DONE:
-            task_counter += 1
+            task_counter.add()
         elif operation_type == common.Operation.GET_TASK_COUNT:
-            communication.mpi_send_object(comm, task_counter, source_rank)
+            communication.mpi_send_object(
+                mpi_state.comm,
+                task_counter.task_counter,
+                source_rank,
+            )
         elif operation_type == common.Operation.CANCEL:
+            if not MPI.Is_finalized():
+                MPI.Finalize()
             break  # leave event loop and shutdown monitoring
         else:
             raise ValueError("Unsupported operation!")
-
-
-# Event loop
-if rank == communication.MPIRank.MONITOR:
-    monitor_loop()

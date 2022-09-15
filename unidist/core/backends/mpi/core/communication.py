@@ -4,8 +4,9 @@
 
 """MPI communication interfaces."""
 
-import time
 from collections import defaultdict
+import socket
+import time
 
 try:
     import mpi4py
@@ -19,8 +20,9 @@ from unidist.core.backends.mpi.core.serialization import (
     SimpleDataSerializer,
 )
 
+
 # TODO: Find a way to move this after all imports
-mpi4py.rc(recv_mprobe=False)
+mpi4py.rc(recv_mprobe=False, initialize=False)
 from mpi4py import MPI  # noqa: E402
 
 
@@ -28,30 +30,53 @@ from mpi4py import MPI  # noqa: E402
 sleep_time = 0.0001
 
 
+class MPIState:
+    """
+    The class holding MPI information.
+
+    Parameters
+    ----------
+    comm : mpi4py.MPI.Comm
+        MPI communicator.
+    rank : int
+        Rank of a process.
+    world_sise : int
+        Number of processes.
+    """
+
+    __instance = None
+
+    def __init__(self, comm, rank, world_sise):
+        # attributes get actual values when MPI is initialized
+        self.comm = comm
+        self.rank = rank
+        self.world_size = world_sise
+
+    @classmethod
+    def get_instance(cls, *args):
+        """
+        Get instance of this class.
+
+        Parameters
+        ----------
+        *args : tuple
+            Positional arguments to create the instance.
+            See the constructor's docstring on the arguments.
+
+        Returns
+        -------
+        MPIState
+        """
+        if cls.__instance is None and args:
+            cls.__instance = MPIState(*args)
+        return cls.__instance
+
+
 class MPIRank:
     """Class that describes ranks assignment."""
 
     ROOT = 0
     MONITOR = 1
-
-
-def get_mpi_state():
-    """
-    Get the necessary MPI structures.
-
-    Returns
-    -------
-    object
-        An MPI communicator.
-    int
-        Current rank.
-    int
-        MPI processes number.
-    """
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    world_size = comm.Get_size()
-    return comm, rank, world_size
 
 
 def get_topology():
@@ -64,13 +89,14 @@ def get_topology():
         Dictionary, containing workers ranks assignments by IP-addresses in
         the form: `{"node_ip0": [rank_2, rank_3, ...], "node_ip1": [rank_i, ...], ...}`.
     """
-    import socket
+    mpi_state = MPIState.get_instance()
+    comm = mpi_state.comm
+    rank = mpi_state.rank
 
-    topology = defaultdict(list)
-    comm, rank, _ = get_mpi_state()
     hostname = socket.gethostname()
     host = socket.gethostbyname(hostname)
     cluster_info = comm.allgather((host, rank))
+    topology = defaultdict(list)
 
     for host, rank in cluster_info:
         if rank not in [MPIRank.ROOT, MPIRank.MONITOR]:
@@ -79,7 +105,9 @@ def get_topology():
     return dict(topology)
 
 
-# Main communication utilities
+# ---------------------------- #
+# Main communication utilities #
+# ---------------------------- #
 
 
 def mpi_send_object(comm, data, dest_rank):
@@ -229,8 +257,9 @@ def recv_operation_type(comm):
             time.sleep(sleep_time)
 
 
-# Communication operation functions
-# ---------------------------------
+# --------------------------------- #
+# Communication operation functions #
+# --------------------------------- #
 
 
 def _send_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
@@ -430,8 +459,9 @@ def recv_complex_data(comm, source_rank):
     return deserializer.deserialize(msgpack_buffer)
 
 
-# Public API
-# -----------
+# ---------- #
+# Public API #
+# ---------- #
 
 
 def send_complex_operation(comm, operation_type, operation_data, dest_rank):
