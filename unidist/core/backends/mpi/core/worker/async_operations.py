@@ -26,11 +26,11 @@ class AsyncOperations:
     @classmethod
     def get_instance(cls):
         """
-        Get instance of ``RequestStore``.
+        Get instance of ``AsyncOperations``.
 
         Returns
         -------
-        unidist.core.backends.multiprocessing.core.object_store.ObjectStore
+        AsyncOperations
         """
         if cls.__instance is None:
             cls.__instance = AsyncOperations()

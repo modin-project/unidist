@@ -30,11 +30,11 @@ class TaskStore:
     @classmethod
     def get_instance(cls):
         """
-        Get instance of ``RequestStore``.
+        Get instance of ``TaskStore``.
 
         Returns
         -------
-        unidist.core.backends.multiprocessing.core.object_store.ObjectStore
+        TaskStore
         """
         if cls.__instance is None:
             cls.__instance = TaskStore()

@@ -40,7 +40,7 @@ class RequestStore:
 
         Returns
         -------
-        unidist.core.backends.multiprocessing.core.object_store.ObjectStore
+        RequestStore
         """
         if cls.__instance is None:
             cls.__instance = RequestStore()

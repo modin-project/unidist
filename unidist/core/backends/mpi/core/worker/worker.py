@@ -22,8 +22,9 @@ from unidist.core.backends.mpi.core.worker.async_operations import AsyncOperatio
 mpi4py.rc(recv_mprobe=False, initialize=False)
 from mpi4py import MPI  # noqa: E402
 
+mpi_state = communication.MPIState.get_instance()
 # Logger configuration
-log_file = "worker_{}.log".format(communication.MPIState.get_instance().rank)
+log_file = "worker_{}.log".format(mpi_state.rank)
 w_logger = common.get_logger("worker", log_file)
 
 # Actors map {handle : actor}
@@ -45,57 +46,49 @@ def worker_loop():
     The loop exits on special cancelation operation.
     ``unidist.core.backends.mpi.core.common.Operations`` defines a set of supported operations.
     """
+    task_store = TaskStore.get_instance()
+    object_store = ObjectStore.get_instance()
+    request_store = RequestStore.get_instance()
+    async_operations = AsyncOperations.get_instance()
     while True:
         # Listen receive operation from any source
-        operation_type, source_rank = communication.recv_operation_type(
-            communication.MPIState.get_instance().comm
-        )
+        operation_type, source_rank = communication.recv_operation_type(mpi_state.comm)
         w_logger.debug("common.Operation processing - {}".format(operation_type))
 
         # Proceed the request
         if operation_type == common.Operation.EXECUTE:
-            request = communication.recv_complex_data(
-                communication.MPIState.get_instance().comm, source_rank
-            )
+            request = communication.recv_complex_data(mpi_state.comm, source_rank)
 
             # Execute the task if possible
-            pending_request = TaskStore.get_instance().process_task_request(request)
+            pending_request = task_store.process_task_request(request)
             if pending_request:
-                TaskStore.get_instance().put(pending_request)
+                task_store.put(pending_request)
             else:
                 # Check pending requests. Maybe some data became available.
-                TaskStore.get_instance().check_pending_tasks()
+                task_store.check_pending_tasks()
 
         elif operation_type == common.Operation.GET:
-            request = communication.recv_simple_operation(
-                communication.MPIState.get_instance().comm, source_rank
-            )
-            RequestStore.get_instance().process_get_request(
-                request["source"], request["id"]
-            )
+            request = communication.recv_simple_operation(mpi_state.comm, source_rank)
+            request_store.process_get_request(request["source"], request["id"])
 
         elif operation_type == common.Operation.PUT_DATA:
-            request = communication.recv_complex_data(
-                communication.MPIState.get_instance().comm, source_rank
-            )
+            request = communication.recv_complex_data(mpi_state.comm, source_rank)
             w_logger.debug(
                 "PUT (RECV) {} id from {} rank".format(request["id"]._id, source_rank)
             )
-            ObjectStore.get_instance().put(request["id"], request["data"])
+            object_store.put(request["id"], request["data"])
 
             # Clear cached request to another worker, if data_id became available
-            RequestStore.get_instance().clear_cache(request["id"])
+            request_store.clear_cache(request["id"])
 
             # Check pending requests. Maybe some data became available.
-            TaskStore.get_instance().check_pending_tasks()
+            task_store.check_pending_tasks()
             # Check pending actor requests also.
-            TaskStore.get_instance().check_pending_actor_tasks()
+            task_store.check_pending_actor_tasks()
 
         elif operation_type == common.Operation.PUT_OWNER:
-            request = communication.recv_simple_operation(
-                communication.MPIState.get_instance().comm, source_rank
-            )
-            ObjectStore.get_instance().put_data_owner(request["id"], request["owner"])
+            request = communication.recv_simple_operation(mpi_state.comm, source_rank)
+            object_store.put_data_owner(request["id"], request["owner"])
 
             w_logger.debug(
                 "PUT_OWNER {} id is owned by {} rank".format(
@@ -104,16 +97,12 @@ def worker_loop():
             )
 
         elif operation_type == common.Operation.WAIT:
-            request = communication.recv_simple_operation(
-                communication.MPIState.get_instance().comm, source_rank
-            )
+            request = communication.recv_simple_operation(mpi_state.comm, source_rank)
             w_logger.debug("WAIT for {} id".format(request["id"]._id))
-            RequestStore.get_instance().process_wait_request(request["id"])
+            request_store.process_wait_request(request["id"])
 
         elif operation_type == common.Operation.ACTOR_CREATE:
-            request = communication.recv_complex_data(
-                communication.MPIState.get_instance().comm, source_rank
-            )
+            request = communication.recv_complex_data(mpi_state.comm, source_rank)
             cls = request["class"]
             args = request["args"]
             kwargs = request["kwargs"]
@@ -122,9 +111,7 @@ def worker_loop():
             actor_map[handler] = cls(*args, **kwargs)
 
         elif operation_type == common.Operation.ACTOR_EXECUTE:
-            request = communication.recv_complex_data(
-                communication.MPIState.get_instance().comm, source_rank
-            )
+            request = communication.recv_complex_data(mpi_state.comm, source_rank)
 
             # Prepare the data
             method_name = request["task"]
@@ -133,23 +120,21 @@ def worker_loop():
             request["task"] = actor_method
 
             # Execute the actor task if possible
-            pending_actor_request = TaskStore.get_instance().process_task_request(
-                request
-            )
+            pending_actor_request = task_store.process_task_request(request)
             if pending_actor_request:
-                TaskStore.get_instance().put_actor(pending_actor_request)
+                task_store.put_actor(pending_actor_request)
             else:
                 # Check pending requests. Maybe some data became available.
-                TaskStore.get_instance().check_pending_actor_tasks()
+                task_store.check_pending_actor_tasks()
 
         elif operation_type == common.Operation.CLEANUP:
             cleanup_list = communication.recv_serialized_data(
-                communication.MPIState.get_instance().comm, source_rank
+                mpi_state.comm, source_rank
             )
-            ObjectStore.get_instance().clear(cleanup_list)
+            object_store.clear(cleanup_list)
 
         elif operation_type == common.Operation.CANCEL:
-            AsyncOperations.get_instance().finish()
+            async_operations.finish()
             w_logger.debug("Exit worker event loop")
             if not MPI.Is_finalized():
                 MPI.Finalize()
@@ -158,4 +143,4 @@ def worker_loop():
             raise ValueError("Unsupported operation!")
 
         # Check completion status of previous async MPI routines
-        AsyncOperations.get_instance().check()
+        async_operations.check()

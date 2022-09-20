@@ -124,7 +124,7 @@ def init():
         communication.MPIRank.ROOT,
         communication.MPIRank.MONITOR,
     ):
-        from unidist.core.backends.mpi.core.worker import worker_loop
+        from unidist.core.backends.mpi.core.worker.worker import worker_loop
 
         worker_loop()
         return
