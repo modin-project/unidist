@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""`ObjectStore` functionality."""
 
 import weakref
 from collections import defaultdict
@@ -278,3 +279,6 @@ class ObjectStore:
             Cached serialized data associated with `data_id`.
         """
         return self._serialization_cache[data_id]
+
+
+object_store = ObjectStore.get_instance()

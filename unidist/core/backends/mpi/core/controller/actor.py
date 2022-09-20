@@ -2,9 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""Actor specific functionality using MPI backend."""
+
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
-from unidist.core.backends.mpi.core.controller.object_store import ObjectStore
+from unidist.core.backends.mpi.core.controller.object_store import object_store
 from unidist.core.backends.mpi.core.controller.garbage_collector import (
     garbage_collector,
 )
@@ -30,7 +32,7 @@ class ActorMethod:
         self._method_name = method_name
 
     def __call__(self, *args, num_returns=1, **kwargs):
-        output_id = ObjectStore.get_instance().generate_output_data_id(
+        output_id = object_store.generate_output_data_id(
             self._actor._owner_rank, garbage_collector, num_returns
         )
 
@@ -78,9 +80,7 @@ class Actor:
 
     def __init__(self, cls, *args, **kwargs):
         self._owner_rank = RoundRobin.get_instance().schedule_rank()
-        self._handler_id = ObjectStore.get_instance().generate_data_id(
-            garbage_collector
-        )
+        self._handler_id = object_store.generate_data_id(garbage_collector)
 
         operation_type = common.Operation.ACTOR_CREATE
         operation_data = {

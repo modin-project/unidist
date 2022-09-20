@@ -85,6 +85,7 @@ jobs:
       - run: python -m pytest unidist/test/
         if: matrix.backend != 'mpi'
       # when using a directory to run with mpiexec MPI gets hung after executing tests
+      # so we run the test files one by one
       - run: mpiexec -n 1 python -m pytest unidist/test/test_actor.py
         if: matrix.backend == 'mpi'
       - run: mpiexec -n 1 python -m pytest unidist/test/test_general.py
@@ -130,6 +131,7 @@ jobs:
       - run: python -m pytest unidist/test/
         if: matrix.backend != 'mpi'
       # when using a directory to run with mpiexec MPI gets hung after executing tests
+      # so we run the test files one by one
       - run: mpiexec -n 1 python -m pytest unidist/test/test_actor.py
         if: matrix.backend == 'mpi'
       - run: mpiexec -n 1 python -m pytest unidist/test/test_general.py

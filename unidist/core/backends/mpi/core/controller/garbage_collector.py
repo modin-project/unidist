@@ -2,12 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""`GarbageCollector` functionality."""
+
 import time
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.serialization import SimpleDataSerializer
-from unidist.core.backends.mpi.core.controller.object_store import ObjectStore
+from unidist.core.backends.mpi.core.controller.object_store import object_store
+from unidist.core.backends.mpi.core.controller.common import initial_worker_number
 
 
 logger = common.get_logger("utils", "utils.log")
@@ -55,11 +58,12 @@ class GarbageCollector:
                 common.unwrapped_data_ids_list(cleanup_list)
             )
         )
+        mpi_state = communication.MPIState.get_instance()
         # Cache serialized list of data IDs
         s_cleanup_list = SimpleDataSerializer().serialize_pickle(cleanup_list)
-        for rank_id in range(2, communication.MPIState.get_instance().world_size):
+        for rank_id in range(initial_worker_number, mpi_state.world_size):
             communication.send_serialized_operation(
-                communication.MPIState.get_instance().comm,
+                mpi_state.comm,
                 common.Operation.CLEANUP,
                 s_cleanup_list,
                 rank_id,
@@ -108,14 +112,15 @@ class GarbageCollector:
                 if (timestamp_snapshot - self._timestamp) > self._time_threshold:
                     logger.debug("Cleanup counter {}".format(self._cleanup_counter))
 
+                    mpi_state = communication.MPIState.get_instance()
                     # Compare submitted and executed tasks
                     communication.mpi_send_object(
-                        communication.MPIState.get_instance().comm,
+                        mpi_state.comm,
                         common.Operation.GET_TASK_COUNT,
                         communication.MPIRank.MONITOR,
                     )
                     executed_task_counter = communication.recv_simple_operation(
-                        communication.MPIState.get_instance().comm,
+                        mpi_state.comm,
                         communication.MPIRank.MONITOR,
                     )
 
@@ -135,4 +140,4 @@ class GarbageCollector:
                 self._cleanup_counter += 1
 
 
-garbage_collector = GarbageCollector(ObjectStore.get_instance())
+garbage_collector = GarbageCollector(object_store)

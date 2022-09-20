@@ -28,24 +28,18 @@ class TaskCounter:
     @classmethod
     def get_instance(cls):
         """
-        Get instance of ``ObjectStore``.
+        Get instance of ``TaskCounter``.
 
         Returns
         -------
-        unidist.core.backends.mpi.core.controller.object_store.ObjectStore
+        TaskCounter
         """
         if cls.__instance is None:
             cls.__instance = TaskCounter()
         return cls.__instance
 
-    def add(self):
-        """
-        Get instance of ``ObjectStore``.
-
-        Returns
-        -------
-        unidist.core.backends.mpi.core.controller.object_store.ObjectStore
-        """
+    def increment(self):
+        """Increment task counter by one."""
         self.task_counter += 1
 
 
@@ -69,7 +63,7 @@ def monitor_loop():
 
         # Proceed the request
         if operation_type == common.Operation.TASK_DONE:
-            task_counter.add()
+            task_counter.increment()
         elif operation_type == common.Operation.GET_TASK_COUNT:
             communication.mpi_send_object(
                 mpi_state.comm,

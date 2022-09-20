@@ -47,7 +47,7 @@ class MPIState:
     __instance = None
 
     def __init__(self, comm, rank, world_sise):
-        # attributes get actual values when MPI is initialized
+        # attributes get actual values when MPI is initialized in `init` function
         self.comm = comm
         self.rank = rank
         self.world_size = world_sise

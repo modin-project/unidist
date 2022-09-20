@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""MPI backend functionality related to `controller` concept."""
+
 from unidist.core.backends.mpi.core.controller.api import (
     put,
     get,

@@ -16,7 +16,7 @@ except ImportError:
         "Missing dependency 'mpi4py'. Use pip or conda to install it."
     ) from None
 
-from unidist.core.backends.mpi.core.controller.object_store import ObjectStore
+from unidist.core.backends.mpi.core.controller.object_store import object_store
 from unidist.core.backends.mpi.core.controller.garbage_collector import (
     garbage_collector,
 )
@@ -92,7 +92,7 @@ def init():
                 root=rank,
             )
             comm = intercomm.Merge(high=False)
-        # path for processes to be started by mpiexec
+        # path for processes to be started by mpiexec -n <N>, where N > 1
         else:
             comm = MPI.COMM_WORLD
 
@@ -124,7 +124,7 @@ def init():
         communication.MPIRank.ROOT,
         communication.MPIRank.MONITOR,
     ):
-        from unidist.core.backends.mpi.core.worker.worker import worker_loop
+        from unidist.core.backends.mpi.core.worker import worker_loop
 
         worker_loop()
         return
@@ -183,8 +183,8 @@ def put(data):
     unidist.core.backends.mpi.core.common.MasterDataID
         An ID of an object in object storage.
     """
-    data_id = ObjectStore.get_instance().generate_data_id(garbage_collector)
-    ObjectStore.get_instance().put(data_id, data)
+    data_id = object_store.generate_data_id(garbage_collector)
+    object_store.put(data_id, data)
 
     logger.debug("PUT {} id".format(data_id._id))
 
@@ -207,8 +207,8 @@ def get(data_ids):
     """
 
     def get_impl(data_id):
-        if ObjectStore.get_instance().contains(data_id):
-            value = ObjectStore.get_instance().get(data_id)
+        if object_store.contains(data_id):
+            value = object_store.get(data_id)
         else:
             value = request_worker_data(data_id)
 
@@ -255,10 +255,10 @@ def wait(data_ids, num_returns=1):
     mpi_state = communication.MPIState.get_instance()
 
     def wait_impl(data_id):
-        if ObjectStore.get_instance().contains(data_id):
+        if object_store.contains(data_id):
             return
 
-        owner_rank = ObjectStore.get_instance().get_data_owner(data_id)
+        owner_rank = object_store.get_data_owner(data_id)
 
         operation_type = common.Operation.WAIT
         operation_data = {"id": data_id.base_data_id()}
@@ -323,7 +323,7 @@ def submit(task, *args, num_returns=1, **kwargs):
 
     dest_rank = RoundRobin.get_instance().schedule_rank()
 
-    output_ids = ObjectStore.get_instance().generate_output_data_id(
+    output_ids = object_store.generate_output_data_id(
         dest_rank, garbage_collector, num_returns
     )
 

@@ -2,14 +2,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""Common functionality related to `controller`."""
+
 import itertools
 
 from unidist.core.backends.common.data_id import is_data_id
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
-from unidist.core.backends.mpi.core.controller.object_store import ObjectStore
+from unidist.core.backends.mpi.core.controller.object_store import object_store
 
 logger = common.get_logger("common", "common.log")
+
+# initial worker number is equal to rank 2 because
+# rank 0 is for controller process
+# rank 1 is for monitor process
+initial_worker_number = 2
 
 
 class RoundRobin:
@@ -17,17 +24,19 @@ class RoundRobin:
 
     def __init__(self):
         self.rank_to_schedule = itertools.cycle(
-            range(2, communication.MPIState.get_instance().world_size)
+            range(
+                initial_worker_number, communication.MPIState.get_instance().world_size
+            )
         )
 
     @classmethod
     def get_instance(cls):
         """
-        Get instance of ``ObjectStore``.
+        Get instance of ``RoundRobin``.
 
         Returns
         -------
-        unidist.core.backends.mpi.core.controller.object_store.ObjectStore
+        RoundRobin
         """
         if cls.__instance is None:
             cls.__instance = RoundRobin()
@@ -61,7 +70,7 @@ def request_worker_data(data_id):
     """
     mpi_state = communication.MPIState.get_instance()
 
-    owner_rank = ObjectStore.get_instance().get_data_owner(data_id)
+    owner_rank = object_store.get_data_owner(data_id)
 
     logger.debug("GET {} id from {} rank".format(data_id._id, owner_rank))
 
@@ -82,7 +91,7 @@ def request_worker_data(data_id):
     data = communication.recv_complex_data(mpi_state.comm, owner_rank)
 
     # Caching the result, check the protocol correctness here
-    ObjectStore.get_instance().put(data_id, data)
+    object_store.put(data_id, data)
 
     return data
 
@@ -99,15 +108,16 @@ def _push_local_data(dest_rank, data_id):
         An ID to data.
     """
     # Check if data was already pushed
-    if not ObjectStore.get_instance().is_already_sent(data_id, dest_rank):
+    if not object_store.is_already_sent(data_id, dest_rank):
         logger.debug("PUT LOCAL {} id to {} rank".format(data_id._id, dest_rank))
 
+        mpi_state = communication.MPIState.get_instance()
         # Push the local master data to the target worker directly
         operation_type = common.Operation.PUT_DATA
-        if ObjectStore.get_instance().is_already_serialized(data_id):
-            serialized_data = ObjectStore.get_instance().get_serialized_data(data_id)
+        if object_store.is_already_serialized(data_id):
+            serialized_data = object_store.get_serialized_data(data_id)
             communication.send_operation(
-                communication.MPIState.get_instance().comm,
+                mpi_state.comm,
                 operation_type,
                 serialized_data,
                 dest_rank,
@@ -116,18 +126,18 @@ def _push_local_data(dest_rank, data_id):
         else:
             operation_data = {
                 "id": data_id,
-                "data": ObjectStore.get_instance().get(data_id),
+                "data": object_store.get(data_id),
             }
             serialized_data = communication.send_operation(
-                communication.MPIState.get_instance().comm,
+                mpi_state.comm,
                 operation_type,
                 operation_data,
                 dest_rank,
                 is_serialized=False,
             )
-            ObjectStore.get_instance().cache_serialized_data(data_id, serialized_data)
+            object_store.cache_serialized_data(data_id, serialized_data)
         #  Remember pushed id
-        ObjectStore.get_instance().cache_send_info(data_id, dest_rank)
+        object_store.cache_send_info(data_id, dest_rank)
 
 
 def _push_data_owner(dest_rank, data_id):
@@ -144,7 +154,7 @@ def _push_data_owner(dest_rank, data_id):
     operation_type = common.Operation.PUT_OWNER
     operation_data = {
         "id": data_id,
-        "owner": ObjectStore.get_instance().get_data_owner(data_id),
+        "owner": object_store.get_data_owner(data_id),
     }
     communication.send_simple_operation(
         communication.MPIState.get_instance().comm,
@@ -175,9 +185,9 @@ def push_data(dest_rank, value):
         for v in value.values():
             push_data(dest_rank, v)
     elif is_data_id(value):
-        if ObjectStore.get_instance().contains(value):
+        if object_store.contains(value):
             _push_local_data(dest_rank, value)
-        elif ObjectStore.get_instance().contains_data_owner(value):
+        elif object_store.contains_data_owner(value):
             _push_data_owner(dest_rank, value)
         else:
             raise ValueError("Unknown DataID!")
