@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from unidist.core.backends.mpi.core.controller import (
+"""MPI backend functionality related to `controller` concept."""
+
+from unidist.core.backends.mpi.core.controller.api import (
     put,
     get,
     submit,
@@ -10,8 +12,8 @@ from unidist.core.backends.mpi.core.controller import (
     init,
     cluster_resources,
     shutdown,
-    Actor,
 )
+from unidist.core.backends.mpi.core.controller.actor import Actor
 
 __all__ = [
     "put",
