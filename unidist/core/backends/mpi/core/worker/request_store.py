@@ -5,8 +5,10 @@ import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.worker.object_store import ObjectStore
 from unidist.core.backends.mpi.core.worker.async_operations import AsyncOperations
 
+
+mpi_state = communication.MPIState.get_instance()
 # Logger configuration
-log_file = "worker_{}.log".format(communication.MPIState.get_instance().rank)
+log_file = "worker_{}.log".format(mpi_state.rank)
 logger = common.get_logger("worker", log_file)
 
 
@@ -59,11 +61,11 @@ class RequestStore:
         request_type : int
             Type of request.
         """
-        if request_type == RequestStore.REQ_DATA:
+        if request_type == self.REQ_DATA:
             self._data_request[data_id].add(rank)
-        elif request_type == RequestStore.REQ_WAIT:
+        elif request_type == self.REQ_WAIT:
             self._wait_request[data_id] = rank
-        elif request_type == RequestStore.REQ_DATA_CACHE:
+        elif request_type == self.REQ_DATA_CACHE:
             self._data_request_cache.add(data_id)
         else:
             raise ValueError("Unsupported request type option!")
@@ -171,9 +173,7 @@ class RequestStore:
             )
             logger.debug("Wait data {} id is ready".format(data_id._id))
         else:
-            RequestStore.get_instance().put(
-                data_id, communication.MPIRank.ROOT, RequestStore.REQ_WAIT
-            )
+            self.put(data_id, communication.MPIRank.ROOT, self.REQ_WAIT)
             logger.debug("Pending wait request {} id".format(data_id._id))
 
     def process_get_request(self, source_rank, data_id):
@@ -193,47 +193,45 @@ class RequestStore:
         -----
         Request is asynchronous, no wait for the data sending.
         """
-        if ObjectStore.get_instance().contains(data_id):
+        object_store = ObjectStore.get_instance()
+        async_operations = AsyncOperations.get_instance()
+        if object_store.contains(data_id):
             if source_rank == communication.MPIRank.ROOT:
                 # Master is blocked by request and has no event loop, no need for OP type
-                operation_data = ObjectStore.get_instance().get(data_id)
+                operation_data = object_store.get(data_id)
                 communication.send_complex_data(
-                    communication.MPIState.get_instance().comm,
+                    mpi_state.comm,
                     operation_data,
                     source_rank,
                 )
             else:
                 operation_type = common.Operation.PUT_DATA
-                if ObjectStore.get_instance().is_already_serialized(data_id):
-                    operation_data = ObjectStore.get_instance().get_serialized_data(
-                        data_id
-                    )
+                if object_store.is_already_serialized(data_id):
+                    operation_data = object_store.get_serialized_data(data_id)
                     # Async send to avoid possible dead-lock between workers
                     h_list, _ = communication.isend_complex_operation(
-                        communication.MPIState.get_instance().comm,
+                        mpi_state.comm,
                         operation_type,
                         operation_data,
                         source_rank,
                         is_serialized=True,
                     )
-                    AsyncOperations.get_instance().extend(h_list)
+                    async_operations.extend(h_list)
                 else:
                     operation_data = {
                         "id": data_id,
-                        "data": ObjectStore.get_instance().get(data_id),
+                        "data": object_store.get(data_id),
                     }
                     # Async send to avoid possible dead-lock between workers
                     h_list, serialized_data = communication.isend_complex_operation(
-                        communication.MPIState.get_instance().comm,
+                        mpi_state.comm,
                         operation_type,
                         operation_data,
                         source_rank,
                         is_serialized=False,
                     )
-                    AsyncOperations.get_instance().extend(h_list)
-                    ObjectStore.get_instance().cache_serialized_data(
-                        data_id, serialized_data
-                    )
+                    async_operations.extend(h_list)
+                    object_store.cache_serialized_data(data_id, serialized_data)
 
             logger.debug(
                 "Send requested {} id to {} rank - PROCESSED".format(
@@ -244,4 +242,4 @@ class RequestStore:
             logger.debug(
                 "Pending request {} id to {} rank".format(data_id._id, source_rank)
             )
-            RequestStore.get_instance().put(data_id, source_rank, RequestStore.REQ_DATA)
+            self.put(data_id, source_rank, self.REQ_DATA)

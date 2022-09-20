@@ -40,7 +40,7 @@ class ObjectStore:
 
         Returns
         -------
-        unidist.core.backends.mpi.core.controller.object_store.ObjectStore
+        ObjectStore
         """
         if cls.__instance is None:
             cls.__instance = ObjectStore()

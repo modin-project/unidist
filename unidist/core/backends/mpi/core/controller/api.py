@@ -41,6 +41,7 @@ from mpi4py import MPI  # noqa: E402
 
 logger = common.get_logger("api", "api.log")
 
+# The topology of MPI cluster gets available when MPI initialization in `init`
 topology = dict()
 
 
