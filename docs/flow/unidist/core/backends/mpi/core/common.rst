@@ -20,6 +20,7 @@ API
   :members:
 
 .. autofunction:: unidist.core.backends.mpi.core.common.get_logger
+.. autofunction:: unidist.core.backends.mpi.core.common.unwrapped_data_ids_list
 .. autofunction:: unidist.core.backends.mpi.core.common.master_data_ids_to_base
 .. autofunction:: unidist.core.backends.mpi.core.common.unwrap_data_ids
 .. autofunction:: unidist.core.backends.mpi.core.common.materialize_data_ids

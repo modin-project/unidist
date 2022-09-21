@@ -19,6 +19,7 @@ functions (tasks) and classes (actors).
 .. code-block:: python
 
    # script.py
+   
    if __name__ == "__main__":
       import unidist.config as cfg
       import unidist
@@ -59,33 +60,20 @@ functions (tasks) and classes (actors).
 Choosing unidist's backend
 ==========================
 
-The recommended way to choose a concrete execution backend is to use the argument of :doc:`unidist CLI </using_cli>`
-when running your python script:
+The examples below use the ``UNIDIST_BACKEND`` environment variable to set the execution backend:
 
 .. code-block:: bash
 
     # Running the script with unidist on Ray backend
-    $ unidist script.py --backend ray
+    $ export UNIDIST_BACKEND=ray
+    $ python script.py
     # Running the script with unidist on MPI backend
-    $ unidist script.py --backend mpi
+    $ export UNIDIST_BACKEND=mpi
+    $ mpiexec -n 1 python script.py
     # Running the script with unidist on Dask backend
-    $ unidist script.py --backend dask
-    # Running the script with unidist on Python Multiprocessing backend
-    $ unidist script.py --backend multiprocessing
-    # Running the script with unidist on sequential Python backend
-    $ unidist script.py --backend python
+    $ export UNIDIST_BACKEND=dask
+    $ python script.py
 
-For more options on how to choose a concrete execution backend
-see :doc:`Using Unidist </using_unidist/index>` section.
-
-Running unidist application
-===========================
-
-To run the script mentioned above the unidist CLI should be used:
-
-.. code-block:: bash
-
-    # Running the script in a single node with `Ray` backend on `4` workers:
-    $ unidist script.py -num_cpus 4
-
-To find more options for running refer to :doc:`unidist CLI </using_cli>` documentation page.
+Since some of the execution backends, particularly, MPI, have some specifics regarding running python programs,
+please refer to  :doc:`Using Unidist </using_unidist/index>` section to get more information on
+setting the execution backend to run on.

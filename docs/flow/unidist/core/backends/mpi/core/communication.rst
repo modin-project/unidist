@@ -8,7 +8,7 @@
 MPI communication API
 """""""""""""""""""""
 
-MPI communication routines for master/worker data interchange.
+MPI communication routines for controller/worker data interchange.
 
 API
 ===

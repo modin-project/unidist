@@ -37,6 +37,8 @@ Unidist Configuration Settings List
 || DaskMemoryLimit      || UNIDIST_DASK_MEMORY_LIMIT       || How many bytes of memory that Dask worker should use                   |
 || IsDaskCluster        || UNIDIST_DASK_CLUSTER            || Whether Dask is running on pre-initialized Dask cluster                |
 || DaskSchedulerAddress || UNIDIST_DASK_SCHEDULER_ADDRESS  || Dask Scheduler address to connect to when running in Dask cluster      |
+|| IsMpiSpawnWorkers    || UNIDIST_IS_MPI_SPAWN_WORKERS    || Whether to enable MPI spawn or not                                     |
+|| MpiHosts             || UNIDIST_MPI_HOSTS               || MPI hosts to run unidist on                                            |
 +-----------------------+----------------------------------+-------------------------------------------------------------------------+
 
 Usage Guide
@@ -69,14 +71,3 @@ by using config API.
 .. note::
    Make sure that setting configuration values happens before unidist initialization
    (:py:func:`~unidist.api.init` call)! Otherwise, unidist will opt for the default settings.
-
-Note that unidist also supports its own command line interface (CLI) though which a config value can be set.
-Wherein, **strongly recommended do not mix setting a config value with multiple ways, use only one!**
-
-.. code-block:: bash
-
-    # Running the script with unidist in a single node with `Backend` and
-    # `CpuCount` config values set to `mpi` and `8`, respectively:
-    $ unidist script.py --backend mpi --num_cpus 8
-
-Refer to :doc:`full documentation </using_cli>` on how to run a python program with unidist using its CLI.
