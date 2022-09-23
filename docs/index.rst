@@ -74,7 +74,6 @@ Run the `script.py` with:
 
    installation
    getting_started
-   using_cli
    using_unidist/index
    developer/architecture
    developer/contributing

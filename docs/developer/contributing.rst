@@ -149,21 +149,16 @@ To run the entire test suite, run the following from the project root:
 
 .. code-block:: bash
 
-  python unidist/cli -m pytest unidist/test
+  python -m pytest unidist/test
 
 If you've only modified a small amount of code, it may be sufficient to run a single test or
 some subset of the test suite. In order to run a specific test run:
 
 .. code-block:: bash
 
-  python unidist/cli -m pytest unidist/test/test_new_functionality.py::test_new_functionality
+  python -m pytest unidist/test/test_new_functionality.py::test_new_functionality
 
 The entire test suite is automatically run for each pull request.
-
-Refer to :doc:`full documentation </using_cli>` on how to run a python program with unidist using its CLI.
-
-..
-      Add a link to unidist CLI when #83 is merged
 
 Building documentation
 ----------------------
