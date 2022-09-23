@@ -164,7 +164,7 @@ or set the associated configuration value:
 
 This will enable unidist not to spawn MPI processes dynamically because the user himself spawns the processes.
 
-Then, you should also use ``mpiexec`` command and specify both hosts and a number of workers to spawn.
+Then, you should also use ``mpiexec`` command and specify both hosts and a number of workers to spawn on each node.
 
 .. code-block:: bash
 
