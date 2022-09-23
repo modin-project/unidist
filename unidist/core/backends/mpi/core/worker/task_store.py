@@ -12,7 +12,13 @@ from unidist.core.backends.mpi.core.worker.request_store import RequestStore
 
 
 # Logger configuration
-log_file = "worker_{}.log".format(communication.MPIState.get_instance().rank)
+# When building documentation we do not have MPI initialized so
+# we use the condition to set "worker_0.log" in order to build it succesfully.
+log_file = "worker_{}.log".format(
+    communication.MPIState.get_instance().rank
+    if communication.MPIState.get_instance()
+    else 0
+)
 w_logger = common.get_logger("worker", log_file)
 
 
