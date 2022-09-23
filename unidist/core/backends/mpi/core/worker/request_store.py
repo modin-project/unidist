@@ -8,7 +8,9 @@ from unidist.core.backends.mpi.core.worker.async_operations import AsyncOperatio
 
 mpi_state = communication.MPIState.get_instance()
 # Logger configuration
-log_file = "worker_{}.log".format(mpi_state.rank)
+# When building documentation we do not have MPI initialized so
+# we use the condition to set "worker_0.log" in order to build it succesfully.
+log_file = "worker_{}.log".format(mpi_state.rank if mpi_state is not None else 0)
 logger = common.get_logger("worker", log_file)
 
 

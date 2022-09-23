@@ -11,7 +11,7 @@ Workers related functionality API
 Worker
 ======
 
-Each worker MPI process starts infinite :py:func:`~unidist.core.backends.mpi.core.worker.worker.worker_loop`,
+Each MPI worker process starts infinite :py:func:`~unidist.core.backends.mpi.core.worker.loop.worker_loop`,
 which accepts and processes incoming operations.
 
 API
@@ -20,12 +20,16 @@ API
 Cancel operation from :py:class:`~unidist.core.backends.mpi.core.common.Operations` class breaks the loop
 and leaves all internal storages in their current state.
 
-.. autofunction:: unidist.core.backends.mpi.core.worker.worker.worker_loop
+.. autofunction:: unidist.core.backends.mpi.core.worker.loop.worker_loop
 
 .. autofunction:: unidist.core.backends.mpi.core.worker.request_store.RequestStore.process_get_request
+  :noindex:
 .. autofunction:: unidist.core.backends.mpi.core.worker.request_store.RequestStore.process_wait_request
+  :noindex:
 .. autofunction:: unidist.core.backends.mpi.core.worker.task_store.TaskStore.process_task_request
+  :noindex:
 .. autofunction:: unidist.core.backends.mpi.core.worker.task_store.TaskStore.request_worker_data
+  :noindex:
 
 Local Object Storage
 ====================
