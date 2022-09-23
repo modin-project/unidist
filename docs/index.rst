@@ -36,8 +36,8 @@ To install the most recent stable release for unidist run the following:
 
   pip install unidist[all] # Install unidist with dependencies for all the backends
 
-For further instructions on how to install unidist with ``conda`` or for specific platforms
-or execution backends, see our :doc:`Installation <installation>` section.
+For further instructions on how to install unidist with concrete execution backends or
+using ``conda`` see our :doc:`Installation <installation>` section.
 
 Usage
 """""
@@ -63,13 +63,11 @@ The example below describes squaring the numbers from a list using unidist:
       # Get materialized data.
       print(unidist.get(refs)) # [0, 1, 4, 9]
 
-To run the `script.py` use :doc:`unidist CLI </using_cli>`:
+Run the `script.py` with:
 
 .. code-block:: bash
 
-    # Running the script in a single node with `mpi` backend on `4` workers:
-    $ unidist script.py --backend mpi --num_cpus 4
-
+    $ python script.py
 
 .. toctree::
    :hidden:

@@ -6,7 +6,7 @@
 Using Unidist
 '''''''''''''
 
-This page contains information on how to run unidist on different execution backends.
+This page contains information on how to choose a concrete execution backend and run unidist with it.
 
 - :doc:`Unidist on Ray <unidist_on_ray>`
 - :doc:`Unidist on MPI <unidist_on_mpi>`

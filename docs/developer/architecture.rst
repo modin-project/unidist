@@ -63,7 +63,7 @@ details just pick module you are interested in.
            |   |   ├───core
            |   │   │    ├─── :doc:`common </flow/unidist/core/backends/mpi/core/common>`
            |   │   │    ├─── :doc:`communication </flow/unidist/core/backends/mpi/core/communication>`
-           |   │   │    ├─── :doc:`executor </flow/unidist/core/backends/mpi/core/executor>`
+           |   │   │    ├─── :doc:`controller </flow/unidist/core/backends/mpi/core/controller>`
            |   │   │    ├─── :doc:`monitor </flow/unidist/core/backends/mpi/core/monitor>`
            |   │   │    ├─── :doc:`serialization </flow/unidist/core/backends/mpi/core/serialization>`
            |   │   │    └─── :doc:`worker </flow/unidist/core/backends/mpi/core/worker>`

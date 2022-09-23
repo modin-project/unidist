@@ -68,33 +68,36 @@ For more information refer to [Installation](https://unidist.readthedocs.io/en/l
 
 #### Choosing an execution backend
 
-The recommended way to choose a concrete execution backend is to use
-the argument of [unidist CLI](https://unidist.readthedocs.io/en/latest/using_cli.html)
-when running your python script:
+If you want to choose a specific execution backend to run on,
+you can set the environment variable `UNIDIST_BACKEND` and unidist will do computation with that backend:
 
 ```bash
-# Running the script with unidist on Ray backend
-$ unidist script.py --backend ray
-# Running the script with unidist on MPI backend
-$ unidist script.py --backend mpi
-# Running the script with unidist on Dask backend
-$ unidist script.py --backend dask
-# Running the script with unidist on Python Multiprocessing backend
-$ unidist script.py --backend multiprocessing
-# Running the script with unidist on sequential Python backend
-$ unidist script.py --backend python
+export UNIDIST_BACKEND=ray  # unidist will use Ray
+export UNIDIST_BACKEND=mpi  # unidist will use MPI
+export UNIDIST_BACKEND=dask  # unidist will use Dask
 ```
 
-If you have installed all the execution backends, Ray is used by default.
+This can also be done within a notebook/interpreter before you initialize unidist:
 
-For more options on how to choose a concrete execution backend
-see [Using Unidist](https://unidist.readthedocs.io/en/latest/using_unidist/index.html) section.
+```python
+from unidist.config import Backend
+
+Backend.put("ray")  # unidist will use Ray
+Backend.put("mpi")  # unidist will use MPI
+Backend.put("dask")  # unidist will use Dask
+```
+
+If you have installed all the execution backends and haven't specified any of the execution backends, Ray is used by default.
+
+Since some of the execution backends, particularly, MPI, have some specifics regarding running python programs, please
+refer to [Using Unidist](https://unidist.readthedocs.io/en/latest/using_unidist/index.html) section to get more information on
+setting the execution backend to run on.
 
 #### Usage
 
-unidist provides [CLI interface](https://unidist.readthedocs.io/en/latest/using_cli.html) to run python programs.
-
 ```python
+# script.py
+
 import unidist
 unidist.init() # Ray backend is used by default
 
@@ -107,7 +110,13 @@ def foo(x):
 refs = [foo.remote(i) for i in range(5)]
 # To get the data call `unidist.get(...)`
 print(unidist.get(refs))
-[0, 1, 4, 9, 16]
+```
+
+Run the `script.py` with:
+
+```bash
+$ python script.py
+[0, 1, 4, 9, 16] # output
 ```
 
 For more examples refer to [Getting Started](https://unidist.readthedocs.io/en/latest/getting_started.html) section
