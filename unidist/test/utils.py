@@ -71,3 +71,25 @@ class TestActor:
 
     def multiple_returns(self, x):
         return x, self._accumulator
+
+
+@unidist.remote
+class TestAsyncActor:
+    _accumulator = 0
+
+    def __init__(self, init=0):
+        self._accumulator = init
+
+    async def get_accumulator(self):
+        return self._accumulator
+
+    def _internal(self):
+        self._accumulator += 1
+
+    async def task(self, x):
+        self._accumulator += x
+        self._internal()
+        return self._accumulator
+
+    async def multiple_returns(self, x):
+        return x, self._accumulator
