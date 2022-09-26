@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
+import functools
+import inspect
 import time
 
 from unidist.core.backends.common.data_id import is_data_id
@@ -32,6 +35,8 @@ class TaskStore:
         self._pending_tasks_list = []
         # Incomplete actor tasks list - arguments not ready yet
         self._pending_actor_tasks_list = []
+        # Event loop for executing coroutines
+        self.event_loop = asyncio.get_event_loop()
 
     @classmethod
     def get_instance(cls):
@@ -208,7 +213,11 @@ class TaskStore:
             start = time.perf_counter()
 
             # Execute user task
-            output_values = task(*args, **kwargs)
+            if inspect.iscoroutinefunction(task):
+                f_to_execute = functools.partial(task, *args, **kwargs)
+                output_values = self.event_loop.run_until_complete(f_to_execute())
+            else:
+                output_values = task(*args, **kwargs)
 
             w_logger.info(
                 "Task evaluation time: {}".format(time.perf_counter() - start)
@@ -286,3 +295,6 @@ class TaskStore:
                 RequestStore.get_instance().check_pending_get_requests(output_ids)
                 RequestStore.get_instance().check_pending_wait_requests(output_ids)
             return None
+
+    def __del__(self):
+        self.event_loop.close()
