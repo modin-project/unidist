@@ -78,7 +78,10 @@ def init():
     if rank == 0 and parent_comm == MPI.COMM_NULL:
         if IsMpiSpawnWorkers.get():
             nprocs_to_spawn = CpuCount.get() + 1  # +1 for monitor process
-            args = ["-c", "import unidist; unidist.init()"]
+            args = [
+                "-c",
+                "import unidist; import unidist.config as cfg; cfg.Backend.put('mpi'); unidist.init()",
+            ]
 
             hosts = MpiHosts.get()
             info = MPI.Info.Create()
