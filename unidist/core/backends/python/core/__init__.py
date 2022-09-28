@@ -4,6 +4,6 @@
 
 """Python backend core functionality."""
 
-from .api import put, get, submit, init
+from .api import put, get, submit, init, is_initialized
 
-__all__ = ["put", "get", "submit", "init"]
+__all__ = ["put", "get", "submit", "init", "is_initialized"]

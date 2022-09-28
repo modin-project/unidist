@@ -179,3 +179,20 @@ class DaskBackend(Backend):
         """Shutdown Dask execution backend."""
         client = get_client()
         client.shutdown()
+
+    @staticmethod
+    def is_initialized():
+        """
+        Check if Dask backend has already been initialized.
+
+        Returns
+        -------
+        bool
+            True or False.
+        """
+        try:
+            get_client()
+        except ValueError:
+            return False
+        else:
+            return True

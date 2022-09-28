@@ -10,6 +10,7 @@ from unidist.core.backends.mpi.core.controller.api import (
     submit,
     wait,
     init,
+    is_initialized,
     cluster_resources,
     shutdown,
 )
@@ -21,6 +22,7 @@ __all__ = [
     "submit",
     "wait",
     "init",
+    "is_initialized",
     "cluster_resources",
     "shutdown",
     "Actor",

@@ -15,6 +15,7 @@ API
 ===
 
 .. autofunction:: unidist.core.backends.mpi.core.controller.api.init
+.. autofunction:: unidist.core.backends.mpi.core.controller.api.is_initialized
 
 Function :py:func:`~unidist.core.backends.mpi.core.controller.api.shutdown` sends cancelation signal to all MPI processes.
 After that, MPI backend couldn't be restarted.

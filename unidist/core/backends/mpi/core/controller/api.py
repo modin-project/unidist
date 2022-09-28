@@ -43,6 +43,8 @@ logger = common.get_logger("api", "api.log")
 
 # The topology of MPI cluster gets available when MPI initialization in `init`
 topology = dict()
+# The global variable is responsible for if MPI backend has already been initialized
+is_mpi_initialized = False
 
 
 def init():
@@ -112,6 +114,10 @@ def init():
     if not topology:
         topology = communication.get_topology()
 
+    global is_mpi_initialized
+    if not is_mpi_initialized:
+        is_mpi_initialized = True
+
     if mpi_state.rank == communication.MPIRank.ROOT:
         atexit.register(_termination_handler)
         signal.signal(signal.SIGTERM, _termination_handler)
@@ -132,6 +138,19 @@ def init():
 
         worker_loop()
         return
+
+
+def is_initialized():
+    """
+    Check if MPI backend has already been initialized.
+
+    Returns
+    -------
+    bool
+        True or False.
+    """
+    global is_mpi_initialized
+    return is_mpi_initialized
 
 
 # TODO: cleanup before shutdown?

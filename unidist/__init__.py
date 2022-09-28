@@ -6,6 +6,7 @@
 
 from .api import (
     init,
+    is_initialized,
     shutdown,
     remote,
     put,
@@ -20,6 +21,7 @@ from ._version import get_versions
 
 __all__ = [
     "init",
+    "is_initialized",
     "shutdown",
     "remote",
     "put",

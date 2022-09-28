@@ -9,6 +9,10 @@ from unidist.core.backends.common.data_id import DataID
 from unidist.core.backends.python.core.object_store import ObjectStore
 
 
+# The global variable is responsible for if Python backend has already been initialized
+is_python_initialized = False
+
+
 def init():
     """
     Initialize an object storage.
@@ -18,6 +22,22 @@ def init():
     Run initialization of singleton object ``unidist.core.backends.python.core.object_store.ObjectStore``.
     """
     ObjectStore.get_instance()
+    global is_python_initialized
+    if not is_python_initialized:
+        is_python_initialized = True
+
+
+def is_initialized():
+    """
+    Check if Python backend has already been initialized.
+
+    Returns
+    -------
+    bool
+        True or False.
+    """
+    global is_python_initialized
+    return is_python_initialized
 
 
 def put(data):

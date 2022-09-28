@@ -14,6 +14,11 @@ for working with object storage and submitting tasks.
 API
 ===
 
+Function :py:func:`~unidist.core.backends.multiprocessing.core.api.is_initialized` allows to check
+if the execution backend has been initialized.
+
+.. autofunction:: unidist.core.backends.multiprocessing.core.api.is_initialized
+
 Function :py:func:`~unidist.core.backends.multiprocessing.core.api.init` creates instances of singleton
 classes :py:class:`~unidist.core.backends.multiprocessing.core.object_store.ObjectStore` and
 :py:class:`~unidist.core.backends.multiprocessing.core.process_manager.ProcessManager`.
