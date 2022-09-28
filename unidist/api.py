@@ -92,6 +92,19 @@ def init():
     init_backend()
 
 
+def is_initialized():
+    """
+    Check if a unidist backend has already been initialized.
+
+    Returns
+    -------
+    bool
+        True or False.
+    """
+    execution_backend = get_backend_proxy()
+    return execution_backend.is_initialized()
+
+
 def shutdown():
     """Shutdown an execution backend."""
     execution_backend = get_backend_proxy()

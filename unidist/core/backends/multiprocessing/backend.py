@@ -167,3 +167,15 @@ class MultiProcessingBackend(Backend):
         raise NotImplementedError(
             "'shutdown' is not supported yet by MultiProcessing backend."
         )
+
+    @staticmethod
+    def is_initialized():
+        """
+        Check if Multiprocessing backend has already been initialized.
+
+        Returns
+        -------
+        bool
+            True or False.
+        """
+        return mp.is_initialized()

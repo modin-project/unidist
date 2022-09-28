@@ -15,6 +15,11 @@ init
 
 .. autofunction:: unidist.api.init
 
+is_initialized
+--------------
+
+.. autofunction:: unidist.api.is_initialized
+
 remote
 ------
 

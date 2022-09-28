@@ -5,6 +5,6 @@
 """MultiProcessing backend core functionality."""
 
 from .actor import Actor
-from .api import put, wait, get, submit, init
+from .api import put, wait, get, submit, init, is_initialized
 
-__all__ = ["Actor", "put", "wait", "get", "submit", "init"]
+__all__ = ["Actor", "put", "wait", "get", "submit", "init", "is_initialized"]

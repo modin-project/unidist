@@ -14,6 +14,10 @@ from unidist.core.backends.multiprocessing.core.process_manager import (
 )
 
 
+# The global variable is responsible for if Multiprocessing backend has already been initialized
+is_multiprocessing_initialized = False
+
+
 def init(num_workers=CpuCount.get()):
     """
     Initialize shared object storage and workers pool.
@@ -30,6 +34,22 @@ def init(num_workers=CpuCount.get()):
     """
     ObjectStore.get_instance()
     ProcessManager.get_instance(num_workers=num_workers)
+    global is_multiprocessing_initialized
+    if not is_multiprocessing_initialized:
+        is_multiprocessing_initialized = True
+
+
+def is_initialized():
+    """
+    Check if Multiprocessing backend has already been initialized.
+
+    Returns
+    -------
+    bool
+        True or False.
+    """
+    global is_multiprocessing_initialized
+    return is_multiprocessing_initialized
 
 
 def put(data):

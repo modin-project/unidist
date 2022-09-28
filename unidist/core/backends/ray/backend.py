@@ -161,3 +161,14 @@ class RayBackend(Backend):
     def shutdown():
         """Shutdown Ray execution backend."""
         ray.shutdown()
+
+    def is_initialized(self):
+        """
+        Check if Ray backend has already been initialized.
+
+        Returns
+        -------
+        bool
+            True or False.
+        """
+        return ray.is_initialized()

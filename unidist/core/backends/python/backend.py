@@ -155,3 +155,15 @@ class PythonBackend(Backend):
             Dictionary with node info in the form `{"node_ip": {"CPU": x}}`.
         """
         return {PythonBackend.get_ip(): {"CPU": PythonBackend.num_cpus()}}
+
+    @staticmethod
+    def is_initialized():
+        """
+        Check if Python backend has already been initialized.
+
+        Returns
+        -------
+        bool
+            True or False.
+        """
+        return py.is_initialized()

@@ -176,6 +176,18 @@ class Backend(ABC):
         """Shutdown an execution backend."""
         pass
 
+    @staticmethod
+    def is_initialized():
+        """
+        Check if a unidist backend has already been initialized.
+
+        Returns
+        -------
+        bool
+            True or False.
+        """
+        pass
+
 
 class BackendProxy(Backend):
     """
@@ -375,3 +387,14 @@ class BackendProxy(Backend):
     def shutdown(self):
         """Shutdown an execution backend."""
         self._backend_cls.shutdown()
+
+    def is_initialized(self):
+        """
+        Check if a unidist backend has already been initialized.
+
+        Returns
+        -------
+        bool
+            True or False.
+        """
+        return self._backend_cls.is_initialized()

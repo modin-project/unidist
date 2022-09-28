@@ -162,3 +162,15 @@ class MPIBackend(Backend):
     def shutdown():
         """Shutdown MPI execution backend."""
         mpi.shutdown()
+
+    @staticmethod
+    def is_initialized():
+        """
+        Check if MPI backend has already been initialized.
+
+        Returns
+        -------
+        bool
+            True or False.
+        """
+        return mpi.is_initialized()
