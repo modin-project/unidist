@@ -191,10 +191,10 @@ def unwrap_data_ids(data_ids):
     iterable
         Transformed iterable object (task arguments).
     """
-    if isinstance(data_ids, (list, tuple, dict)):
+    if type(data_ids) in (list, tuple, dict):
         container = type(data_ids)()
         for value in data_ids:
-            if isinstance(value, (list, tuple, dict)):
+            if type(value) in (list, tuple, dict):
                 unwrapped_value = unwrap_data_ids(
                     {value: data_ids[value]} if isinstance(data_ids, dict) else value
                 )
@@ -218,7 +218,7 @@ def unwrap_data_ids(data_ids):
                         data_ids[value].base_data_id()
                         if is_data_id(data_ids[value])
                         else unwrap_data_ids(data_ids[value])
-                        if isinstance(data_ids[value], (list, tuple, dict))
+                        if type(data_ids[value]) in (list, tuple, dict)
                         else data_ids[value]
                     )
         return container

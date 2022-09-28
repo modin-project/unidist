@@ -181,7 +181,7 @@ def push_data(dest_rank, value):
     if isinstance(value, (list, tuple)):
         for v in value:
             push_data(dest_rank, v)
-    elif isinstance(value, (dict)):
+    elif isinstance(value, dict):
         for v in value.values():
             push_data(dest_rank, v)
     elif is_data_id(value):
