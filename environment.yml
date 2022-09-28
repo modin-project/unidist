@@ -11,7 +11,7 @@ dependencies:
   - packaging
   - psutil
   - pytest
-  - ray-default
+  - ray-default>=1.4.0
   # for downloading packages from PyPI
   - pip
   - pip:
