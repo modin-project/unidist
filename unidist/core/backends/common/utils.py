@@ -19,10 +19,10 @@ def unwrap_object_refs(obj_refs):
     -------
     iterable or underlying object of ObjectRef
     """
-    if isinstance(obj_refs, (list, tuple, dict)):
+    if type(obj_refs) in (list, tuple, dict):
         container = type(obj_refs)()
         for value in obj_refs:
-            if isinstance(value, (list, tuple, dict)):
+            if type(value) in (list, tuple, dict):
                 unwrapped_value = unwrap_object_refs(
                     {value: obj_refs[value]} if isinstance(obj_refs, dict) else value
                 )
@@ -42,7 +42,7 @@ def unwrap_object_refs(obj_refs):
                         obj_refs[value]._ref
                         if is_object_ref(obj_refs[value])
                         else unwrap_object_refs(obj_refs[value])
-                        if isinstance(obj_refs[value], (list, tuple, dict))
+                        if type(obj_refs[value]) in (list, tuple, dict)
                         else obj_refs[value]
                     )
         return container
