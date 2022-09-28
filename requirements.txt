@@ -7,7 +7,7 @@ msgpack>=1.0.0
 packaging
 psutil
 pytest
-ray[default]
+ray[default]>=1.4.0
 # for building the documentation
 sphinx
 sphinx_rtd_theme
