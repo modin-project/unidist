@@ -89,6 +89,54 @@ class Actor:
     def __init__(self, actor_cls):
         self._actor_cls = actor_cls
 
+    def _serialization_helper(self):
+        """
+        Helper to save the state of the object.
+
+        This is defined to make pickling work via `__reduce__`.
+
+        Returns
+        -------
+        dict
+            A dictionary of the information needed to reconstruct the object.
+        """
+        state = {
+            "actor_cls": self._actor_cls,
+        }
+        return state
+
+    @classmethod
+    def _deserialization_helper(cls, state):
+        """
+        Helper to restore the state of the object.
+
+        This is defined to make pickling work via `__reduce__`.
+
+        Parameters
+        ----------
+        state : dict
+            The serialized state of the object.
+
+        Returns
+        -------
+        Actor
+        """
+        return cls(
+            state["actor_cls"],
+        )
+
+    def __reduce__(self):
+        """
+        This is defined intentionally to make pickling work correctly.
+
+        Returns
+        -------
+        tuple
+            Callable and arguments to be passed in to it.
+        """
+        state = self._serialization_helper()
+        return self._deserialization_helper, (state,)
+
     def __getattr__(self, name):
         """
         Get the attribute `name` of the actor class.
