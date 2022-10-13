@@ -103,13 +103,69 @@ class DaskActor(Actor):
         The number of CPUs to reserve for the lifetime of the actor.
     resources : dict
         Custom resources to reserve for the lifetime of the actor.
+    actor_handle : None or distributed.actor.Actor
+        Used for proper serialization/deserialization via `__reduce__`.
     """
 
-    def __init__(self, cls, num_cpus, resources):
+    def __init__(self, cls, num_cpus, resources, actor_handle=None):
         self._cls = cls
         self._num_cpus = num_cpus
         self._resources = resources
-        self._actor_handle = None
+        self._actor_handle = actor_handle
+
+    def _serialization_helper(self):
+        """
+        Helper to save the state of the object.
+
+        This is defined to make pickling work via `__reduce__`.
+
+        Returns
+        -------
+        dict
+            A dictionary of the information needed to reconstruct the object.
+        """
+        state = {
+            "cls": self._cls,
+            "num_cpus": self._num_cpus,
+            "resources": self._resources,
+            "actor_handle": self._actor_handle,
+        }
+        return state
+
+    @classmethod
+    def _deserialization_helper(cls, state):
+        """
+        Helper to restore the state of the object.
+
+        This is defined to make pickling work via `__reduce__`.
+
+        Parameters
+        ----------
+        state : dict
+            The serialized state of the object.
+
+        Returns
+        -------
+        DaskActor
+        """
+        return cls(
+            state["cls"],
+            state["num_cpus"],
+            state["resources"],
+            state["actor_handle"],
+        )
+
+    def __reduce__(self):
+        """
+        This is defined intentionally to make pickling work correctly.
+
+        Returns
+        -------
+        tuple
+            Callable and arguments to be passed in to it.
+        """
+        state = self._serialization_helper()
+        return self._deserialization_helper, (state,)
 
     def __getattr__(self, name):
         """
