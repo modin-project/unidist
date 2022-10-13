@@ -65,8 +65,8 @@ def test_address_space(is_use_options):
 
 
 @pytest.mark.skipif(
-    Backend.get() != BackendName.RAY,
-    reason="We only have proper serialization/deserialization for Ray actors for now",
+    Backend.get() not in (BackendName.RAY, BackendName.DASK),
+    reason="We only have proper serialization/deserialization for Ray and Dask actors for now",
 )
 def test_global_capture():
     actor = TestActor.remote(0)
@@ -82,8 +82,8 @@ def test_global_capture():
 
 
 @pytest.mark.skipif(
-    Backend.get() != BackendName.RAY,
-    reason="We only have proper serialization/deserialization for Ray actors for now",
+    Backend.get() not in (BackendName.RAY, BackendName.DASK),
+    reason="We only have proper serialization/deserialization for Ray and Dask actors for now",
 )
 def test_direct_capture():
     actor = TestActor.remote(0)
