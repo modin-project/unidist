@@ -46,7 +46,12 @@ def is_cpkl_serializable(data):
     bool
         ``True` if the data should be serialized with cloudpickle library.
     """
-    return inspect.isfunction(data) or inspect.isclass(data) or inspect.ismethod(data)
+    return (
+        inspect.isfunction(data)
+        or inspect.isclass(data)
+        or inspect.ismethod(data)
+        or data.__class__.__module__ != "builtins"
+    )
 
 
 def is_pickle5_serializable(data):
