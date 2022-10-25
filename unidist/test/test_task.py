@@ -3,8 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import time
+import pytest
 
 import unidist
+from unidist.config import Backend
+from unidist.core.base.common import BackendName
 from .utils import (
     assert_equal,
     catch_exception,
@@ -81,6 +84,10 @@ def test_return_none():
     assert_equal(task_return_none.remote(), None)
 
 
+@pytest.mark.skipif(
+    Backend.get() == BackendName.MP,
+    reason="Run remote task inside of another remote task is not supported by MultiProcessing",
+)
 def test_internal_remote():
     @unidist.remote
     def foo(x):
