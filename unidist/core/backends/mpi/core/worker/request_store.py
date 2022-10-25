@@ -190,6 +190,10 @@ class RequestStore:
             Rank number to send data to.
         data_id: unidist.core.backends.common.data_id.DataID
             `data_id` associated data to request
+        is_blocking_op : bool, default: False
+            # Whether the get request should be blocking or not.
+            # If ``True``, the request should be processed immediatly
+            # even for a worker since it can get into controller mode.
 
         Notes
         -----
@@ -199,7 +203,8 @@ class RequestStore:
         async_operations = AsyncOperations.get_instance()
         if object_store.contains(data_id):
             if source_rank == communication.MPIRank.ROOT or is_blocking_op:
-                # Master is blocked by request and has no event loop, no need for OP type
+                # The controller or a requesting worker is blocked by the request
+                # which should be processed immediatly
                 operation_data = object_store.get(data_id)
                 communication.send_complex_data(
                     mpi_state.comm,
