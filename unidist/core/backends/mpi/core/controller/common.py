@@ -24,9 +24,14 @@ class RoundRobin:
 
     def __init__(self):
         self.rank_to_schedule = itertools.cycle(
-            range(
-                initial_worker_number, communication.MPIState.get_instance().world_size
-            )
+            [
+                rank
+                for rank in range(
+                    initial_worker_number,
+                    communication.MPIState.get_instance().world_size,
+                )
+                if rank != communication.MPIState.get_instance().rank
+            ]
         )
 
     @classmethod
@@ -79,6 +84,7 @@ def request_worker_data(data_id):
     operation_data = {
         "source": mpi_state.rank,
         "id": data_id.base_data_id(),
+        "blocked": True,
     }
     communication.send_simple_operation(
         mpi_state.comm,

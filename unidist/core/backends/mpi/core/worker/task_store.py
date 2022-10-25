@@ -132,6 +132,7 @@ class TaskStore:
         operation_data = {
             "source": communication.MPIState.get_instance().rank,
             "id": data_id,
+            "blocked": False,
         }
         communication.send_simple_operation(
             communication.MPIState.get_instance().comm,

@@ -178,7 +178,7 @@ class RequestStore:
             self.put(data_id, communication.MPIRank.ROOT, self.REQ_WAIT)
             logger.debug("Pending wait request {} id".format(data_id._id))
 
-    def process_get_request(self, source_rank, data_id):
+    def process_get_request(self, source_rank, data_id, is_blocked=False):
         """
         Satisfy GET operation request from another process.
 
@@ -198,7 +198,7 @@ class RequestStore:
         object_store = ObjectStore.get_instance()
         async_operations = AsyncOperations.get_instance()
         if object_store.contains(data_id):
-            if source_rank == communication.MPIRank.ROOT:
+            if source_rank == communication.MPIRank.ROOT or is_blocked:
                 # Master is blocked by request and has no event loop, no need for OP type
                 operation_data = object_store.get(data_id)
                 communication.send_complex_data(
