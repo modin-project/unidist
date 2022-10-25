@@ -111,7 +111,7 @@ def test_direct_capture():
 
 
 @pytest.mark.skipif(
-    Backend.get() != BackendName.MP,
+    Backend.get() == BackendName.MP,
     reason="Details are in https://github.com/modin-project/unidist/issues/70.",
 )
 def test_return_none():
