@@ -108,3 +108,12 @@ def test_direct_capture():
     object_ref = foo.remote(actor)
 
     assert_equal(object_ref, 0)
+
+
+@pytest.mark.skipif(
+    Backend.get() == BackendName.MP,
+    reason="Details are in https://github.com/modin-project/unidist/issues/70.",
+)
+def test_return_none():
+    actor = TestActor.remote()
+    assert_equal(actor.task_return_none.remote(), None)

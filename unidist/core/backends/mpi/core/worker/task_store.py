@@ -233,8 +233,7 @@ class TaskStore:
             else:
                 ObjectStore.get_instance().put(output_data_ids, e)
         else:
-            # TODO: check if None case works correctly
-            if output_values is not None:
+            if output_data_ids is not None:
                 if (
                     isinstance(output_data_ids, (list, tuple))
                     and len(output_data_ids) > 1
