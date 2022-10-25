@@ -191,9 +191,9 @@ class RequestStore:
         data_id: unidist.core.backends.common.data_id.DataID
             `data_id` associated data to request
         is_blocking_op : bool, default: False
-            # Whether the get request should be blocking or not.
-            # If ``True``, the request should be processed immediatly
-            # even for a worker since it can get into controller mode.
+            Whether the get request should be blocking or not.
+            If ``True``, the request should be processed immediatly
+            even for a worker since it can get into controller mode.
 
         Notes
         -----
