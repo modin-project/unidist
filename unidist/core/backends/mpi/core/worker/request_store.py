@@ -178,7 +178,7 @@ class RequestStore:
             self.put(data_id, communication.MPIRank.ROOT, self.REQ_WAIT)
             logger.debug("Pending wait request {} id".format(data_id._id))
 
-    def process_get_request(self, source_rank, data_id):
+    def process_get_request(self, source_rank, data_id, is_blocking_op=False):
         """
         Satisfy GET operation request from another process.
 
@@ -190,6 +190,10 @@ class RequestStore:
             Rank number to send data to.
         data_id: unidist.core.backends.common.data_id.DataID
             `data_id` associated data to request
+        is_blocking_op : bool, default: False
+            Whether the get request should be blocking or not.
+            If ``True``, the request should be processed immediatly
+            even for a worker since it can get into controller mode.
 
         Notes
         -----
@@ -198,8 +202,9 @@ class RequestStore:
         object_store = ObjectStore.get_instance()
         async_operations = AsyncOperations.get_instance()
         if object_store.contains(data_id):
-            if source_rank == communication.MPIRank.ROOT:
-                # Master is blocked by request and has no event loop, no need for OP type
+            if source_rank == communication.MPIRank.ROOT or is_blocking_op:
+                # The controller or a requesting worker is blocked by the request
+                # which should be processed immediatly
                 operation_data = object_store.get(data_id)
                 communication.send_complex_data(
                     mpi_state.comm,
