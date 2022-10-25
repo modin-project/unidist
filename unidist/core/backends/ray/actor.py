@@ -125,7 +125,7 @@ class RayActor(Actor):
             state["cls"],
             state["num_cpus"],
             state["resources"],
-            state["actor_handle"],
+            actor_handle=state["actor_handle"],
         )
 
     def __reduce__(self):
