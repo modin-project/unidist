@@ -66,7 +66,7 @@ def test_address_space(is_use_options):
 
 @pytest.mark.skipif(
     Backend.get() == BackendName.MP,
-    reason="Proper serialization/deserialization is not supported by MultiProcessing",
+    reason="Proper serialization/deserialization is not implemented yet for multiprocessing",
 )
 def test_global_capture():
     actor = TestActor.remote(0)
@@ -83,7 +83,7 @@ def test_global_capture():
 
 @pytest.mark.skipif(
     Backend.get() == BackendName.MP,
-    reason="Proper serialization/deserialization is not supported by MultiProcessing",
+    reason="Proper serialization/deserialization is not implemented yet for multiprocessing",
 )
 def test_direct_capture():
     actor = TestActor.remote(0)

@@ -72,7 +72,7 @@ def worker_loop():
         elif operation_type == common.Operation.GET:
             request = communication.recv_simple_operation(mpi_state.comm, source_rank)
             request_store.process_get_request(
-                request["source"], request["id"], request["blocked"]
+                request["source"], request["id"], request["is_blocking_op"]
             )
 
         elif operation_type == common.Operation.PUT_DATA:

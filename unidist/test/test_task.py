@@ -86,7 +86,7 @@ def test_return_none():
 
 @pytest.mark.skipif(
     Backend.get() == BackendName.MP,
-    reason="Run remote task inside of another remote task is not supported by MultiProcessing",
+    reason="Run of a remote task inside of another one is not implemented yet for multiprocessing",
 )
 def test_internal_remote():
     @unidist.remote
