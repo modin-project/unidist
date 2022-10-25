@@ -75,7 +75,9 @@ class MasterDataID(DataID):
 
     def __del__(self):
         """Track object deletion by garbage collector."""
-        if self._gc is not None:
+        # We check for existence of `_qc` attribute because
+        # it might be deleted during serialization via `__getstate__`
+        if hasattr(self, "_gc") and self._gc is not None:
             self._gc.collect(self.base_data_id())
 
     def __getstate__(self):
