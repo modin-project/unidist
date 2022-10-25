@@ -41,6 +41,11 @@ def task(x):
     return x * x
 
 
+@unidist.remote
+def task_return_none():
+    return None
+
+
 @unidist.remote(num_returns=2)
 def task_multiple_returns_default(x):
     return x, x * x
@@ -68,6 +73,9 @@ class TestActor:
         self._accumulator += x
         self._internal()
         return self._accumulator
+
+    def task_return_none(self):
+        return None
 
     def multiple_returns(self, x):
         return x, self._accumulator
