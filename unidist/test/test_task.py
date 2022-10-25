@@ -9,6 +9,7 @@ from .utils import (
     assert_equal,
     catch_exception,
     task,
+    task_return_none,
     task_multiple_returns_default,
     task_multiple_returns,
 )
@@ -74,3 +75,7 @@ def test_exception():
         return x / x
 
     catch_exception(foo.remote(0), ZeroDivisionError)
+
+
+def test_return_none():
+    assert_equal(task_return_none.remote(), None)
