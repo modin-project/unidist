@@ -88,3 +88,46 @@ def test_address_space(is_use_options):
 
     assert_equal(object_ref0, 0)
     assert_equal(object_ref1, 1)
+
+
+@pytest.mark.skipif(
+    Backend.get() == BackendName.MP,
+    reason="Proper serialization/deserialization is not implemented yet for multiprocessing",
+)
+def test_global_capture():
+    actor = TestAsyncActor.remote(0)
+
+    @unidist.remote
+    def foo():
+        object_ref = actor.get_accumulator.remote()
+        return unidist.get(object_ref)
+
+    object_ref = foo.remote()
+
+    assert_equal(object_ref, 0)
+
+
+@pytest.mark.skipif(
+    Backend.get() == BackendName.MP,
+    reason="Proper serialization/deserialization is not implemented yet for multiprocessing",
+)
+def test_direct_capture():
+    actor = TestAsyncActor.remote(0)
+
+    @unidist.remote
+    def foo(actor):
+        object_ref = actor.get_accumulator.remote()
+        return unidist.get(object_ref)
+
+    object_ref = foo.remote(actor)
+
+    assert_equal(object_ref, 0)
+
+
+@pytest.mark.skipif(
+    Backend.get() == BackendName.MP,
+    reason="Details are in https://github.com/modin-project/unidist/issues/70.",
+)
+def test_return_none():
+    actor = TestAsyncActor.remote()
+    assert_equal(actor.task_return_none.remote(), None)
