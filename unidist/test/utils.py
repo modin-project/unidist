@@ -99,5 +99,8 @@ class TestAsyncActor:
         self._internal()
         return self._accumulator
 
+    async def task_return_none(self):
+        return None
+
     async def multiple_returns(self, x):
         return x, self._accumulator
