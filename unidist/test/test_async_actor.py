@@ -91,8 +91,8 @@ def test_address_space(is_use_options):
 
 
 @pytest.mark.skipif(
-    Backend.get() == BackendName.MP,
-    reason="Proper serialization/deserialization is not implemented yet for multiprocessing",
+    Backend.get() in (BackendName.MP, BackendName.PY),
+    reason="Proper serialization/deserialization is not implemented yet for multiprocessing and python",
 )
 def test_global_capture():
     actor = TestAsyncActor.remote(0)
@@ -108,8 +108,8 @@ def test_global_capture():
 
 
 @pytest.mark.skipif(
-    Backend.get() == BackendName.MP,
-    reason="Proper serialization/deserialization is not implemented yet for multiprocessing",
+    Backend.get() in (BackendName.MP, BackendName.PY),
+    reason="Proper serialization/deserialization is not implemented yet for multiprocessing and python",
 )
 def test_direct_capture():
     actor = TestAsyncActor.remote(0)
@@ -125,7 +125,7 @@ def test_direct_capture():
 
 
 @pytest.mark.skipif(
-    Backend.get() == BackendName.MP,
+    Backend.get() in (BackendName.MP, BackendName.PY),
     reason="Details are in https://github.com/modin-project/unidist/issues/70.",
 )
 def test_return_none():
