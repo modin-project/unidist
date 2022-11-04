@@ -168,7 +168,7 @@ class ObjectStore:
         unidist.core.backends.mpi.core.common.MasterDataID
             Unique data ID instance.
         """
-        data_id = f"RANK_{communication.MPIState.get_instance().rank}_ID_{self._data_id_counter}"
+        data_id = f"rank_{communication.MPIState.get_instance().rank}_id_{self._data_id_counter}"
         self._data_id_counter += 1
         return common.MasterDataID(data_id, gc)
 
