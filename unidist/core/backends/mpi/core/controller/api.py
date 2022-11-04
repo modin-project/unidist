@@ -135,8 +135,11 @@ def init():
         communication.MPIRank.MONITOR,
     ):
         from unidist.core.backends.mpi.core.worker.loop import worker_loop
+        import asyncio
 
-        worker_loop()
+        event_loop = asyncio.get_event_loop()
+        _ = asyncio.ensure_future(worker_loop(event_loop), loop=event_loop)
+        event_loop.run_forever()
         return
 
 

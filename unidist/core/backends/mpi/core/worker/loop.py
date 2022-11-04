@@ -17,6 +17,7 @@ from unidist.core.backends.mpi.core.worker.object_store import ObjectStore
 from unidist.core.backends.mpi.core.worker.request_store import RequestStore
 from unidist.core.backends.mpi.core.worker.task_store import TaskStore
 from unidist.core.backends.mpi.core.worker.async_operations import AsyncOperations
+from unidist.core.backends.mpi.utils import async_wrap
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
@@ -37,7 +38,7 @@ actor_map = {}
 # ---------------------------- #
 
 
-def worker_loop():
+async def worker_loop(loop):
     """
     Infinite operations processing loop.
 
@@ -54,7 +55,9 @@ def worker_loop():
     async_operations = AsyncOperations.get_instance()
     while True:
         # Listen receive operation from any source
-        operation_type, source_rank = communication.recv_operation_type(mpi_state.comm)
+        operation_type, source_rank = await async_wrap(
+            communication.recv_operation_type
+        )(mpi_state.comm)
         w_logger.debug("common.Operation processing - {}".format(operation_type))
 
         # Proceed the request
@@ -148,3 +151,5 @@ def worker_loop():
 
         # Check completion status of previous async MPI routines
         async_operations.check()
+
+    task_store.stop_event_loop()
