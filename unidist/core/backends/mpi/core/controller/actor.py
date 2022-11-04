@@ -102,6 +102,7 @@ class Actor:
 
         # submit `ACTOR_CREATE` task to a worker only once
         if owner_rank is None and handler_id is None:
+            RoundRobin.get_instance().add_reserved_rank(self._owner_rank)
             operation_type = common.Operation.ACTOR_CREATE
             operation_data = {
                 "class": cls,
@@ -174,3 +175,6 @@ class Actor:
 
     def __getattr__(self, name):
         return ActorMethod(self, name)
+
+    def __del__(self):
+        RoundRobin.get_instance().remove_reserved_rank(self._owner_rank)

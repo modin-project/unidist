@@ -23,6 +23,7 @@ class RoundRobin:
     __instance = None
 
     def __init__(self):
+        self.reserved_ranks = []
         self.rank_to_schedule = itertools.cycle(
             (
                 rank
@@ -34,6 +35,9 @@ class RoundRobin:
                 # of the current process to not get into recursive scheduling
                 if rank != communication.MPIState.get_instance().rank
             )
+        )
+        logger.debug(
+            f"RoundRobin init for {communication.MPIState.get_instance().rank} rank"
         )
 
     @classmethod
@@ -58,7 +62,28 @@ class RoundRobin:
         int
             A rank number.
         """
-        return next(self.rank_to_schedule)
+        next_rank = next(self.rank_to_schedule)
+        for _ in range(
+            initial_worker_number, communication.MPIState.get_instance().world_size
+        ):
+            if next_rank in self.reserved_ranks:
+                next_rank = next(self.rank_to_schedule)
+            else:
+                return next_rank
+
+        raise Exception("All rank were blocked")
+
+    def add_reserved_rank(self, rank):
+        self.reserved_ranks.append(rank)
+        logger.debug(
+            f"RoundRobin add reserved rank: {communication.MPIState.get_instance().rank}"
+        )
+
+    def remove_reserved_rank(self, rank):
+        self.reserved_ranks.remove(rank)
+        logger.debug(
+            f"RoundRobin remove reserved rank: {communication.MPIState.get_instance().rank}"
+        )
 
 
 def request_worker_data(data_id):
