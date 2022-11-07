@@ -7,6 +7,7 @@
 import importlib
 import inspect
 import sys
+from collections.abc import KeysView
 
 # Serialization libraries
 if sys.version_info[1] < 8:  # check the minor Python version
@@ -51,6 +52,7 @@ def is_cpkl_serializable(data):
         or inspect.isclass(data)
         or inspect.ismethod(data)
         or data.__class__.__module__ != "builtins"
+        or isinstance(data, KeysView)
     )
 
 

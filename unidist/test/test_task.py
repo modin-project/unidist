@@ -95,3 +95,17 @@ def test_internal_remote():
         return unidist.get(o_r) + 10
 
     assert_equal(foo.remote(5), 35)
+
+
+@pytest.mark.skipif(
+    Backend.get() == BackendName.MP,
+    reason="Serialization of `dict_keys` is not properly implemented yet for multiprocessing",
+)
+def test_serialize_dict_keys():
+    @unidist.remote
+    def f(keys):
+        return keys
+
+    dict_obj = {"1": 1, "2": 2, "3": 3, "4": 4, "5": 5}
+
+    assert_equal(f.remote(dict_obj.keys()), dict_obj.keys())
