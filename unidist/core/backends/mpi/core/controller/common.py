@@ -23,7 +23,7 @@ class RoundRobin:
     __instance = None
 
     def __init__(self):
-        self.reserved_ranks = []
+        self.reserved_ranks = set()
         self.rank_to_schedule = itertools.cycle(
             (
                 rank
@@ -74,7 +74,7 @@ class RoundRobin:
         raise Exception("All rank were blocked")
 
     def add_reserved_rank(self, rank):
-        self.reserved_ranks.append(rank)
+        self.reserved_ranks.add(rank)
         logger.debug(
             f"RoundRobin add reserved rank: {communication.MPIState.get_instance().rank}"
         )

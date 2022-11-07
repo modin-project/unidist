@@ -6,7 +6,7 @@ import sys
 import pytest
 
 import unidist
-from unidist.config import Backend
+from unidist.config import Backend, CpuCount
 from unidist.core.base.common import BackendName
 from .utils import assert_equal, TestActor
 
@@ -105,3 +105,23 @@ def test_direct_capture():
 def test_return_none():
     actor = TestActor.remote()
     assert_equal(actor.task_return_none.remote(), None)
+
+
+@pytest.mark.skipif(
+    Backend.get() == BackendName.MP,
+    reason="Run of a remote task inside of another one is not implemented yet for multiprocessing",
+)
+@pytest.mark.skipif(
+    Backend.get() == BackendName.DASK,
+    reason="Dask hungs when the number of tasks exceeds the number of cores",
+)
+def test_actor_scheduling():
+    actor = TestActor.remote()
+
+    @unidist.remote
+    def f():
+        return unidist.get(actor.get_accumulator.remote())
+
+    # Use a deliberately larger number of cores to check the assignment
+    for _ in range(CpuCount.get() + 5):
+        assert_equal(f.remote(), 0)
