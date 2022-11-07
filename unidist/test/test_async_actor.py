@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import sys
+import time
 import pytest
 
 import unidist
@@ -131,3 +133,19 @@ def test_direct_capture():
 def test_return_none():
     actor = TestAsyncActor.remote()
     assert_equal(actor.task_return_none.remote(), None)
+
+def test_pending_get():
+    @unidist.remote
+    class SlowActor:
+        async def slow_execute():
+            asyncio.sleep(5)
+            return 1
+    
+    slow_actor = SlowActor.remote()
+    slow_result = unidist.get(slow_actor.slow_execute.remote())
+
+    @unidist.remote
+    def g():
+        return slow_result + 1
+
+    assert_equal(g.remote(), 2)
