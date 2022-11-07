@@ -4,6 +4,7 @@
 
 import asyncio
 import sys
+import time
 import pytest
 import gc
 
@@ -164,3 +165,61 @@ def test_pending_get():
         return unidist.get(slow_actor.slow_execute.remote()) + 1
 
     assert_equal(g.remote(), 2)
+
+
+@pytest.mark.skipif(
+    Backend.get() == BackendName.MP,
+    reason="Courutine serialize is not implemented yet for multiprocessing",
+)
+def test_async_task():
+    @unidist.remote
+    class AsyncActor:
+        async def run_concurrent(self):
+            # concurrent workload here
+            await asyncio.sleep(1)
+            return 0
+
+    actor = AsyncActor.remote()
+
+    start_time = time.time()
+    unidist.get([actor.run_concurrent.remote() for _ in range(4)])
+    end_time = time.time()
+
+    assert end_time - start_time < 2, "Too long async execution"
+
+
+@pytest.mark.skipif(
+    Backend.get() == BackendName.DASK,
+    reason="Unnexpeted exception `There is no current event loop in thread` is raised",
+)
+@pytest.mark.skipif(
+    Backend.get() == BackendName.MP,
+    reason="Run of a remote task inside of another one is not implemented yet for multiprocessing",
+)
+def test_signal_actor():
+    @unidist.remote
+    class SignalActor:
+        def __init__(self, event_count: int):
+            self.events = [asyncio.Event() for _ in range(event_count)]
+
+        def send(self, event_idx: int):
+            self.events[event_idx].set()
+
+        async def wait(self, event_idx: int):
+            await self.events[event_idx].wait()
+
+    signals = SignalActor.remote(6)
+
+    unidist.get(signals.send.remote(0))
+
+    @unidist.remote
+    def func(idx):
+        unidist.get(signals.wait.remote(idx))
+        unidist.get(signals.send.remote(idx + 1))
+        return idx
+
+    tasks = []
+    for idx in range(5):
+        tasks.append(func.remote(idx))
+
+    assert_equal(tasks, [0, 1, 2, 3, 4])
