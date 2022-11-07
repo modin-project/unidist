@@ -63,10 +63,11 @@ operations_dict = dict(
 )
 
 
-def get_opp_name(opp: int):
-    if opp in operations_dict.keys():
-        return operations_dict[opp]
-    raise ValueError("Unsupported operation!")
+def get_op_name(op):
+    op_name = operations_dict.get(op, None)
+    if op_name is None:
+        raise KeyError(f"Got unsupported operation `{op}`")
+    return op_name
 
 
 class MasterDataID(DataID):

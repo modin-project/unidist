@@ -22,12 +22,12 @@ from unidist.core.backends.mpi.core.serialization import (
 )
 import unidist.core.backends.mpi.core.common as common
 
-logger = common.get_logger("communication", "communication.log")
 # Logger configuration
+logger = common.get_logger("communication", "communication.log")
 logger_worker_count = CpuCount.get() + 2
 logger_opp_name_len = 15
 logger_tab_len = 4
-worker_ids_str = "".join(["{}\t".format(i) for i in range(logger_worker_count)])
+worker_ids_str = "".join([f"{i}\t" for i in range(logger_worker_count)])
 logger.debug(f'#{" "*logger_opp_name_len}{worker_ids_str}')
 
 # TODO: Find a way to move this after all imports
@@ -261,7 +261,7 @@ def recv_operation_type(comm):
     while True:
         is_ready, op_type = req_handle.test(status=status)
         if is_ready:
-            # Write opperation to log
+            # Write operation to log
             source_rank = status.Get_source()
             dest_rank = MPIState.get_instance().rank
             opp_name = common.get_opp_name(op_type)
