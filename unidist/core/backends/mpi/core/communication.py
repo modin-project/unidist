@@ -259,7 +259,6 @@ def recv_operation_type(comm):
             curr_rank = status.Get_source()
             owner_rank = MPIState.get_instance().rank
             opp_name = common.Operation.get_name_opp(op_type)
-            # logger.debug(f'\t{curr_rank} -> {op_type} -> {owner_rank}')
             if owner_rank > curr_rank:
                 logger.debug(
                     f'{opp_name}:{" "*(15-len(opp_name))}{"    "*curr_rank}{"-"*(4*(owner_rank - curr_rank) - 1)}>'
@@ -268,7 +267,7 @@ def recv_operation_type(comm):
                 logger.debug(
                     f'{opp_name}:{" "*(15-len(opp_name))}{"    "*owner_rank}<{"-"*(4*(curr_rank - owner_rank) - 1)}'
                 )
-            
+
             return op_type, status.Get_source()
         else:
             time.sleep(sleep_time)
