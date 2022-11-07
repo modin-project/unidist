@@ -4,6 +4,7 @@
 
 import sys
 import pytest
+import gc
 
 import unidist
 from unidist.config import Backend
@@ -11,6 +12,13 @@ from unidist.core.base.common import BackendName
 from .utils import assert_equal, TestAsyncActor
 
 unidist.init()
+
+
+@pytest.fixture(autouse=True)
+def run_around_tests():
+    yield
+    # GC should collect all references from the previous test
+    gc.collect()
 
 
 @pytest.mark.skipif(
