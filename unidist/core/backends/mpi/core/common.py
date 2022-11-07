@@ -5,6 +5,7 @@
 """Common classes and utilities."""
 
 import logging
+import inspect
 
 from unidist.core.backends.common.data_id import DataID, is_data_id
 
@@ -54,31 +55,18 @@ class Operation:
     ### --- Common operations --- ###
     CANCEL = 11
 
-    @classmethod
-    def get_name_opp(cls, opp: int):
-        if cls.ACTOR_CREATE == opp:
-            return "ACTOR_CREATE"
-        elif cls.ACTOR_EXECUTE == opp:
-            return "ACTOR_EXECUTE"
-        elif cls.CANCEL == opp:
-            return "CANCEL"
-        elif cls.CLEANUP == opp:
-            return "CLEANUP"
-        elif cls.EXECUTE == opp:
-            return "EXECUTE"
-        elif cls.GET == opp:
-            return "GET"
-        elif cls.GET_TASK_COUNT == opp:
-            return "GET_TASK_COUNT"
-        elif cls.PUT_DATA == opp:
-            return "PUT_DATA"
-        elif cls.PUT_OWNER == opp:
-            return "PUT_OWNER"
-        elif cls.TASK_DONE == opp:
-            return "TASK_DONE"
-        elif cls.WAIT == opp:
-            return "WAIT"
-        return str(opp)
+
+operations_dict = dict(
+    (value, name)
+    for name, value in inspect.getmembers(Operation)
+    if name not in dir(type("dummy", (object,), {}))
+)
+
+
+def get_opp_name(opp: int):
+    if opp in operations_dict.keys():
+        return operations_dict[opp]
+    raise ValueError("Unsupported operation!")
 
 
 class MasterDataID(DataID):

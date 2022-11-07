@@ -15,6 +15,7 @@ except ImportError:
         "Missing dependency 'mpi4py'. Use pip or conda to install it."
     ) from None
 
+from unidist.config import CpuCount
 from unidist.core.backends.mpi.core.serialization import (
     ComplexDataSerializer,
     SimpleDataSerializer,
@@ -22,8 +23,12 @@ from unidist.core.backends.mpi.core.serialization import (
 import unidist.core.backends.mpi.core.common as common
 
 logger = common.get_logger("communication", "communication.log")
-logger.debug(f'#{" "*15}0\t1\t2\t3\t4\t5\t6\t7\t8\t9')
-
+# Logger configuration
+logger_worker_count = CpuCount.get() + 2
+logger_opp_name_len = 15
+logger_tab_len = 4
+worker_ids_str = "".join(["{}\t".format(i) for i in range(logger_worker_count)])
+logger.debug(f'#{" "*logger_opp_name_len}{worker_ids_str}')
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
@@ -256,17 +261,24 @@ def recv_operation_type(comm):
     while True:
         is_ready, op_type = req_handle.test(status=status)
         if is_ready:
-            curr_rank = status.Get_source()
-            owner_rank = MPIState.get_instance().rank
-            opp_name = common.Operation.get_name_opp(op_type)
-            if owner_rank > curr_rank:
-                logger.debug(
-                    f'{opp_name}:{" "*(15-len(opp_name))}{"    "*curr_rank}{"-"*(4*(owner_rank - curr_rank) - 1)}>'
-                )
+            # Write opperation to log
+            source_rank = status.Get_source()
+            dest_rank = MPIState.get_instance().rank
+            opp_name = common.get_opp_name(op_type)
+            space_after_opp_name = " " * (logger_opp_name_len - len(opp_name))
+            space_before_arrow = ".   " * (min(source_rank, dest_rank))
+            space_after_arrow = "   ." * (
+                logger_worker_count - max(source_rank, dest_rank) - 1
+            )
+            arrow_line_str = abs(dest_rank - source_rank)
+            # Right arrow if dest_rank > source_rank else left
+            if dest_rank > source_rank:
+                arrow = f'{".---"*arrow_line_str}>'
             else:
-                logger.debug(
-                    f'{opp_name}:{" "*(15-len(opp_name))}{"    "*owner_rank}<{"-"*(4*(curr_rank - owner_rank) - 1)}'
-                )
+                arrow = f'<{arrow_line_str*"---."}'
+            logger.debug(
+                f"{opp_name}:{space_after_opp_name}{space_before_arrow}{arrow}{space_after_arrow}"
+            )
 
             return op_type, status.Get_source()
         else:
