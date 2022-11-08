@@ -4,7 +4,6 @@
 
 import asyncio
 import sys
-import time
 import pytest
 
 import unidist
@@ -134,18 +133,26 @@ def test_return_none():
     actor = TestAsyncActor.remote()
     assert_equal(actor.task_return_none.remote(), None)
 
+
+@pytest.mark.skipif(
+    Backend.get() == BackendName.MP,
+    reason="Run of a remote task inside of another one is not implemented yet for multiprocessing",
+)
+@pytest.mark.skipif(
+    Backend.get() == BackendName.PY,
+    reason="Use courutine result is not implemented yet for python",
+)
 def test_pending_get():
     @unidist.remote
     class SlowActor:
-        async def slow_execute():
-            asyncio.sleep(5)
+        async def slow_execute(self):
+            await asyncio.sleep(5)
             return 1
-    
+
     slow_actor = SlowActor.remote()
-    slow_result = unidist.get(slow_actor.slow_execute.remote())
 
     @unidist.remote
     def g():
-        return slow_result + 1
+        return unidist.get(slow_actor.slow_execute.remote()) + 1
 
     assert_equal(g.remote(), 2)
