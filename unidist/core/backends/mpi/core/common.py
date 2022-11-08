@@ -57,6 +57,7 @@ class Operation:
 
 
 default_class_properties = dir(type("dummy", (object,), {}))
+# Mapping between operations and their names (e.g., Operation.EXECUTE: "EXECUTE")
 operations_dict = dict(
     (value, name)
     for name, value in inspect.getmembers(Operation)
@@ -66,20 +67,21 @@ operations_dict = dict(
 
 def get_op_name(op):
     """
-    Return operation name
+    Get string operation name.
 
     Parameters
     ----------
     op : unidist.core.backends.mpi.core.common.Operation
-        Operation type number
-    Raises
-    ------
-    KeyError
-        If the operation does not exist in unidist.core.backends.mpi.core.common.Operation
+        Operation type.
     Returns
     -------
     str
-        Operation type name
+        String operation name.
+
+    Raises
+    ------
+    KeyError
+        If the operation does not match either of `operations_dict`.
     """
     op_name = operations_dict.get(op, None)
     if op_name is None:

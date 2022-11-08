@@ -32,32 +32,32 @@ sleep_time = 0.0001
 
 # Logger configuration
 logger = common.get_logger("communication", "communication.log")
-logger_header_is_printed = False
+is_logger_header_printed = False
 
 
-def log_opertation(op_type, status):
+def log_operation(op_type, status):
     """
-    Logging communication between proceses
+    Log a communication between worker processes.
 
     Parameters
     ----------
     op_type : unidist.core.backends.mpi.core.common.Operation
-        Operation type
-    status : MPI.Status
-        Communication status
+        Operation type.
+    status : mpi4py.MPI.Status
+        Represents the status of a reception operation.
     """
-    global logger_header_is_printed
+    global is_logger_header_printed
     logger_op_name_len = 15
     logger_worker_count = MPIState.get_instance().world_size
 
     # write header on first worker
     if (
-        not logger_header_is_printed
+        not is_logger_header_printed
         and MPIState.get_instance().rank == MPIRank.FIRST_WORKER
     ):
         worker_ids_str = "".join([f"{i}\t" for i in range(logger_worker_count)])
         logger.debug(f'#{" "*logger_op_name_len}{worker_ids_str}')
-        logger_header_is_printed = True
+        is_logger_header_printed = True
 
     # Write operation to log
     source_rank = status.Get_source()
@@ -300,7 +300,7 @@ def recv_operation_type(comm):
     while True:
         is_ready, op_type = req_handle.test(status=status)
         if is_ready:
-            log_opertation(op_type, status)
+            log_operation(op_type, status)
             return op_type, status.Get_source()
         else:
             time.sleep(sleep_time)
