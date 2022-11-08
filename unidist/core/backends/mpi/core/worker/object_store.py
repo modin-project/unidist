@@ -1,4 +1,3 @@
-# Logger configuration
 # Copyright (C) 2021-2022 Modin authors
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -7,6 +6,7 @@ import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 
 
+# Logger configuration
 # When building documentation we do not have MPI initialized so
 # we use the condition to set "worker_0.log" in order to build it succesfully.
 log_file = "worker_{}.log".format(
