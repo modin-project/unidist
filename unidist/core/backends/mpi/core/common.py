@@ -73,6 +73,7 @@ def get_op_name(op):
     ----------
     op : unidist.core.backends.mpi.core.common.Operation
         Operation type.
+
     Returns
     -------
     str
