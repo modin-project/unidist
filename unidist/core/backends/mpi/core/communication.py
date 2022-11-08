@@ -15,20 +15,11 @@ except ImportError:
         "Missing dependency 'mpi4py'. Use pip or conda to install it."
     ) from None
 
-from unidist.config import CpuCount
 from unidist.core.backends.mpi.core.serialization import (
     ComplexDataSerializer,
     SimpleDataSerializer,
 )
 import unidist.core.backends.mpi.core.common as common
-
-# Logger configuration
-logger = common.get_logger("communication", "communication.log")
-logger_worker_count = CpuCount.get() + 2
-logger_opp_name_len = 15
-logger_tab_len = 4
-worker_ids_str = "".join([f"{i}\t" for i in range(logger_worker_count)])
-logger.debug(f'#{" "*logger_opp_name_len}{worker_ids_str}')
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
@@ -37,6 +28,53 @@ from mpi4py import MPI  # noqa: E402
 
 # Sleep time setting inside the busy wait loop
 sleep_time = 0.0001
+
+
+# Logger configuration
+logger = common.get_logger("communication", "communication.log")
+logger_header_is_printed = False
+
+
+def log_opertation(op_type, status):
+    """
+    Logging communication between proceses
+
+    Parameters
+    ----------
+    op_type : unidist.core.backends.mpi.core.common.Operation
+        Operation type
+    status : MPI.Status
+        Communication status
+    """
+    global logger_header_is_printed
+    logger_op_name_len = 15
+    logger_worker_count = MPIState.get_instance().world_size
+
+    # write header on first worker
+    if (
+        not logger_header_is_printed
+        and MPIState.get_instance().rank == MPIRank.FIRST_WORKER
+    ):
+        worker_ids_str = "".join([f"{i}\t" for i in range(logger_worker_count)])
+        logger.debug(f'#{" "*logger_op_name_len}{worker_ids_str}')
+        logger_header_is_printed = True
+
+    # Write operation to log
+    source_rank = status.Get_source()
+    dest_rank = MPIState.get_instance().rank
+    op_name = common.get_op_name(op_type)
+    space_after_op_name = " " * (logger_op_name_len - len(op_name))
+    space_before_arrow = ".   " * (min(source_rank, dest_rank))
+    space_after_arrow = "   ." * (logger_worker_count - max(source_rank, dest_rank) - 1)
+    arrow_line_str = abs(dest_rank - source_rank)
+    # Right arrow if dest_rank > source_rank else left
+    if dest_rank > source_rank:
+        arrow = f'{".---"*arrow_line_str}>'
+    else:
+        arrow = f'<{arrow_line_str*"---."}'
+    logger.debug(
+        f"{op_name}:{space_after_op_name}{space_before_arrow}{arrow}{space_after_arrow}"
+    )
 
 
 class MPIState:
@@ -86,6 +124,7 @@ class MPIRank:
 
     ROOT = 0
     MONITOR = 1
+    FIRST_WORKER = 2
 
 
 def get_topology():
@@ -261,25 +300,7 @@ def recv_operation_type(comm):
     while True:
         is_ready, op_type = req_handle.test(status=status)
         if is_ready:
-            # Write operation to log
-            source_rank = status.Get_source()
-            dest_rank = MPIState.get_instance().rank
-            opp_name = common.get_opp_name(op_type)
-            space_after_opp_name = " " * (logger_opp_name_len - len(opp_name))
-            space_before_arrow = ".   " * (min(source_rank, dest_rank))
-            space_after_arrow = "   ." * (
-                logger_worker_count - max(source_rank, dest_rank) - 1
-            )
-            arrow_line_str = abs(dest_rank - source_rank)
-            # Right arrow if dest_rank > source_rank else left
-            if dest_rank > source_rank:
-                arrow = f'{".---"*arrow_line_str}>'
-            else:
-                arrow = f'<{arrow_line_str*"---."}'
-            logger.debug(
-                f"{opp_name}:{space_after_opp_name}{space_before_arrow}{arrow}{space_after_arrow}"
-            )
-
+            log_opertation(op_type, status)
             return op_type, status.Get_source()
         else:
             time.sleep(sleep_time)

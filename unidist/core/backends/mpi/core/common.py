@@ -56,14 +56,31 @@ class Operation:
     CANCEL = 11
 
 
+default_class_properties = dir(type("dummy", (object,), {}))
 operations_dict = dict(
     (value, name)
     for name, value in inspect.getmembers(Operation)
-    if name not in dir(type("dummy", (object,), {}))
+    if name not in default_class_properties
 )
 
 
 def get_op_name(op):
+    """
+    Return operation name
+
+    Parameters
+    ----------
+    op : unidist.core.backends.mpi.core.common.Operation
+        Operation type number
+    Raises
+    ------
+    KeyError
+        If the operation does not exist in unidist.core.backends.mpi.core.common.Operation
+    Returns
+    -------
+    str
+        Operation type name
+    """
     op_name = operations_dict.get(op, None)
     if op_name is None:
         raise KeyError(f"Got unsupported operation `{op}`")
