@@ -5,6 +5,7 @@
 """Common classes and utilities."""
 
 import logging
+import inspect
 
 from unidist.core.backends.common.data_id import DataID, is_data_id
 
@@ -53,6 +54,40 @@ class Operation:
     GET_TASK_COUNT = 10
     ### --- Common operations --- ###
     CANCEL = 11
+
+
+default_class_properties = dir(type("dummy", (object,), {}))
+# Mapping between operations and their names (e.g., Operation.EXECUTE: "EXECUTE")
+operations_dict = dict(
+    (value, name)
+    for name, value in inspect.getmembers(Operation)
+    if name not in default_class_properties
+)
+
+
+def get_op_name(op):
+    """
+    Get string operation name.
+
+    Parameters
+    ----------
+    op : unidist.core.backends.mpi.core.common.Operation
+        Operation type.
+
+    Returns
+    -------
+    str
+        String operation name.
+
+    Raises
+    ------
+    KeyError
+        If the operation does not match either of `operations_dict`.
+    """
+    op_name = operations_dict.get(op, None)
+    if op_name is None:
+        raise KeyError(f"Got unsupported operation `{op}`")
+    return op_name
 
 
 class MasterDataID(DataID):
