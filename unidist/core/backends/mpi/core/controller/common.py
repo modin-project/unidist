@@ -23,6 +23,7 @@ class RoundRobin:
     __instance = None
 
     def __init__(self):
+        self.reserved_ranks = set()
         self.rank_to_schedule = itertools.cycle(
             (
                 rank
@@ -34,6 +35,9 @@ class RoundRobin:
                 # of the current process to not get into recursive scheduling
                 if rank != communication.MPIState.get_instance().rank
             )
+        )
+        logger.debug(
+            f"RoundRobin init for {communication.MPIState.get_instance().rank} rank"
         )
 
     @classmethod
@@ -51,14 +55,61 @@ class RoundRobin:
 
     def schedule_rank(self):
         """
-        Find the next rank for task/actor-task execution.
+        Find the next non-reserved rank for task/actor-task execution.
 
         Returns
         -------
         int
             A rank number.
         """
-        return next(self.rank_to_schedule)
+        next_rank = None
+
+        # Go rank by rank to find the first one non-reserved
+        for _ in range(
+            initial_worker_number, communication.MPIState.get_instance().world_size
+        ):
+            rank = next(self.rank_to_schedule)
+            if rank not in self.reserved_ranks:
+                next_rank = rank
+                break
+
+        if next_rank is None:
+            raise Exception("All ranks blocked")
+
+        return next_rank
+
+    def reserve_rank(self, rank):
+        """
+        Reserve the rank for the actor scheduling.
+
+        This makes the rank unavailable for scheduling a new actor or task
+        until it gets released.
+
+        Parameters
+        ----------
+        rank : int
+            A rank number.
+        """
+        self.reserved_ranks.add(rank)
+        logger.debug(
+            f"RoundRobin reserve rank {communication.MPIState.get_instance().rank}"
+        )
+
+    def release_rank(self, rank):
+        """
+        Release the rank reserved for the actor.
+
+        This makes the rank available for scheduling a new actor or task.
+
+        Parameters
+        ----------
+        rank : int
+            A rank number.
+        """
+        self.reserved_ranks.remove(rank)
+        logger.debug(
+            f"RoundRobin release rank: {communication.MPIState.get_instance().rank}"
+        )
 
 
 def request_worker_data(data_id):
