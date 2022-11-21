@@ -4,6 +4,7 @@
 
 import sys
 import pytest
+import gc
 
 import unidist
 from unidist.config import Backend
@@ -11,6 +12,17 @@ from unidist.core.base.common import BackendName
 from .utils import assert_equal, TestAsyncActor
 
 unidist.init()
+
+
+@pytest.fixture(autouse=True)
+def call_gc_collect():
+    """
+    Collect all references from the previous test in order for MPI backend to work correctly.
+    """
+    yield
+    # This is only needed for the MPI backend
+    if Backend.get() == BackendName.MPI:
+        gc.collect()
 
 
 @pytest.mark.skipif(
