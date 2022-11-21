@@ -32,6 +32,8 @@ class RequestStore:
     def __init__(self):
         # Data requests {DataId : [ Set of Ranks ]}
         self._data_request = defaultdict(set)
+        # Blocking data requests {DataId : [ Set of Ranks ]}
+        self._blocking_data_request = defaultdict(set)
         # Wait requests {DataId : Rank}
         self._wait_request = {}
         # Cache for already requested ids
@@ -50,7 +52,7 @@ class RequestStore:
             cls.__instance = RequestStore()
         return cls.__instance
 
-    def put(self, data_id, rank, request_type):
+    def put(self, data_id, rank, request_type, is_blocking_op=False):
         """
         Save request type for this data ID for later processing.
 
@@ -62,9 +64,16 @@ class RequestStore:
             Source rank requester.
         request_type : int
             Type of request.
+        is_blocking_op : bool
+            Whether the get request should be blocking or not.
+            If ``True``, the request should be processed immediatly
+            even for a worker since it can get into controller mode.
         """
         if request_type == self.REQ_DATA:
-            self._data_request[data_id].add(rank)
+            if is_blocking_op:
+                self._blocking_data_request[data_id].add(rank)
+            else:
+                self._data_request[data_id].add(rank)
         elif request_type == self.REQ_WAIT:
             self._wait_request[data_id] = rank
         elif request_type == self.REQ_DATA_CACHE:
@@ -110,21 +119,28 @@ class RequestStore:
         data_id : iterable or unidist.core.backends.common.data_id.DataID
             An ID or list of IDs to data.
         """
-        if isinstance(data_ids, (list, tuple)):
-            for data_id in data_ids:
-                if data_id in self._data_request:
-                    ranks_with_get_request = self._data_request[data_id]
-                    for rank_num in ranks_with_get_request:
-                        # Data is already in DataMap, so not problem here
-                        self.process_get_request(rank_num, data_id)
-                    del self._data_request[data_id]
-        else:
-            if data_ids in self._data_request:
-                ranks_with_get_request = self._data_request[data_ids]
+
+        def check_request(data_id):
+            # Check non-blocking data requests for one of the workers
+            if data_id in self._data_request:
+                ranks_with_get_request = self._data_request[data_id]
                 for rank_num in ranks_with_get_request:
                     # Data is already in DataMap, so not problem here
-                    self.process_get_request(rank_num, data_ids)
-                del self._data_request[data_ids]
+                    self.process_get_request(rank_num, data_id, is_blocking_op=False)
+                del self._data_request[data_id]
+            # Check blocking data requests other of the workers
+            if data_id in self._blocking_data_request:
+                ranks_with_get_request = self._blocking_data_request[data_id]
+                for rank_num in ranks_with_get_request:
+                    # Data is already in DataMap, so not problem here
+                    self.process_get_request(rank_num, data_id, is_blocking_op=True)
+                del self._blocking_data_request[data_id]
+
+        if isinstance(data_ids, (list, tuple)):
+            for data_id in data_ids:
+                check_request(data_id)
+        else:
+            check_request(data_ids)
 
     def check_pending_wait_requests(self, data_ids):
         """
@@ -249,4 +265,4 @@ class RequestStore:
             logger.debug(
                 "Pending request {} id to {} rank".format(data_id._id, source_rank)
             )
-            self.put(data_id, source_rank, self.REQ_DATA)
+            self.put(data_id, source_rank, self.REQ_DATA, is_blocking_op=is_blocking_op)
