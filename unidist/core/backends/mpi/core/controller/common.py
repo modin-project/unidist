@@ -79,12 +79,28 @@ class RoundRobin:
         return next_rank
 
     def reserve_rank(self, rank):
+        """
+        Make rank unavailable for scheduling a new actor or task.
+
+        Parameters
+        ----------
+        rank : int
+            A rank number.
+        """
         self.reserved_ranks.add(rank)
         logger.debug(
             f"RoundRobin reserve rank {communication.MPIState.get_instance().rank}"
         )
 
     def release_rank(self, rank):
+        """
+        Make rank available for scheduling a new actor or task.
+
+        Parameters
+        ----------
+        rank : int
+            A rank number.
+        """
         self.reserved_ranks.remove(rank)
         logger.debug(
             f"RoundRobin release rank: {communication.MPIState.get_instance().rank}"
