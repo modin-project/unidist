@@ -116,7 +116,7 @@ class RequestStore:
             An ID or list of IDs to data.
         """
 
-        def check_data_id(data_id):
+        def check_request(data_id):
             if data_id in self._data_request:
                 ranks_with_get_request = self._data_request[data_id]
                 for rank_num in ranks_with_get_request:
@@ -133,9 +133,9 @@ class RequestStore:
 
         if isinstance(data_ids, (list, tuple)):
             for data_id in data_ids:
-                check_data_id(data_id)
+                check_request(data_id)
         else:
-            check_data_id(data_ids)
+            check_request(data_ids)
 
     def check_pending_wait_requests(self, data_ids):
         """

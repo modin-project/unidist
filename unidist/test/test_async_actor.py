@@ -135,12 +135,8 @@ def test_return_none():
 
 
 @pytest.mark.skipif(
-    Backend.get() == BackendName.MP,
-    reason="Run of a remote task inside of another one is not implemented yet for multiprocessing",
-)
-@pytest.mark.skipif(
-    Backend.get() == BackendName.PY,
-    reason="Use courutine result is not implemented yet for python",
+    Backend.get() in (BackendName.MP, BackendName.PY),
+    reason="MP and PY backends do not support execution of coroutines.",
 )
 def test_pending_get():
     @unidist.remote
