@@ -16,9 +16,13 @@ unidist.init()
 
 @pytest.fixture(autouse=True)
 def call_gc_collect():
+    """
+    This collects all references from the previous test and releases unused MPI resources.
+    """
     yield
-    # GC should collect all references from the previous test
-    gc.collect()
+    # This is only needed for the MPI backend
+    if Backend.get() == BackendName.MPI:
+        gc.collect()
 
 
 @pytest.mark.skipif(
@@ -131,5 +135,5 @@ def test_actor_scheduling():
         return unidist.get(actor.get_accumulator.remote())
 
     # Use a larger number of cores deliberately to check the assignment
-    for _ in range(CpuCount.get() + 5):
+    for _ in range(CpuCount.get()):
         assert_equal(f.remote(), 0)

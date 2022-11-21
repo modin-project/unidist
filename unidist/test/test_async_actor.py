@@ -16,9 +16,13 @@ unidist.init()
 
 @pytest.fixture(autouse=True)
 def call_gc_collect():
+    """
+    This collects all references from the previous test and releases unused MPI resources.
+    """
     yield
-    # GC should collect all references from the previous test
-    gc.collect()
+    # This is only needed for the MPI backend
+    if Backend.get() == BackendName.MPI:
+        gc.collect()
 
 
 @pytest.mark.skipif(

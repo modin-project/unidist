@@ -55,23 +55,28 @@ class RoundRobin:
 
     def schedule_rank(self):
         """
-        Find the next rank for task/actor-task execution.
+        Find the next non-reserved rank for task/actor-task execution.
 
         Returns
         -------
         int
             A rank number.
         """
-        next_rank = next(self.rank_to_schedule)
+        next_rank = None
+
+        # Go rank by rank to find the first one non-reserved
         for _ in range(
             initial_worker_number, communication.MPIState.get_instance().world_size
         ):
-            if next_rank in self.reserved_ranks:
-                next_rank = next(self.rank_to_schedule)
-            else:
-                return next_rank
+            checking_rank = next(self.rank_to_schedule)
+            if checking_rank not in self.reserved_ranks:
+                next_rank = checking_rank
+                break
 
-        raise Exception("All rank were blocked")
+        if next_rank is None:
+            raise Exception("All rank were blocked")
+
+        return next_rank
 
     def reserve_rank(self, rank):
         self.reserved_ranks.add(rank)

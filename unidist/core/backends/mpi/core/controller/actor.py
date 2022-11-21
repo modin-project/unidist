@@ -179,4 +179,7 @@ class Actor:
         return ActorMethod(self, name)
 
     def __del__(self):
+        """
+        This is defined the release of resources after the actor has finished executing.
+        """
         RoundRobin.get_instance().release_rank(self._owner_rank)
