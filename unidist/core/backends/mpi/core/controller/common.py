@@ -74,13 +74,16 @@ class RoundRobin:
                 break
 
         if next_rank is None:
-            raise Exception("All ranks are blocked")
+            raise Exception("All ranks blocked")
 
         return next_rank
 
     def reserve_rank(self, rank):
         """
-        Make rank unavailable for scheduling a new actor or task.
+        Reserve the rank for the actor scheduling.
+
+        This makes the rank unavailable for scheduling a new actor or task
+        until it gets released.
 
         Parameters
         ----------
@@ -94,7 +97,9 @@ class RoundRobin:
 
     def release_rank(self, rank):
         """
-        Make rank available for scheduling a new actor or task.
+        Release the rank reserved for the actor.
+
+        This makes the rank available for scheduling a new actor or task.
 
         Parameters
         ----------
