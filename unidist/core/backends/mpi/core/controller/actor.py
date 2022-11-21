@@ -101,7 +101,7 @@ class Actor:
         object_store.put_data_owner(self._handler_id, self._owner_rank)
 
         # reserve a rank for actor execution only
-        RoundRobin.get_instance().add_reserved_rank(self._owner_rank)
+        RoundRobin.get_instance().reserve_rank(self._owner_rank)
 
         # submit `ACTOR_CREATE` task to a worker only once
         if owner_rank is None and handler_id is None:
@@ -179,4 +179,4 @@ class Actor:
         return ActorMethod(self, name)
 
     def __del__(self):
-        RoundRobin.get_instance().remove_reserved_rank(self._owner_rank)
+        RoundRobin.get_instance().release_rank(self._owner_rank)

@@ -15,7 +15,7 @@ unidist.init()
 
 
 @pytest.fixture(autouse=True)
-def run_around_tests():
+def call_gc_collect():
     yield
     # GC should collect all references from the previous test
     gc.collect()
@@ -117,7 +117,7 @@ def test_return_none():
 
 @pytest.mark.skipif(
     Backend.get() == BackendName.MP,
-    reason="Run of a remote task inside of another one is not implemented yet for multiprocessing",
+    reason="Run of a remote task inside of an actor method is not implemented yet for multiprocessing",
 )
 @pytest.mark.skipif(
     Backend.get() == BackendName.DASK,
@@ -130,6 +130,6 @@ def test_actor_scheduling():
     def f():
         return unidist.get(actor.get_accumulator.remote())
 
-    # Use a deliberately larger number of cores to check the assignment
+    # Use a larger number of cores deliberately to check the assignment
     for _ in range(CpuCount.get() + 5):
         assert_equal(f.remote(), 0)

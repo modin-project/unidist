@@ -15,7 +15,7 @@ unidist.init()
 
 
 @pytest.fixture(autouse=True)
-def run_around_tests():
+def call_gc_collect():
     yield
     # GC should collect all references from the previous test
     gc.collect()

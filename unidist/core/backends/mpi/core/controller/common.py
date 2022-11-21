@@ -73,16 +73,16 @@ class RoundRobin:
 
         raise Exception("All rank were blocked")
 
-    def add_reserved_rank(self, rank):
+    def reserve_rank(self, rank):
         self.reserved_ranks.add(rank)
         logger.debug(
-            f"RoundRobin add reserved rank: {communication.MPIState.get_instance().rank}"
+            f"RoundRobin reserve rank {communication.MPIState.get_instance().rank}"
         )
 
-    def remove_reserved_rank(self, rank):
+    def release_rank(self, rank):
         self.reserved_ranks.remove(rank)
         logger.debug(
-            f"RoundRobin remove reserved rank: {communication.MPIState.get_instance().rank}"
+            f"RoundRobin release rank: {communication.MPIState.get_instance().rank}"
         )
 
 
