@@ -64,6 +64,10 @@ class RequestStore:
             Source rank requester.
         request_type : int
             Type of request.
+        is_blocking_op : bool
+            Whether the get request should be blocking or not.
+            If ``True``, the request should be processed immediatly
+            even for a worker since it can get into controller mode.
         """
         if request_type == self.REQ_DATA:
             if is_blocking_op:
@@ -117,13 +121,14 @@ class RequestStore:
         """
 
         def check_request(data_id):
+            # Check non-blocking data requests for one of the workers
             if data_id in self._data_request:
                 ranks_with_get_request = self._data_request[data_id]
                 for rank_num in ranks_with_get_request:
                     # Data is already in DataMap, so not problem here
                     self.process_get_request(rank_num, data_id, is_blocking_op=False)
                 del self._data_request[data_id]
-            #
+            # Check blocking data requests other of the workers
             if data_id in self._blocking_data_request:
                 ranks_with_get_request = self._blocking_data_request[data_id]
                 for rank_num in ranks_with_get_request:
