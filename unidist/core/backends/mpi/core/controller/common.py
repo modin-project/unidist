@@ -68,13 +68,13 @@ class RoundRobin:
         for _ in range(
             initial_worker_number, communication.MPIState.get_instance().world_size
         ):
-            checking_rank = next(self.rank_to_schedule)
-            if checking_rank not in self.reserved_ranks:
-                next_rank = checking_rank
+            rank = next(self.rank_to_schedule)
+            if rank not in self.reserved_ranks:
+                next_rank = rank
                 break
 
         if next_rank is None:
-            raise Exception("All rank were blocked")
+            raise Exception("All ranks are blocked")
 
         return next_rank
 
