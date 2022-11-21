@@ -74,8 +74,10 @@ def is_pickle5_serializable(data):
     for module in available_modules:
         if module.__name__ == "pandas":
             is_serializable = isinstance(data, (module.DataFrame, module.Series))
+            break
         elif module.__name__ == "numpy":
             is_serializable = isinstance(data, module.ndarray)
+            break
     return is_serializable
 
 
