@@ -180,6 +180,6 @@ class Actor:
 
     def __del__(self):
         """
-        This is defined the release of resources after the actor has finished executing.
+        This is defined to release the rank reserved for the actor when it gets out of scope.
         """
         RoundRobin.get_instance().release_rank(self._owner_rank)
