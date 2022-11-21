@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import sys
 import pytest
 import gc
@@ -143,3 +144,23 @@ def test_direct_capture():
 def test_return_none():
     actor = TestAsyncActor.remote()
     assert_equal(actor.task_return_none.remote(), None)
+
+
+@pytest.mark.skipif(
+    Backend.get() in (BackendName.MP, BackendName.PY),
+    reason="MP and PY backends do not support execution of coroutines.",
+)
+def test_pending_get():
+    @unidist.remote
+    class SlowActor:
+        async def slow_execute(self):
+            await asyncio.sleep(5)
+            return 1
+
+    slow_actor = SlowActor.remote()
+
+    @unidist.remote
+    def g():
+        return unidist.get(slow_actor.slow_execute.remote()) + 1
+
+    assert_equal(g.remote(), 2)
