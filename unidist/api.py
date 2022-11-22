@@ -174,6 +174,8 @@ def put(data):
     ObjectRef
         ``ObjectRef`` matching to data.
     """
+    if not is_initialized():
+        init()
     execution_backend = get_backend_proxy()
     return execution_backend.put(data)
 
