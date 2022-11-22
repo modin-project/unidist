@@ -7,6 +7,7 @@
 import sys
 import atexit
 import signal
+import asyncio
 from collections import defaultdict
 
 try:
@@ -136,7 +137,7 @@ def init():
     ):
         from unidist.core.backends.mpi.core.worker.loop import worker_loop
 
-        worker_loop()
+        asyncio.run(worker_loop())
         return
 
 

@@ -23,7 +23,7 @@ class RoundRobin:
     __instance = None
 
     def __init__(self):
-        self.reserved_ranks = set()
+        self.reserved_ranks = []
         self.rank_to_schedule = itertools.cycle(
             (
                 rank
@@ -90,9 +90,10 @@ class RoundRobin:
         rank : int
             A rank number.
         """
-        self.reserved_ranks.add(rank)
+        self.reserved_ranks.append(rank)
         logger.debug(
-            f"RoundRobin reserve rank {communication.MPIState.get_instance().rank}"
+            f"RoundRobin reserve rank {rank} for actor "
+            + f"on worker with rank {communication.MPIState.get_instance().rank}"
         )
 
     def release_rank(self, rank):
@@ -108,7 +109,8 @@ class RoundRobin:
         """
         self.reserved_ranks.remove(rank)
         logger.debug(
-            f"RoundRobin release rank: {communication.MPIState.get_instance().rank}"
+            f"RoundRobin release rank {rank} reserved for actor "
+            + f"on worker with rank {communication.MPIState.get_instance().rank}"
         )
 
 

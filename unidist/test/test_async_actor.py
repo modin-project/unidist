@@ -8,7 +8,7 @@ import pytest
 import gc
 
 import unidist
-from unidist.config import Backend
+from unidist.config import Backend, CpuCount
 from unidist.core.base.common import BackendName
 from .utils import assert_equal, TestAsyncActor
 
@@ -164,3 +164,38 @@ def test_pending_get():
         return unidist.get(slow_actor.slow_execute.remote()) + 1
 
     assert_equal(g.remote(), 2)
+
+
+@pytest.mark.skipif(
+    Backend.get() == BackendName.DASK,
+    reason="Unexpected exception `There is no current event loop in thread` is raised",
+)
+@pytest.mark.skipif(
+    Backend.get() == BackendName.MP,
+    reason="Run of a remote task inside of an async actor method is not implemented yet for multiprocessing",
+)
+def test_signal_actor():
+    @unidist.remote
+    class SignalActor:
+        def __init__(self, event_count: int):
+            self.events = [asyncio.Event() for _ in range(event_count)]
+
+        def send(self, event_idx: int):
+            self.events[event_idx].set()
+
+        async def wait(self, event_idx: int):
+            await self.events[event_idx].wait()
+
+    signals = SignalActor.remote(CpuCount.get() + 1)
+
+    unidist.get(signals.send.remote(0))
+
+    @unidist.remote
+    def func(idx):
+        unidist.get(signals.wait.remote(idx))
+        unidist.get(signals.send.remote(idx + 1))
+        return idx
+
+    object_refs = [func.remote(idx) for idx in range(CpuCount.get())]
+
+    assert_equal(object_refs, list(range(CpuCount.get())))
