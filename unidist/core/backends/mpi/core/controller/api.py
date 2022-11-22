@@ -7,6 +7,7 @@
 import sys
 import atexit
 import signal
+import asyncio
 from collections import defaultdict
 
 try:
@@ -135,11 +136,8 @@ def init():
         communication.MPIRank.MONITOR,
     ):
         from unidist.core.backends.mpi.core.worker.loop import worker_loop
-        import asyncio
 
-        event_loop = asyncio.get_event_loop()
-        _ = asyncio.ensure_future(worker_loop(event_loop), loop=event_loop)
-        event_loop.run_forever()
+        asyncio.run(worker_loop())
         return
 
 

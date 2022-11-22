@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Worker MPI process task processing functionality."""
+import asyncio
+from functools import wraps, partial
 
 try:
     import mpi4py
@@ -17,7 +19,6 @@ from unidist.core.backends.mpi.core.worker.object_store import ObjectStore
 from unidist.core.backends.mpi.core.worker.request_store import RequestStore
 from unidist.core.backends.mpi.core.worker.task_store import TaskStore
 from unidist.core.backends.mpi.core.worker.async_operations import AsyncOperations
-from unidist.core.backends.mpi.utils import async_wrap
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
@@ -33,12 +34,43 @@ w_logger = common.get_logger("worker", log_file)
 # Actors map {handle : actor}
 actor_map = {}
 
+
+# -------------- #
+# Loop utilities #
+# -------------- #
+
+
+def async_wrap(func):
+    """
+    Make a decorator that allows to run a regular function asynchronously.
+
+    Parameters
+    ----------
+    func : callable
+        The function, which should be called like as coroutine.
+
+    Returns
+    -------
+    callable
+        Function-decorator.
+    """
+
+    @wraps(func)
+    async def run(*args, loop=None, executor=None, **kwargs):
+        if loop is None:
+            loop = asyncio.get_event_loop()
+        pfunc = partial(func, *args, **kwargs)
+        return await loop.run_in_executor(executor, pfunc)
+
+    return run
+
+
 # ---------------------------- #
 # Worker event processing loop #
 # ---------------------------- #
 
 
-async def worker_loop(loop):
+async def worker_loop():
     """
     Infinite operations processing loop.
 
@@ -151,5 +183,3 @@ async def worker_loop(loop):
 
         # Check completion status of previous async MPI routines
         async_operations.check()
-
-    task_store.stop_event_loop()

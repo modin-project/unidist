@@ -37,6 +37,8 @@ class TaskStore:
         self._pending_actor_tasks_list = []
         # Event loop for executing coroutines
         self.event_loop = asyncio.get_event_loop()
+        # Started async tasks
+        self.background_tasks = set()
 
     @classmethod
     def get_instance(cls):
@@ -201,8 +203,7 @@ class TaskStore:
         -----
         Exceptions are stored in output data IDs as value.
         """
-        is_async = inspect.iscoroutinefunction(task)
-        if is_async:
+        if inspect.iscoroutinefunction(task):
 
             async def execute():
                 try:
@@ -260,7 +261,13 @@ class TaskStore:
                     communication.MPIRank.MONITOR,
                 )
 
-            asyncio.ensure_future(execute(), loop=self.event_loop)
+            async_task = asyncio.create_task(execute())
+            # Add task to the set. This creates a strong reference.
+            self.background_tasks.add(async_task)
+            # To prevent keeping references to finished tasks forever,
+            # make each task remove its own reference from the set after
+            # completion.
+            async_task.add_done_callback(self.background_tasks.discard)
         else:
             try:
                 w_logger.debug("- Start task execution -")
@@ -355,9 +362,6 @@ class TaskStore:
                 RequestStore.get_instance().check_pending_get_requests(output_ids)
                 RequestStore.get_instance().check_pending_wait_requests(output_ids)
             return None
-
-    def stop_event_loop(self):
-        self.event_loop.stop()
 
     def __del__(self):
         self.event_loop.close()
