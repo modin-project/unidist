@@ -128,7 +128,7 @@ class RequestStore:
                     # Data is already in DataMap, so not problem here
                     self.process_get_request(rank_num, data_id, is_blocking_op=False)
                 del self._data_request[data_id]
-            # Check blocking data requests other of the workers
+            # Check blocking data requests for other of the workers
             if data_id in self._blocking_data_request:
                 ranks_with_get_request = self._blocking_data_request[data_id]
                 for rank_num in ranks_with_get_request:

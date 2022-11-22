@@ -37,6 +37,8 @@ class TaskStore:
         self._pending_actor_tasks_list = []
         # Event loop for executing coroutines
         self.event_loop = asyncio.get_event_loop()
+        # Started async tasks
+        self.background_tasks = set()
 
     @classmethod
     def get_instance(cls):
@@ -201,54 +203,119 @@ class TaskStore:
         -----
         Exceptions are stored in output data IDs as value.
         """
-        try:
-            w_logger.debug("- Start task execution -")
+        if inspect.iscoroutinefunction(task):
 
-            for arg in args:
-                if isinstance(arg, Exception):
-                    raise arg
-            for value in kwargs.values():
-                if isinstance(value, Exception):
-                    raise value
+            async def execute():
+                try:
+                    w_logger.debug("- Start task execution -")
 
-            start = time.perf_counter()
+                    for arg in args:
+                        if isinstance(arg, Exception):
+                            raise arg
+                    for value in kwargs.values():
+                        if isinstance(value, Exception):
+                            raise value
 
-            # Execute user task
-            if inspect.iscoroutinefunction(task):
-                f_to_execute = functools.partial(task, *args, **kwargs)
-                output_values = self.event_loop.run_until_complete(f_to_execute())
-            else:
+                    start = time.perf_counter()
+
+                    # Execute user task
+                    f_to_execute = functools.partial(task, *args, **kwargs)
+                    output_values = await f_to_execute()
+
+                    w_logger.info(
+                        "Task evaluation time: {}".format(time.perf_counter() - start)
+                    )
+                    w_logger.debug("- End task execution -")
+
+                except Exception as e:
+                    w_logger.debug("Exception - {}".format(e))
+
+                    if (
+                        isinstance(output_data_ids, (list, tuple))
+                        and len(output_data_ids) > 1
+                    ):
+                        for output_id in output_data_ids:
+                            ObjectStore.get_instance().put(output_id, e)
+                    else:
+                        ObjectStore.get_instance().put(output_data_ids, e)
+                else:
+                    if output_data_ids is not None:
+                        if (
+                            isinstance(output_data_ids, (list, tuple))
+                            and len(output_data_ids) > 1
+                        ):
+                            for output_id, value in zip(output_data_ids, output_values):
+                                ObjectStore.get_instance().put(output_id, value)
+                        else:
+                            ObjectStore.get_instance().put(
+                                output_data_ids, output_values
+                            )
+
+                        RequestStore.get_instance().check_pending_get_requests(
+                            output_data_ids
+                        )
+                # Monitor the task execution
+                communication.mpi_send_object(
+                    communication.MPIState.get_instance().comm,
+                    common.Operation.TASK_DONE,
+                    communication.MPIRank.MONITOR,
+                )
+
+            async_task = asyncio.create_task(execute())
+            # Add task to the set. This creates a strong reference.
+            self.background_tasks.add(async_task)
+            # To prevent keeping references to finished tasks forever,
+            # make each task remove its own reference from the set after
+            # completion.
+            async_task.add_done_callback(self.background_tasks.discard)
+        else:
+            try:
+                w_logger.debug("- Start task execution -")
+
+                for arg in args:
+                    if isinstance(arg, Exception):
+                        raise arg
+                for value in kwargs.values():
+                    if isinstance(value, Exception):
+                        raise value
+
+                start = time.perf_counter()
+
+                # Execute user task
                 output_values = task(*args, **kwargs)
 
-            w_logger.info(
-                "Task evaluation time: {}".format(time.perf_counter() - start)
-            )
-            w_logger.debug("- End task execution -")
+                w_logger.info(
+                    "Task evaluation time: {}".format(time.perf_counter() - start)
+                )
+                w_logger.debug("- End task execution -")
 
-        except Exception as e:
-            w_logger.debug("Exception - {}".format(e))
+            except Exception as e:
+                w_logger.debug("Exception - {}".format(e))
 
-            if isinstance(output_data_ids, (list, tuple)) and len(output_data_ids) > 1:
-                for output_id in output_data_ids:
-                    ObjectStore.get_instance().put(output_id, e)
-            else:
-                ObjectStore.get_instance().put(output_data_ids, e)
-        else:
-            if output_data_ids is not None:
                 if (
                     isinstance(output_data_ids, (list, tuple))
                     and len(output_data_ids) > 1
                 ):
-                    for output_id, value in zip(output_data_ids, output_values):
-                        ObjectStore.get_instance().put(output_id, value)
+                    for output_id in output_data_ids:
+                        ObjectStore.get_instance().put(output_id, e)
                 else:
-                    ObjectStore.get_instance().put(output_data_ids, output_values)
-        # Monitor the task execution
-        communication.mpi_send_object(
-            communication.MPIState.get_instance().comm,
-            common.Operation.TASK_DONE,
-            communication.MPIRank.MONITOR,
-        )
+                    ObjectStore.get_instance().put(output_data_ids, e)
+            else:
+                if output_data_ids is not None:
+                    if (
+                        isinstance(output_data_ids, (list, tuple))
+                        and len(output_data_ids) > 1
+                    ):
+                        for output_id, value in zip(output_data_ids, output_values):
+                            ObjectStore.get_instance().put(output_id, value)
+                    else:
+                        ObjectStore.get_instance().put(output_data_ids, output_values)
+            # Monitor the task execution
+            communication.mpi_send_object(
+                communication.MPIState.get_instance().comm,
+                common.Operation.TASK_DONE,
+                communication.MPIRank.MONITOR,
+            )
 
     def process_task_request(self, request):
         """

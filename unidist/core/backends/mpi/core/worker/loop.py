@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Worker MPI process task processing functionality."""
+import asyncio
+from functools import wraps, partial
 
 try:
     import mpi4py
@@ -32,12 +34,43 @@ w_logger = common.get_logger("worker", log_file)
 # Actors map {handle : actor}
 actor_map = {}
 
+
+# -------------- #
+# Loop utilities #
+# -------------- #
+
+
+def async_wrap(func):
+    """
+    Make a decorator that allows to run a regular function asynchronously.
+
+    Parameters
+    ----------
+    func : callable
+        The function, which should be called like as coroutine.
+
+    Returns
+    -------
+    callable
+        Function-decorator.
+    """
+
+    @wraps(func)
+    async def run(*args, loop=None, executor=None, **kwargs):
+        if loop is None:
+            loop = asyncio.get_event_loop()
+        pfunc = partial(func, *args, **kwargs)
+        return await loop.run_in_executor(executor, pfunc)
+
+    return run
+
+
 # ---------------------------- #
 # Worker event processing loop #
 # ---------------------------- #
 
 
-def worker_loop():
+async def worker_loop():
     """
     Infinite operations processing loop.
 
@@ -54,7 +87,9 @@ def worker_loop():
     async_operations = AsyncOperations.get_instance()
     while True:
         # Listen receive operation from any source
-        operation_type, source_rank = communication.recv_operation_type(mpi_state.comm)
+        operation_type, source_rank = await async_wrap(
+            communication.recv_operation_type
+        )(mpi_state.comm)
         w_logger.debug("common.Operation processing - {}".format(operation_type))
 
         # Proceed the request
