@@ -81,6 +81,10 @@ def test_cluster_resources():
     )
 
 
+@pytest.mark.skipif(
+    Backend.get() != BackendName.MPI,
+    reason="Check only mpi functionality",
+)
 def test_complexDataSerializer_pickle5():
     serializer = ComplexDataSerializer()
     _ = serializer.serialize(pd.DataFrame([1, 2, 3, 4, 5]))
