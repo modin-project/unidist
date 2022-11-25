@@ -5,10 +5,13 @@
 import sys
 import pytest
 import time
+import pandas as pd
+import numpy as np
 
 import unidist
 from unidist.config import Backend, CpuCount
 from unidist.core.base.common import BackendName
+from unidist.core.backends.mpi.core.serialization import ComplexDataSerializer
 from .utils import assert_equal, task, TestActor
 
 unidist.init()
@@ -76,3 +79,13 @@ def test_cluster_resources():
     assert_equal(
         unidist.cluster_resources(), {unidist.get_ip(): {"CPU": unidist.num_cpus()}}
     )
+
+
+def test_complexDataSerializer_pickle5():
+    serializer = ComplexDataSerializer()
+    _ = serializer.serialize(pd.DataFrame([1, 2, 3, 4, 5]))
+    assert len(serializer.buffers) == 1
+
+    serializer = ComplexDataSerializer()
+    _ = serializer.serialize(np.array([1, 2, 3, 4, 5]))
+    assert len(serializer.buffers) == 1
