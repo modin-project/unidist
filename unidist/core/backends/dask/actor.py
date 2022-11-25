@@ -83,7 +83,7 @@ class DaskActorMethod(ActorMethod):
         elif num_returns > 1:
             return [
                 ObjectRef(
-                    client.submit(lambda l, i: l.result()[i], future, i, pure=False)
+                    client.submit(lambda f, i: f.result()[i], future, i, pure=False)
                 )
                 for i in range(num_returns)
             ]

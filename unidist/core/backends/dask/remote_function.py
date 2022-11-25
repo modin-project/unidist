@@ -87,7 +87,7 @@ class DaskRemoteFunction(RemoteFunction):
             return ObjectRef(future)
         elif num_returns > 1:
             return [
-                ObjectRef(client.submit(lambda l, i: l[i], future, i, pure=False))
+                ObjectRef(client.submit(lambda f, i: f[i], future, i, pure=False))
                 for i in range(num_returns)
             ]
         elif num_returns == 0:
