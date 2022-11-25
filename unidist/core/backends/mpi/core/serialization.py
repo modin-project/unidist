@@ -70,15 +70,14 @@ def is_pickle5_serializable(data):
     bool
         ``True`` if the data should be serialized with pickle using protocol 5 (out-of-band data).
     """
-    is_serializable = False
     for module in available_modules:
-        if module.__name__ == "pandas":
-            is_serializable = isinstance(data, (module.DataFrame, module.Series))
-            break
-        elif module.__name__ == "numpy":
-            is_serializable = isinstance(data, module.ndarray)
-            break
-    return is_serializable
+        if module.__name__ == "pandas" and isinstance(
+            data, (module.DataFrame, module.Series)
+        ):
+            return True
+        elif module.__name__ == "numpy" and isinstance(data, module.ndarray):
+            return True
+    return False
 
 
 class ComplexDataSerializer:
