@@ -328,14 +328,16 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
     dest_rank : int
         Target MPI process to transfer data.
     """
-    # Send message pack bytestring
-    mpi_send_buffer(comm, len(s_data), s_data, dest_rank)
-    # Send the necessary metadata
-    mpi_send_object(comm, len(raw_buffers), dest_rank)
+    join_array = bytearray()
+    array_lengths = list()
+    join_array += s_data
+    array_lengths.append(len(s_data))
     for raw_buffer in raw_buffers:
-        mpi_send_buffer(comm, len(raw_buffer.raw()), raw_buffer, dest_rank)
-    # TODO: do not send if raw_buffers is zero
-    mpi_send_object(comm, len_buffers, dest_rank)
+        array_lengths.append(len(raw_buffer.raw()))
+        join_array += raw_buffer
+
+    mpi_send_buffer(comm, len(join_array), join_array, dest_rank)
+    mpi_send_object(comm, (array_lengths, len_buffers), dest_rank)
 
 
 def send_complex_data(comm, data, dest_rank):
@@ -399,25 +401,20 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
         A list of pairs, ``MPI_Isend`` handler and associated data to send.
     """
     handlers = []
-
-    # Send message pack bytestring
-    h1 = mpi_isend_object(comm, len(s_data), dest_rank)
-    h2 = mpi_isend_buffer(comm, s_data, dest_rank)
-    handlers.append((h1, None))
-    handlers.append((h2, s_data))
-
-    # Send the necessary metadata
-    h3 = mpi_isend_object(comm, len(raw_buffers), dest_rank)
-    handlers.append((h3, None))
+    join_array = bytearray()
+    array_lengths = list()
+    join_array += s_data
+    array_lengths.append(len(s_data))
     for raw_buffer in raw_buffers:
-        h4 = mpi_isend_object(comm, len(raw_buffer.raw()), dest_rank)
-        h5 = mpi_isend_buffer(comm, raw_buffer, dest_rank)
-        handlers.append((h4, None))
-        handlers.append((h5, raw_buffer))
-    # TODO: do not send if raw_buffers is zero
-    h6 = mpi_isend_object(comm, len_buffers, dest_rank)
-    handlers.append((h6, len_buffers))
+        array_lengths.append(len(raw_buffer.raw()))
+        join_array += raw_buffer
 
+    h1 = mpi_isend_object(comm, len(join_array), dest_rank)
+    handlers.append((h1, None))
+    h2 = mpi_isend_buffer(comm, join_array, dest_rank)
+    handlers.append((h2, join_array))
+    h3 = mpi_isend_object(comm, (array_lengths, len_buffers), dest_rank)
+    handlers.append((h3, array_lengths))
     return handlers
 
 
@@ -482,30 +479,27 @@ def recv_complex_data(comm, source_rank):
     object
         Received data object from another MPI process.
     """
-    # Recv main message pack buffer.
-    # First MPI call uses busy wait loop to remove possible contention
-    # in a long running data receive operations.
     buf_size = mpi_busy_wait_recv(comm, source_rank)
-    msgpack_buffer = bytearray(buf_size)
-    comm.Recv([msgpack_buffer, MPI.CHAR], source=source_rank)
-
-    # Recv pickle buffers array for all complex data frames
-    raw_buffers_size = comm.recv(source=source_rank)
-    # Pre-allocate pickle buffers list
-    raw_buffers = [None] * raw_buffers_size
-    for i in range(raw_buffers_size):
-        buf_size = comm.recv(source=source_rank)
-        recv_buffer = bytearray(buf_size)
-        comm.Recv([recv_buffer, MPI.CHAR], source=source_rank)
-        raw_buffers[i] = recv_buffer
-    # Recv len of buffers for each complex data frames
-    len_buffers = comm.recv(source=source_rank)
-
+    joined_array = bytearray(buf_size)
+    comm.Recv([joined_array, MPI.CHAR], source=source_rank)
+    joined_array_mv = memoryview(joined_array)
+    buffer_lengths, len_buffers = comm.recv(source=source_rank)
+    raw_buffers = []
+    s_data = []
+    start_index = 0
+    for i in range(len(buffer_lengths)):
+        new_end_index = start_index + buffer_lengths[i]
+        buffer = joined_array_mv[start_index:new_end_index]
+        start_index = new_end_index
+        if i == 0:
+            s_data = buffer
+        else:
+            raw_buffers.append(buffer)
     # Set the necessary metadata for unpacking
     deserializer = ComplexDataSerializer(raw_buffers, len_buffers)
 
     # Start unpacking
-    return deserializer.deserialize(msgpack_buffer)
+    return deserializer.deserialize(s_data)
 
 
 # ---------- #
