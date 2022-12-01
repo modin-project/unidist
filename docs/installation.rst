@@ -94,6 +94,18 @@ or explicitly:
 
   conda install unidist-dask unidist-mpi unidist-ray -c conda-forge
 
+Using intel channel
+"""""""""""""""""""
+
+Conda ``intel`` channel contains a performant `MPI implementaion <https://anaconda.org/intel/mpi4py>`_,
+which can be used in the unidist MPI backend instead of the MPI implementation from ``conda-forge`` channel.
+To install Intel MPI you should use the following:
+
+.. code-block:: bash
+
+  conda install unidist -c conda-forge
+  conda install mpi4py -c intel
+
 Installing from the GitHub master branch
 ''''''''''''''''''''''''''''''''''''''''
 
