@@ -63,7 +63,7 @@ without using ``mpiexec`` command so you can run unidist on Intel MPI just with:
 
     $ python script.py
 
-Refer to :doc:`Installation using intel channel </installation>` section on how to install Intel MPI implementation to use it with unidist.
+Refer to ``Using intel channel`` section of :doc:`Installation </installation>` page on how to install Intel MPI implementation to use it with unidist.
 
 SMPD model
 ----------
