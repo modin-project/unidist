@@ -1,0 +1,95 @@
+name: master
+on: push
+jobs:
+  test-ubuntu:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9"]
+        backend: ["ray", "mpi", "dask", "multiprocessing", "python"]
+    env:
+      UNIDIST_BACKEND: ${{matrix.backend}}
+    name: test-ubuntu (backend ${{matrix.backend}}, python ${{matrix.python-version}})
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: unidist
+          environment-file: environment.yml
+          python-version: ${{matrix.python-version}}
+          channel-priority: strict
+          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
+          # Miniconda setup sometimes fails because of an http error. retry
+          # it once if it fails. todo(https://github.com/conda-incubator/setup-miniconda/issues/129):
+          # get rid of this once setup-miniconda can be configured to retry
+          # setup on http errors.
+          max_attempts: 2
+          retry_on: error
+      - name: Conda environment
+        run: |
+          conda info
+          conda list
+      - run: python -m pytest unidist/test/
+        if: matrix.backend != 'mpi'
+      # when using a directory to run with mpiexec MPI gets hung after executing tests
+      # so we run the test files one by one
+      - run: mpiexec -n 1 python -m pytest unidist/test/test_actor.py
+        if: matrix.backend == 'mpi'
+      - run: mpiexec -n 1 python -m pytest unidist/test/test_async_actor.py
+        if: matrix.backend == 'mpi'
+      - run: mpiexec -n 1 python -m pytest unidist/test/test_task.py
+        if: matrix.backend == 'mpi'
+      - run: mpiexec -n 1 python -m pytest unidist/test/test_general.py
+        if: matrix.backend == 'mpi'
+
+  test-windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9"]
+        backend: ["ray", "dask", "multiprocessing", "python", "mpi"]
+    env:
+      UNIDIST_BACKEND: ${{matrix.backend}}
+    name: test-windows (backend ${{matrix.backend}}, python ${{matrix.python-version}})
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: unidist
+          environment-file: environment.yml
+          python-version: ${{matrix.python-version}}
+          channel-priority: strict
+          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly
+          auto-update-conda: true # this enable `use-only-tar-bz2` feature on Windows
+          # Miniconda setup sometimes fails because of an http error. retry
+          # it once if it fails. todo(https://github.com/conda-incubator/setup-miniconda/issues/129):
+          # get rid of this once setup-miniconda can be configured to retry
+          # setup on http errors.
+          max_attempts: 2
+          retry_on: error
+      - name: Conda environment
+        run: |
+          conda info
+          conda list
+      - run: python -m pytest unidist/test/
+        if: matrix.backend != 'mpi'
+      # when using a directory to run with mpiexec MPI gets hung after executing tests
+      # so we run the test files one by one
+      - run: mpiexec -n 1 python -m pytest unidist/test/test_actor.py
+        if: matrix.backend == 'mpi'
+      - run: mpiexec -n 1 python -m pytest unidist/test/test_async_actor.py
+        if: matrix.backend == 'mpi'
+      - run: mpiexec -n 1 python -m pytest unidist/test/test_task.py
+        if: matrix.backend == 'mpi'
+      - run: mpiexec -n 1 python -m pytest unidist/test/test_general.py
+        if: matrix.backend == 'mpi'
