@@ -8,7 +8,6 @@ import logging
 import inspect
 
 from unidist.core.backends.common.data_id import DataID, is_data_id
-from unidist.core.backends.mpi.utils import is_namedTuple_instance
 
 
 class Operation:
@@ -288,12 +287,10 @@ def materialize_data_ids(data_ids, unwrap_data_id_impl, is_pending=False):
             is_pending = progress
         return value
 
-    if isinstance(data_ids, (list, tuple, dict)) and not is_namedTuple_instance(
-        data_ids
-    ):
+    if type(data_ids) in (list, tuple, dict):
         container = type(data_ids)()
         for value in data_ids:
-            if isinstance(value, (list, tuple, dict)):
+            if type(value) in (list, tuple, dict):
                 unwrapped_value, is_pending = materialize_data_ids(
                     {value: data_ids[value]} if isinstance(data_ids, dict) else value,
                     unwrap_data_id_impl,
@@ -315,7 +312,7 @@ def materialize_data_ids(data_ids, unwrap_data_id_impl, is_pending=False):
                         materialize_data_ids(
                             data_ids[value], unwrap_data_id_impl, is_pending=is_pending
                         )
-                        if isinstance(data_ids[value], (list, tuple, dict))
+                        if type(data_ids[value]) in (list, tuple, dict)
                         else (data_ids[value], is_pending)
                     )
                     container[value] = _unwrap_data_id(unwrapped_value)
