@@ -12,6 +12,9 @@ dependencies:
   - psutil
   - pytest
   - ray-default>=1.4.0
+  # workaround for https://github.com/conda/conda/issues/11744
+  - grpcio!=1.45.*
+  - grpcio!=1.46.*
   # for downloading packages from PyPI
   - pip
   - pip:
