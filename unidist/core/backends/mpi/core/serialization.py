@@ -196,7 +196,7 @@ class ComplexDataSerializer:
         -----
         Uses msgpack, cloudpickle and pickle libraries.
         """
-        return msgpack.packb(data, default=self._encode_custom)
+        return msgpack.packb(data, default=self._encode_custom, strict_types=True)
 
     def _decode_custom(self, obj):
         """
