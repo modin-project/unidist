@@ -97,9 +97,8 @@ class ComplexDataSerializer:
     """
 
     def __init__(self, buffers=None, len_buffers=None):
-        self.buffers = buffers if buffers else []
+        self.buffers = buffers if buffers else bytearray()
         self.len_buffers = len_buffers if len_buffers else []
-        self._callback_counter = 0
 
     def _buffer_callback(self, pickle_buffer):
         """
@@ -110,8 +109,8 @@ class ComplexDataSerializer:
         pickle_buffer: pickle.PickleBuffer
             Pickle library buffer wrapper.
         """
-        self.buffers.append(pickle_buffer)
-        self._callback_counter += 1
+        self.buffers += pickle_buffer
+        self.len_buffers[-1].append(len(pickle_buffer))
         return False
 
     def _dataframe_encode(self, frame):
@@ -129,8 +128,7 @@ class ComplexDataSerializer:
             Dictionary with array of serialized bytes.
         """
         s_frame = pkl.dumps(frame, protocol=5, buffer_callback=self._buffer_callback)
-        self.len_buffers.append(self._callback_counter)
-        self._callback_counter = 0
+        self.len_buffers.append([])
         return {"__pickle5_custom__": True, "as_bytes": s_frame}
 
     def _cpkl_encode(self, obj):
@@ -214,7 +212,13 @@ class ComplexDataSerializer:
         elif "__pickle_custom__" in obj:
             return pkl.loads(obj["as_bytes"])
         elif "__pickle5_custom__" in obj:
-            frame = pkl.loads(obj["as_bytes"], buffers=self.buffers)
+            buffer_mv = memoryview(self.buffers)
+            buffers = []
+            last_index = 0
+            for buf_len in self.len_buffers[0]:
+                buffers.append(buffer_mv[last_index : last_index + buf_len])
+                last_index += buf_len
+            frame = pkl.loads(obj["as_bytes"], buffers=buffers)
             del self.buffers[: self.len_buffers.pop(0)]
             return frame
         else:
