@@ -11,13 +11,13 @@ dependencies:
   - packaging
   - psutil
   - pytest
-  - ray-default>=1.4.0
-  # workaround for https://github.com/conda/conda/issues/11744
-  - grpcio!=1.45.*
-  - grpcio!=1.46.*
   # for downloading packages from PyPI
   - pip
   - pip:
+      # for development
+      # we install ray from PyPI for now as the package is broken in conda-forge
+      # see details in https://github.com/modin-project/unidist/issues/219
+      - ray[default]>=1.4.0
       # for building the documentation
       - sphinx
       - sphinx_rtd_theme
