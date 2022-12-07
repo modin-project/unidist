@@ -26,6 +26,12 @@ jobs:
           # we set use-only-tar-bz2 to false in order for conda to properly find new packages to be installed
           # for more info see https://github.com/conda-incubator/setup-miniconda/issues/264
           use-only-tar-bz2: false
+      # we install pickle5 here as it is missing in Ray for python 3.7 from PyPI
+      # remove this when we return Ray back to installation from conda-forge
+      # see details in https://github.com/modin-project/unidist/issues/219
+      - name: Pickle5 installation for python 3.7
+        run: conda install pickle5 -c conda-forge
+        if: matrix.python-version == '3.7'
       - name: Conda environment
         run: |
           conda info
@@ -68,6 +74,12 @@ jobs:
           # we set use-only-tar-bz2 to false in order for conda to properly find new packages to be installed
           # for more info see https://github.com/conda-incubator/setup-miniconda/issues/264
           use-only-tar-bz2: false
+      # we install pickle5 here as it is missing in Ray for python 3.7 from PyPI
+      # remove this when we return Ray back to installation from conda-forge
+      # see details in https://github.com/modin-project/unidist/issues/219
+      - name: Pickle5 installation for python 3.7
+        run: conda install pickle5 -c conda-forge
+        if: matrix.python-version == '3.7'
       - name: Conda environment
         run: |
           conda info
