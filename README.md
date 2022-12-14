@@ -127,7 +127,7 @@ in our documentation.
 
 unidist is meant to be used not only directly by users to get better performance in their workloads,
 but also be a core component of other libraries to power those with the performant execution backends.
-Refer to `Libraries powered by unidist` section of [Using Unidist](https://unidist.readthedocs.io/en/latest/using_unidist/index.html) section
+Refer to `Libraries powered by unidist` section of [Using Unidist](https://unidist.readthedocs.io/en/latest/using_unidist/index.html) page
 to get more information on which libraries have already been using unidist.
 
 ### Full Documentation

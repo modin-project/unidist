@@ -20,8 +20,8 @@ Libraries powered by unidist
 Here you can find information on which libraries have already been integrated with unidist
 to use its performant backends to get better performance.
 
-* Modin_
-  - Refer to `Using pandas on Unidist`_ page of the Modin documentation on how to get started with Modin on unidist.
+- Modin_
+    - Refer to `Using pandas on Unidist`_ page of the Modin documentation on how to get started with Modin on unidist.
 
 .. _`Modin`: https://github.com/modin-project/modin
 .. _`Using pandas on Unidist`: https://modin.readthedocs.io/en/latest/development/using_pandas_on_unidist.html
