@@ -14,7 +14,7 @@ This page contains information on how to choose a concrete execution backend and
 - :doc:`Unidist on Python Multiprocessing <unidist_on_python_multiprocessing>`
 - :doc:`Unidist on Python <unidist_on_python>`
 
-Libraries powered by unidist
+Libraries powered by Unidist
 """"""""""""""""""""""""""""
 
 Here you can find information on which libraries have already been integrated with unidist
