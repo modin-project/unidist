@@ -8,16 +8,17 @@ dependencies:
   - distributed>=2.22.0
   - mpi4py>=3.0.3
   - msgpack-python>=1.0.0
+  - ray-default>=1.13.0
+  # https://github.com/modin-project/modin/pull/5270#issuecomment-1331172629
+  # workaround for https://github.com/conda/conda/issues/11744
+  - grpcio!=1.45.*
+  - grpcio!=1.46.*
   - packaging
   - psutil
   - pytest
   # for downloading packages from PyPI
   - pip
   - pip:
-      # for development
-      # we install ray from PyPI for now as the package is broken in conda-forge
-      # see details in https://github.com/modin-project/unidist/issues/219
-      - ray[default]>=1.4.0
       # for building the documentation
       - sphinx
       - sphinx_rtd_theme
