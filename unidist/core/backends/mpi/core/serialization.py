@@ -234,7 +234,9 @@ class ComplexDataSerializer:
         Uses msgpack, cloudpickle and pickle libraries.
         """
         gc.disable()  # Performance optimization for msgpack
-        unpacked_data = msgpack.unpackb(s_data, object_hook=self._decode_custom)
+        unpacked_data = msgpack.unpackb(
+            s_data, object_hook=self._decode_custom, strict_map_key=False
+        )
         gc.enable()
         return unpacked_data
 
