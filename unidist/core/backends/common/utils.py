@@ -22,29 +22,15 @@ def unwrap_object_refs(obj_refs):
     if type(obj_refs) in (list, tuple, dict):
         container = type(obj_refs)()
         for value in obj_refs:
-            if type(value) in (list, tuple, dict):
-                unwrapped_value = unwrap_object_refs(
-                    {value: obj_refs[value]} if isinstance(obj_refs, dict) else value
-                )
-                if isinstance(container, list):
-                    container += [unwrapped_value]
-                elif isinstance(container, tuple):
-                    container += (unwrapped_value,)
-                elif isinstance(container, dict):
-                    container.update(unwrapped_value)
-            else:
-                if isinstance(container, list):
-                    container += [value._ref] if is_object_ref(value) else [value]
-                elif isinstance(container, tuple):
-                    container += (value._ref,) if is_object_ref(value) else (value,)
-                elif isinstance(container, dict):
-                    container[value] = (
-                        obj_refs[value]._ref
-                        if is_object_ref(obj_refs[value])
-                        else unwrap_object_refs(obj_refs[value])
-                        if type(obj_refs[value]) in (list, tuple, dict)
-                        else obj_refs[value]
-                    )
+            unwrapped_value = unwrap_object_refs(
+                obj_refs[value] if isinstance(obj_refs, dict) else value
+            )
+            if isinstance(container, list):
+                container += [unwrapped_value]
+            elif isinstance(container, tuple):
+                container += (unwrapped_value,)
+            elif isinstance(container, dict):
+                container.update({value: unwrapped_value})
         return container
     else:
         return obj_refs._ref if is_object_ref(obj_refs) else obj_refs
