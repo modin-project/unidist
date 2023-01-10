@@ -251,11 +251,15 @@ def materialize_data_ids(data_ids, unwrap_data_id_impl, is_pending=False):
 
     Find all ``unidist.core.backends.common.data_id.DataID`` instances and call `unwrap_data_id_impl` on them.
 
-
     Parameters
     ----------
     data_ids : iterable
         Iterable objects to transform recursively.
+    unwrap_data_id_impl : callable
+        Function to get the ID associated data from the local object store if available.
+    is_pending : bool, default: False
+        Status of data materialization attempt as a flag.
+
     Returns
     -------
     iterable or bool
