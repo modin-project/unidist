@@ -231,33 +231,15 @@ def unwrap_data_ids(data_ids):
     if type(data_ids) in (list, tuple, dict):
         container = type(data_ids)()
         for value in data_ids:
-            if type(value) in (list, tuple, dict):
-                unwrapped_value = unwrap_data_ids(
-                    {value: data_ids[value]} if isinstance(data_ids, dict) else value
-                )
-                if isinstance(container, list):
-                    container += [unwrapped_value]
-                elif isinstance(container, tuple):
-                    container += (unwrapped_value,)
-                elif isinstance(container, dict):
-                    container.update(unwrapped_value)
-            else:
-                if isinstance(container, list):
-                    container += (
-                        [value.base_data_id()] if is_data_id(value) else [value]
-                    )
-                elif isinstance(container, tuple):
-                    container += (
-                        (value.base_data_id(),) if is_data_id(value) else (value,)
-                    )
-                elif isinstance(container, dict):
-                    container[value] = (
-                        data_ids[value].base_data_id()
-                        if is_data_id(data_ids[value])
-                        else unwrap_data_ids(data_ids[value])
-                        if type(data_ids[value]) in (list, tuple, dict)
-                        else data_ids[value]
-                    )
+            unwrapped_value = unwrap_data_ids(
+                data_ids[value] if isinstance(data_ids, dict) else value
+            )
+            if isinstance(container, list):
+                container += [unwrapped_value]
+            elif isinstance(container, tuple):
+                container += (unwrapped_value,)
+            elif isinstance(container, dict):
+                container.update({value: unwrapped_value})
         return container
     else:
         return data_ids.base_data_id() if is_data_id(data_ids) else data_ids
@@ -269,11 +251,15 @@ def materialize_data_ids(data_ids, unwrap_data_id_impl, is_pending=False):
 
     Find all ``unidist.core.backends.common.data_id.DataID`` instances and call `unwrap_data_id_impl` on them.
 
-
     Parameters
     ----------
     data_ids : iterable
         Iterable objects to transform recursively.
+    unwrap_data_id_impl : callable
+        Function to get the ID associated data from the local object store if available.
+    is_pending : bool, default: False
+        Status of data materialization attempt as a flag.
+
     Returns
     -------
     iterable or bool
@@ -290,32 +276,17 @@ def materialize_data_ids(data_ids, unwrap_data_id_impl, is_pending=False):
     if type(data_ids) in (list, tuple, dict):
         container = type(data_ids)()
         for value in data_ids:
-            if type(value) in (list, tuple, dict):
-                unwrapped_value, is_pending = materialize_data_ids(
-                    {value: data_ids[value]} if isinstance(data_ids, dict) else value,
-                    unwrap_data_id_impl,
-                    is_pending=is_pending,
-                )
-                if isinstance(container, list):
-                    container += [_unwrap_data_id(unwrapped_value)]
-                elif isinstance(container, tuple):
-                    container += (_unwrap_data_id(unwrapped_value),)
-                elif isinstance(container, dict):
-                    container.update(_unwrap_data_id(unwrapped_value[value]))
-            else:
-                if isinstance(container, list):
-                    container += [_unwrap_data_id(value)]
-                elif isinstance(container, tuple):
-                    container += (_unwrap_data_id(value),)
-                elif isinstance(container, dict):
-                    unwrapped_value, is_pending = (
-                        materialize_data_ids(
-                            data_ids[value], unwrap_data_id_impl, is_pending=is_pending
-                        )
-                        if type(data_ids[value]) in (list, tuple, dict)
-                        else (data_ids[value], is_pending)
-                    )
-                    container[value] = _unwrap_data_id(unwrapped_value)
+            unwrapped_value, is_pending = materialize_data_ids(
+                data_ids[value] if isinstance(data_ids, dict) else value,
+                unwrap_data_id_impl,
+                is_pending=is_pending,
+            )
+            if isinstance(container, list):
+                container += [_unwrap_data_id(unwrapped_value)]
+            elif isinstance(container, tuple):
+                container += (_unwrap_data_id(unwrapped_value),)
+            elif isinstance(container, dict):
+                container.update({value: _unwrap_data_id(unwrapped_value)})
         return container, is_pending
     else:
         unwrapped = _unwrap_data_id(data_ids)

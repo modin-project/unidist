@@ -109,3 +109,16 @@ def test_serialize_dict_keys():
     dict_obj = {"1": 1, "2": 2, "3": 3, "4": 4, "5": 5}
 
     assert_equal(f.remote(dict_obj.keys()), dict_obj.keys())
+
+
+def test_serialize_dict_with_tuple_key():
+    @unidist.remote
+    def f(params):
+        return params
+
+    data = {
+        "a": [0, 1, 2, 3],
+        "b": {("a", "b", "c", "d"): "value"},
+    }
+
+    assert_equal(f.remote(data), data)
