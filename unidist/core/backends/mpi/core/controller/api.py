@@ -32,6 +32,7 @@ from unidist.config import (
     CpuCount,
     IsMpiSpawnWorkers,
     MpiHosts,
+    ValueSource,
 )
 
 
@@ -81,10 +82,21 @@ def init():
     if rank == 0 and parent_comm == MPI.COMM_NULL:
         if IsMpiSpawnWorkers.get():
             nprocs_to_spawn = CpuCount.get() + 1  # +1 for monitor process
-            args = [
-                "-c",
-                "import unidist; import unidist.config as cfg; cfg.Backend.put('mpi'); unidist.init()",
+            args = ["-c"]
+            py_str = [
+                "import unidist",
+                "import unidist.config as cfg",
+                "cfg.Backend.put('mpi')",
             ]
+            if IsMpiSpawnWorkers.get_value_source() != ValueSource.DEFAULT:
+                py_str += [f"cfg.IsMpiSpawnWorkers.put({IsMpiSpawnWorkers.get()})"]
+            if MpiHosts.get_value_source() != ValueSource.DEFAULT:
+                py_str += [f"cfg.MpiHosts.put({MpiHosts.get()})"]
+            if CpuCount.get_value_source() != ValueSource.DEFAULT:
+                py_str += [f"cfg.CpuCount.put({CpuCount.get()})"]
+            py_str += ["unidist.init()"]
+            py_str = "; ".join(py_str)
+            args += [py_str]
 
             hosts = MpiHosts.get()
             info = MPI.Info.Create()
