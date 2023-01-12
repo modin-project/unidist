@@ -86,3 +86,20 @@ class CpuCount(EnvironmentVariable, type=int):
         import multiprocessing
 
         return multiprocessing.cpu_count()
+
+
+class PickleThreshold(EnvironmentVariable, type=int):
+    """Minimum buffer size for serialization with pickle 5 protocol"""
+
+    varname = "UNIDIST_PICKLE_THRESHOLD"
+
+    @classmethod
+    def _get_default(cls):
+        """
+        Get default value of the config.
+
+        Returns
+        -------
+        int
+        """
+        return 1024**2 // 4  # 0.25 MiB

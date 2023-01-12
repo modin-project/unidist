@@ -8,6 +8,7 @@ import importlib
 import inspect
 import sys
 from collections.abc import KeysView
+from mpi4py.MPI import memory
 
 # Serialization libraries
 if sys.version_info[1] < 8:  # check the minor Python version
@@ -22,6 +23,8 @@ else:
 import cloudpickle as cpkl
 import msgpack
 import gc  # msgpack optimization
+
+from unidist.config.backends.common.envvars import PickleThreshold
 
 # Pickle 5 protocol compatible types check
 compatible_modules = ("pandas", "numpy")
@@ -96,6 +99,8 @@ class ComplexDataSerializer:
     Uses a combination of msgpack, cloudpickle and pickle libraries
     """
 
+    THRESHOLD = PickleThreshold.get()
+
     def __init__(self, buffers=None, len_buffers=None):
         self.buffers = buffers if buffers else []
         self.len_buffers = len_buffers if len_buffers else []
@@ -110,9 +115,12 @@ class ComplexDataSerializer:
         pickle_buffer: pickle.PickleBuffer
             Pickle library buffer wrapper.
         """
-        self.buffers.append(pickle_buffer)
-        self._callback_counter += 1
-        return False
+        pickle_buffer = memory(pickle_buffer)
+        if len(pickle_buffer) > self.THRESHOLD:
+            self.buffers.append(pickle_buffer)
+            self._callback_counter += 1
+            return False
+        return True
 
     def _dataframe_encode(self, frame):
         """
