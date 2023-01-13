@@ -99,7 +99,8 @@ class ComplexDataSerializer:
     Uses a combination of msgpack, cloudpickle and pickle libraries
     """
 
-    THRESHOLD = PickleThreshold.get()
+    # Minimum buffer size for serialization with pickle 5 protocol
+    PICKLE_THRESHOLD = MpiPickleThreshold.get()
 
     def __init__(self, buffers=None, len_buffers=None):
         self.buffers = buffers if buffers else []
@@ -116,7 +117,7 @@ class ComplexDataSerializer:
             Pickle library buffer wrapper.
         """
         pickle_buffer = memory(pickle_buffer)
-        if len(pickle_buffer) > self.THRESHOLD:
+        if len(pickle_buffer) >= self.PICKLE_THRESHOLD:
             self.buffers.append(pickle_buffer)
             self._callback_counter += 1
             return False
