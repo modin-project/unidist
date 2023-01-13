@@ -13,7 +13,7 @@ from .backends.ray import (
     RayObjectStoreMemory,
 )
 from .backends.dask import DaskMemoryLimit, IsDaskCluster, DaskSchedulerAddress
-from .backends.mpi import IsMpiSpawnWorkers, MpiHosts
+from .backends.mpi import IsMpiSpawnWorkers, MpiHosts, MpiPickleThreshold
 from .parameter import ValueSource
 
 __all__ = [
@@ -30,4 +30,5 @@ __all__ = [
     "IsMpiSpawnWorkers",
     "MpiHosts",
     "ValueSource",
+    "MpiPickleThreshold",
 ]

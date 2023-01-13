@@ -18,3 +18,10 @@ class MpiHosts(EnvironmentVariable, type=ExactStr):
     """MPI hosts to run unidist on."""
 
     varname = "UNIDIST_MPI_HOSTS"
+
+
+class MpiPickleThreshold(EnvironmentVariable, type=int):
+    """Minimum buffer size for serialization with pickle 5 protocol"""
+
+    default = 1024**2 // 4  # 0.25 MiB
+    varname = "UNIDIST_MPI_PICKLE_THRESHOLD"

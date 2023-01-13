@@ -86,11 +86,3 @@ class CpuCount(EnvironmentVariable, type=int):
         import multiprocessing
 
         return multiprocessing.cpu_count()
-
-
-class MpiPickleThreshold(EnvironmentVariable, type=int):
-    """Minimum buffer size for serialization with pickle 5 protocol"""
-
-    default = 1024**2 // 4 # 0.25 MiB
-    varname = "UNIDIST_MPI_PICKLE_THRESHOLD"
-

@@ -24,7 +24,7 @@ import cloudpickle as cpkl
 import msgpack
 import gc  # msgpack optimization
 
-from unidist.config.backends.common.envvars import PickleThreshold
+from unidist.config import MpiPickleThreshold
 
 # Pickle 5 protocol compatible types check
 compatible_modules = ("pandas", "numpy")
