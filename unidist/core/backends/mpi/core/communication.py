@@ -333,7 +333,7 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
     # Send the necessary metadata
     mpi_send_object(comm, len(raw_buffers), dest_rank)
     for raw_buffer in raw_buffers:
-        mpi_send_buffer(comm, len(raw_buffer.raw()), raw_buffer, dest_rank)
+        mpi_send_buffer(comm, len(raw_buffer), raw_buffer, dest_rank)
     # TODO: do not send if raw_buffers is zero
     mpi_send_object(comm, len_buffers, dest_rank)
 
@@ -410,7 +410,7 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
     h3 = mpi_isend_object(comm, len(raw_buffers), dest_rank)
     handlers.append((h3, None))
     for raw_buffer in raw_buffers:
-        h4 = mpi_isend_object(comm, len(raw_buffer.raw()), dest_rank)
+        h4 = mpi_isend_object(comm, len(raw_buffer), dest_rank)
         h5 = mpi_isend_buffer(comm, raw_buffer, dest_rank)
         handlers.append((h4, None))
         handlers.append((h5, raw_buffer))
