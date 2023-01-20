@@ -24,6 +24,7 @@ import unidist.core.backends.mpi.core.common as common
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
 from mpi4py import MPI  # noqa: E402
+from mpi4py.util import pkl5  # noqa: E402
 
 
 # Sleep time setting inside the busy wait loop
@@ -156,52 +157,6 @@ def get_topology():
 # ---------------------------- #
 # Main communication utilities #
 # ---------------------------- #
-
-
-def _bigmpi_create_type(basetype, count, blocksize):
-    qsize, rsize = divmod(count, blocksize)
-    qtype = basetype.Create_vector(qsize, blocksize, blocksize)
-    rtype = basetype.Create_contiguous(rsize)
-    rdisp = qtype.Get_extent()[1]
-    bigtype = MPI.Datatype.Create_struct((1, 1), (0, rdisp), (qtype, rtype))
-    qtype.Free()
-    rtype.Free()
-    return bigtype
-
-
-class _BigMPI:
-    """Support for large message counts."""
-
-    blocksize = 1024**3  # 1 GiB
-
-    def __init__(self):
-        self.cache = {}
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        cache = self.cache
-        for dtype in cache.values():
-            dtype.Free()
-        cache.clear()
-
-    def __call__(self, buf):
-        buf = MPI.memory(buf)
-        count = len(buf)
-        blocksize = self.blocksize
-        if count < blocksize:
-            return (buf, count, MPI.BYTE)
-        cache = self.cache
-        dtype = cache.get(count)
-        if dtype is not None:
-            return (buf, 1, dtype)
-        dtype = _bigmpi_create_type(MPI.BYTE, count, blocksize)
-        cache[count] = dtype.Commit()
-        return (buf, 1, dtype)
-
-
-_bigmpi = _BigMPI()
 
 
 def mpi_send_object(comm, data, dest_rank):
@@ -381,7 +336,7 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
     }
 
     comm.send(info, dest=dest_rank)
-    with _bigmpi as bigmpi:
+    with pkl5._bigmpi as bigmpi:
         comm.Send(bigmpi(s_data), dest=dest_rank)
         for sbuf in raw_buffers:
             comm.Send(bigmpi(sbuf), dest=dest_rank)
@@ -457,7 +412,7 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
     h1 = comm.isend(info, dest=dest_rank)
     handlers.append((h1, None))
 
-    with _bigmpi as bigmpi:
+    with pkl5._bigmpi as bigmpi:
         h2 = comm.Isend(bigmpi(s_data), dest=dest_rank)
         handlers.append((h2, s_data))
         for sbuf in raw_buffers:
@@ -537,7 +492,7 @@ def recv_complex_data(comm, source_rank):
     data = bytearray(info["data_len"])
     len_buffers = info["len_buffers"]
     raw_buffers = list(map(bytearray, info["len_raw_buffers"]))
-    with _bigmpi as bigmpi:
+    with pkl5._bigmpi as bigmpi:
         comm.Recv(bigmpi(data), source=source_rank)
         for rbuf in raw_buffers:
             comm.Recv(bigmpi(rbuf), source=source_rank)
