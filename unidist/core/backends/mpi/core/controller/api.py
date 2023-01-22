@@ -92,7 +92,7 @@ def init():
             if IsMpiSpawnWorkers.get_value_source() != ValueSource.DEFAULT:
                 py_str += [f"cfg.IsMpiSpawnWorkers.put({IsMpiSpawnWorkers.get()})"]
             if MpiHosts.get_value_source() != ValueSource.DEFAULT:
-                py_str += [f"cfg.MpiHosts.put({MpiHosts.get()})"]
+                py_str += [f"cfg.MpiHosts.put('{MpiHosts.get()}')"]
             if CpuCount.get_value_source() != ValueSource.DEFAULT:
                 py_str += [f"cfg.CpuCount.put({CpuCount.get()})"]
             if MpiPickleThreshold.get_value_source() != ValueSource.DEFAULT:
