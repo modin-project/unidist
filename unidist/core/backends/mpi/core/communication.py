@@ -330,9 +330,9 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
         Target MPI process to transfer data.
     """
     info = {
-        "data_len": len(s_data),
-        "len_buffers": len_buffers,
-        "len_raw_buffers": [len(sbuf) for sbuf in raw_buffers],
+        "s_data_len": len(s_data),
+        "buffer_count": buffer_count,
+        "raw_buffers_len": [len(sbuf) for sbuf in raw_buffers],
     }
 
     comm.send(info, dest=dest_rank)
@@ -404,9 +404,9 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
     """
     handlers = []
     info = {
-        "data_len": len(s_data),
-        "len_buffers": len_buffers,
-        "len_raw_buffers": [len(sbuf) for sbuf in raw_buffers],
+        "s_data_len": len(s_data),
+        "buffer_count": buffer_count,
+        "raw_buffers_len": [len(sbuf) for sbuf in raw_buffers],
     }
 
     h1 = comm.isend(info, dest=dest_rank)
@@ -489,19 +489,19 @@ def recv_complex_data(comm, source_rank):
 
     info = comm.recv(source=source_rank)
 
-    data = bytearray(info["data_len"])
-    len_buffers = info["len_buffers"]
-    raw_buffers = list(map(bytearray, info["len_raw_buffers"]))
+    msgpack_buffer = bytearray(info["data_len"])
+    buffer_count = info["buffer_count"]
+    raw_buffers = list(map(bytearray, info["raw_buffers_len"]))
     with pkl5._bigmpi as bigmpi:
-        comm.Recv(bigmpi(data), source=source_rank)
+        comm.Recv(bigmpi(msgpack_buffer), source=source_rank)
         for rbuf in raw_buffers:
             comm.Recv(bigmpi(rbuf), source=source_rank)
 
     # Set the necessary metadata for unpacking
-    deserializer = ComplexDataSerializer(raw_buffers, len_buffers)
+    deserializer = ComplexDataSerializer(raw_buffers, buffer_count)
 
     # Start unpacking
-    return deserializer.deserialize(data)
+    return deserializer.deserialize(msgpack_buffer)
 
 
 # ---------- #
