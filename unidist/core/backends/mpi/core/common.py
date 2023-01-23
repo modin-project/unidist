@@ -151,16 +151,17 @@ def get_logger(logger_name, file_name, activate=False):
     object
         A Python logger object.
     """
-    f_format = logging.Formatter("%(message)s")
-    f_handler = logging.FileHandler(file_name, delay=True)
-    f_handler.setFormatter(f_format)
-
     logger = logging.getLogger(logger_name)
+    if not logger.hasHandlers():
+        f_format = logging.Formatter("%(message)s")
+        f_handler = logging.FileHandler(file_name, delay=True)
+        f_handler.setFormatter(f_format)
+        logger.addHandler(f_handler)
+
     if activate:
         logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.NOTSET)
-    logger.addHandler(f_handler)
 
     return logger
 
