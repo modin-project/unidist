@@ -24,6 +24,7 @@ import unidist.core.backends.mpi.core.common as common
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
 from mpi4py import MPI  # noqa: E402
+from mpi4py.util import pkl5  # noqa: E402
 
 
 # Sleep time setting inside the busy wait loop
@@ -328,14 +329,17 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
     dest_rank : int
         Target MPI process to transfer data.
     """
-    # Send message pack bytestring
-    mpi_send_buffer(comm, len(s_data), s_data, dest_rank)
-    # Send the necessary metadata
-    mpi_send_object(comm, len(raw_buffers), dest_rank)
-    for raw_buffer in raw_buffers:
-        mpi_send_buffer(comm, len(raw_buffer), raw_buffer, dest_rank)
-    # TODO: do not send if raw_buffers is zero
-    mpi_send_object(comm, len_buffers, dest_rank)
+    info = {
+        "s_data_len": len(s_data),
+        "buffer_count": len_buffers,
+        "raw_buffers_len": [len(sbuf) for sbuf in raw_buffers],
+    }
+
+    comm.send(info, dest=dest_rank)
+    with pkl5._bigmpi as bigmpi:
+        comm.Send(bigmpi(s_data), dest=dest_rank)
+        for sbuf in raw_buffers:
+            comm.Send(bigmpi(sbuf), dest=dest_rank)
 
 
 def send_complex_data(comm, data, dest_rank):
@@ -399,24 +403,21 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
         A list of pairs, ``MPI_Isend`` handler and associated data to send.
     """
     handlers = []
+    info = {
+        "s_data_len": len(s_data),
+        "buffer_count": len_buffers,
+        "raw_buffers_len": [len(sbuf) for sbuf in raw_buffers],
+    }
 
-    # Send message pack bytestring
-    h1 = mpi_isend_object(comm, len(s_data), dest_rank)
-    h2 = mpi_isend_buffer(comm, s_data, dest_rank)
+    h1 = comm.isend(info, dest=dest_rank)
     handlers.append((h1, None))
-    handlers.append((h2, s_data))
 
-    # Send the necessary metadata
-    h3 = mpi_isend_object(comm, len(raw_buffers), dest_rank)
-    handlers.append((h3, None))
-    for raw_buffer in raw_buffers:
-        h4 = mpi_isend_object(comm, len(raw_buffer), dest_rank)
-        h5 = mpi_isend_buffer(comm, raw_buffer, dest_rank)
-        handlers.append((h4, None))
-        handlers.append((h5, raw_buffer))
-    # TODO: do not send if raw_buffers is zero
-    h6 = mpi_isend_object(comm, len_buffers, dest_rank)
-    handlers.append((h6, len_buffers))
+    with pkl5._bigmpi as bigmpi:
+        h2 = comm.Isend(bigmpi(s_data), dest=dest_rank)
+        handlers.append((h2, s_data))
+        for sbuf in raw_buffers:
+            h_sbuf = comm.Isend(bigmpi(sbuf), dest=dest_rank)
+            handlers.append((h_sbuf, sbuf))
 
     return handlers
 
@@ -485,24 +486,19 @@ def recv_complex_data(comm, source_rank):
     # Recv main message pack buffer.
     # First MPI call uses busy wait loop to remove possible contention
     # in a long running data receive operations.
-    buf_size = mpi_busy_wait_recv(comm, source_rank)
-    msgpack_buffer = bytearray(buf_size)
-    comm.Recv([msgpack_buffer, MPI.CHAR], source=source_rank)
 
-    # Recv pickle buffers array for all complex data frames
-    raw_buffers_size = comm.recv(source=source_rank)
-    # Pre-allocate pickle buffers list
-    raw_buffers = [None] * raw_buffers_size
-    for i in range(raw_buffers_size):
-        buf_size = comm.recv(source=source_rank)
-        recv_buffer = bytearray(buf_size)
-        comm.Recv([recv_buffer, MPI.CHAR], source=source_rank)
-        raw_buffers[i] = recv_buffer
-    # Recv len of buffers for each complex data frames
-    len_buffers = comm.recv(source=source_rank)
+    info = comm.recv(source=source_rank)
+
+    msgpack_buffer = bytearray(info["s_data_len"])
+    buffer_count = info["buffer_count"]
+    raw_buffers = list(map(bytearray, info["raw_buffers_len"]))
+    with pkl5._bigmpi as bigmpi:
+        comm.Recv(bigmpi(msgpack_buffer), source=source_rank)
+        for rbuf in raw_buffers:
+            comm.Recv(bigmpi(rbuf), source=source_rank)
 
     # Set the necessary metadata for unpacking
-    deserializer = ComplexDataSerializer(raw_buffers, len_buffers)
+    deserializer = ComplexDataSerializer(raw_buffers, buffer_count)
 
     # Start unpacking
     return deserializer.deserialize(msgpack_buffer)
