@@ -331,7 +331,7 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
     """
     info = {
         "s_data_len": len(s_data),
-        "buffer_count": buffer_count,
+        "buffer_count": len_buffers,
         "raw_buffers_len": [len(sbuf) for sbuf in raw_buffers],
     }
 
@@ -405,7 +405,7 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
     handlers = []
     info = {
         "s_data_len": len(s_data),
-        "buffer_count": buffer_count,
+        "buffer_count": len_buffers,
         "raw_buffers_len": [len(sbuf) for sbuf in raw_buffers],
     }
 
@@ -489,7 +489,7 @@ def recv_complex_data(comm, source_rank):
 
     info = comm.recv(source=source_rank)
 
-    msgpack_buffer = bytearray(info["data_len"])
+    msgpack_buffer = bytearray(info["s_data_len"])
     buffer_count = info["buffer_count"]
     raw_buffers = list(map(bytearray, info["raw_buffers_len"]))
     with pkl5._bigmpi as bigmpi:
