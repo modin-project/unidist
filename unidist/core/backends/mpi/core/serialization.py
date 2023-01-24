@@ -92,11 +92,18 @@ class ComplexDataSerializer:
     buffers : list, default: None
         A list of ``PickleBuffer`` objects for data decoding.
     buffer_count : list, default: None
-        A list of buffer sizes for data decoding.
+        List of the number of buffers for each object
+        that was serialized using the pickle 5 protocol by this entity.
 
     Notes
     -----
-    Uses a combination of msgpack, cloudpickle and pickle libraries
+    Uses a combination of msgpack, cloudpickle and pickle libraries.
+    Msgpack allows you to serialize internal objects separately,
+    but send them as one object. For example, in the Dataframes array,
+    each element will be serialized separately using pickle5,
+    and all `raw_buffers` will be stored in one array to be sent together.
+    To deserialize it, use the `buffer_count` list, which contains information
+    about the number of `raw_buffers` for сeach internal objects.
     """
 
     # Minimum buffer size for serialization with pickle 5 protocol

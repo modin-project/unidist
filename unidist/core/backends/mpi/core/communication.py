@@ -325,7 +325,7 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank):
     raw_buffers : list
         Pickle buffers list, out-of-band data collected with pickle 5 protocol.
     buffer_count : list
-        Size of each buffer from `raw_buffers` list.
+        A `ComplexDataSerializer.buffer_count` entity required for deserialization.
     dest_rank : int
         Target MPI process to transfer data.
     """
@@ -393,7 +393,7 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank)
     raw_buffers : list
         A list of pickle buffers.
     buffer_count : list
-        A list of buffers amount for each object.
+        A `ComplexDataSerializer.buffer_count` entity required for deserialization.
     dest_rank : int
         Target MPI process to transfer data.
 
