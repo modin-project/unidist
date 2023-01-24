@@ -395,7 +395,9 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank)
     raw_buffers : list
         A list of pickle buffers.
     buffer_count : list
-        A `ComplexDataSerializer.buffer_count` entity required for deserialization.
+        List of the number of buffers for each object
+        to be serialized/deserialized using the pickle 5 protocol.
+        See details in :py:class:`~unidist.core.backends.mpi.core.serialization.ComplexDataSerializer`.
     dest_rank : int
         Target MPI process to transfer data.
 
