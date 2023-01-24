@@ -93,17 +93,17 @@ class ComplexDataSerializer:
         A list of ``PickleBuffer`` objects for data decoding.
     buffer_count : list, default: None
         List of the number of buffers for each object
-        that was serialized using the pickle 5 protocol by this entity.
+        to be serialized/deserialized using the pickle 5 protocol.
 
     Notes
     -----
     Uses a combination of msgpack, cloudpickle and pickle libraries.
-    Msgpack allows you to serialize internal objects separately,
-    but send them as one object. For example, in the Dataframes array,
-    each element will be serialized separately using pickle5,
-    and all `raw_buffers` will be stored in one array to be sent together.
-    To deserialize it, use the `buffer_count` list, which contains information
-    about the number of `raw_buffers` for сeach internal objects.
+    Msgpack allows to serialize/deserialize internal objects of a container separately,
+    but send them as one object. For example, for an array of pandas DataFrames,
+    each DataFrame will be serialized separately using pickle 5,
+    and all `buffers` will be stored in one array to be sent together.
+    To deserialize it `buffer_count` is used, which contains information
+    about the number of `buffers` for each internal object.
     """
 
     # Minimum buffer size for serialization with pickle 5 protocol
