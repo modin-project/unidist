@@ -91,20 +91,27 @@ class ComplexDataSerializer:
     ----------
     buffers : list, default: None
         A list of ``PickleBuffer`` objects for data decoding.
-    len_buffers : list, default: None
-        A list of buffer sizes for data decoding.
+    buffer_count : list, default: None
+        List of the number of buffers for each object
+        to be serialized/deserialized using the pickle 5 protocol.
 
     Notes
     -----
-    Uses a combination of msgpack, cloudpickle and pickle libraries
+    Uses a combination of msgpack, cloudpickle and pickle libraries.
+    Msgpack allows to serialize/deserialize internal objects of a container separately,
+    but send them as one object. For example, for an array of pandas DataFrames,
+    each DataFrame will be serialized separately using pickle 5,
+    and all `buffers` will be stored in one array to be sent together.
+    To deserialize it `buffer_count` is used, which contains information
+    about the number of `buffers` for each internal object.
     """
 
     # Minimum buffer size for serialization with pickle 5 protocol
     PICKLE_THRESHOLD = MpiPickleThreshold.get()
 
-    def __init__(self, buffers=None, len_buffers=None):
+    def __init__(self, buffers=None, buffer_count=None):
         self.buffers = buffers if buffers else []
-        self.len_buffers = len_buffers if len_buffers else []
+        self.buffer_count = buffer_count if buffer_count else []
         self._callback_counter = 0
 
     def _buffer_callback(self, pickle_buffer):
@@ -138,7 +145,7 @@ class ComplexDataSerializer:
             Dictionary with array of serialized bytes.
         """
         s_frame = pkl.dumps(frame, protocol=5, buffer_callback=self._buffer_callback)
-        self.len_buffers.append(self._callback_counter)
+        self.buffer_count.append(self._callback_counter)
         self._callback_counter = 0
         return {"__pickle5_custom__": True, "as_bytes": s_frame}
 
@@ -224,7 +231,7 @@ class ComplexDataSerializer:
             return pkl.loads(obj["as_bytes"])
         elif "__pickle5_custom__" in obj:
             frame = pkl.loads(obj["as_bytes"], buffers=self.buffers)
-            del self.buffers[: self.len_buffers.pop(0)]
+            del self.buffers[: self.buffer_count.pop(0)]
             return frame
         else:
             return obj

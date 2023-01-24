@@ -312,7 +312,7 @@ def recv_operation_type(comm):
 # --------------------------------- #
 
 
-def _send_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
+def _send_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank):
     """
     Send already serialized complex data.
 
@@ -324,14 +324,16 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
         Serialized data as bytearray.
     raw_buffers : list
         Pickle buffers list, out-of-band data collected with pickle 5 protocol.
-    len_buffers : list
-        Size of each buffer from `raw_buffers` list.
+    buffer_count : list
+        List of the number of buffers for each object
+        to be serialized/deserialized using the pickle 5 protocol.
+        See details in :py:class:`~unidist.core.backends.mpi.core.serialization.ComplexDataSerializer`.
     dest_rank : int
         Target MPI process to transfer data.
     """
     info = {
         "s_data_len": len(s_data),
-        "buffer_count": len_buffers,
+        "buffer_count": buffer_count,
         "raw_buffers_len": [len(sbuf) for sbuf in raw_buffers],
     }
 
@@ -369,16 +371,16 @@ def send_complex_data(comm, data, dest_rank):
     s_data = serializer.serialize(data)
     # Retrive the metadata
     raw_buffers = serializer.buffers
-    len_buffers = serializer.len_buffers
+    buffer_count = serializer.buffer_count
 
     # MPI comminucation
-    _send_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank)
+    _send_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank)
 
     # For caching purpose
-    return s_data, raw_buffers, len_buffers
+    return s_data, raw_buffers, buffer_count
 
 
-def _isend_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
+def _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank):
     """
     Send serialized complex data.
 
@@ -392,8 +394,10 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
         A serialized msgpack data.
     raw_buffers : list
         A list of pickle buffers.
-    len_buffers : list
-        A list of buffers amount for each object.
+    buffer_count : list
+        List of the number of buffers for each object
+        to be serialized/deserialized using the pickle 5 protocol.
+        See details in :py:class:`~unidist.core.backends.mpi.core.serialization.ComplexDataSerializer`.
     dest_rank : int
         Target MPI process to transfer data.
 
@@ -405,7 +409,7 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank):
     handlers = []
     info = {
         "s_data_len": len(s_data),
-        "buffer_count": len_buffers,
+        "buffer_count": buffer_count,
         "raw_buffers_len": [len(sbuf) for sbuf in raw_buffers],
     }
 
@@ -455,14 +459,14 @@ def _isend_complex_data(comm, data, dest_rank):
     s_data = serializer.serialize(data)
     # Retrive the metadata
     raw_buffers = serializer.buffers
-    len_buffers = serializer.len_buffers
+    buffer_count = serializer.buffer_count
 
     # Send message pack bytestring
     handlers.extend(
-        _isend_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank)
+        _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank)
     )
 
-    return handlers, s_data, raw_buffers, len_buffers
+    return handlers, s_data, raw_buffers, buffer_count
 
 
 def recv_complex_data(comm, source_rank):
@@ -612,18 +616,18 @@ def send_operation_data(comm, operation_data, dest_rank, is_serialized=False):
         # Send already serialized data
         s_data = operation_data["s_data"]
         raw_buffers = operation_data["raw_buffers"]
-        len_buffers = operation_data["len_buffers"]
-        _send_complex_data_impl(comm, s_data, raw_buffers, len_buffers, dest_rank)
+        buffer_count = operation_data["buffer_count"]
+        _send_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank)
         return None
     else:
         # Serialize and send the data
-        s_data, raw_buffers, len_buffers = send_complex_data(
+        s_data, raw_buffers, buffer_count = send_complex_data(
             comm, operation_data, dest_rank
         )
         return {
             "s_data": s_data,
             "raw_buffers": raw_buffers,
-            "len_buffers": len_buffers,
+            "buffer_count": buffer_count,
         }
 
 
@@ -709,24 +713,24 @@ def isend_complex_operation(
         # Send already serialized data
         s_data = operation_data["s_data"]
         raw_buffers = operation_data["raw_buffers"]
-        len_buffers = operation_data["len_buffers"]
+        buffer_count = operation_data["buffer_count"]
 
         h2_list = _isend_complex_data_impl(
-            comm, s_data, raw_buffers, len_buffers, dest_rank
+            comm, s_data, raw_buffers, buffer_count, dest_rank
         )
         handlers.extend(h2_list)
 
         return handlers, None
     else:
         # Serialize and send the data
-        h2_list, s_data, raw_buffers, len_buffers = _isend_complex_data(
+        h2_list, s_data, raw_buffers, buffer_count = _isend_complex_data(
             comm, operation_data, dest_rank
         )
         handlers.extend(h2_list)
         return handlers, {
             "s_data": s_data,
             "raw_buffers": raw_buffers,
-            "len_buffers": len_buffers,
+            "buffer_count": buffer_count,
         }
 
 
