@@ -8,6 +8,7 @@ import time
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
+from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.serialization import SimpleDataSerializer
 from unidist.core.backends.mpi.core.controller.object_store import object_store
 from unidist.core.backends.mpi.core.controller.common import initial_worker_number
@@ -62,12 +63,14 @@ class GarbageCollector:
         # Cache serialized list of data IDs
         s_cleanup_list = SimpleDataSerializer().serialize_pickle(cleanup_list)
         for rank_id in range(initial_worker_number, mpi_state.world_size):
-            communication.send_serialized_operation(
+            async_operations = AsyncOperations.get_instance()
+            h_list = communication.isend_serialized_operation(
                 mpi_state.comm,
                 common.Operation.CLEANUP,
                 s_cleanup_list,
                 rank_id,
             )
+            async_operations.extend(h_list)
 
     def increment_task_counter(self):
         """
@@ -107,13 +110,13 @@ class GarbageCollector:
         )
         if len(self._cleanup_list) > self._cleanup_list_threshold:
             if self._cleanup_counter % self._cleanup_threshold == 0:
-
                 timestamp_snapshot = time.perf_counter()
                 if (timestamp_snapshot - self._timestamp) > self._time_threshold:
                     logger.debug("Cleanup counter {}".format(self._cleanup_counter))
 
                     mpi_state = communication.MPIState.get_instance()
                     # Compare submitted and executed tasks
+                    # a blocking send is used because completion is necessary for processing to continue
                     communication.mpi_send_object(
                         mpi_state.comm,
                         common.Operation.GET_TASK_COUNT,

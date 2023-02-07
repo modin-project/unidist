@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import time
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 
@@ -26,6 +27,10 @@ class AsyncOperations:
     __instance = None
 
     def __init__(self):
+        # Cleanup frequency settings
+        self._count_threshold = 10**5
+        self._time_threshold = 10  # seconds
+        self._timestamp = 0  # seconds
         # I-prefixed mpi call handlers
         self._send_async_handlers = []
 
@@ -51,6 +56,14 @@ class AsyncOperations:
         handler_list : list
             A list of pairs with handler and data reference.
         """
+        # force cheeck completed requests to avoid stack overflow
+        # the value of the criteria is determined experimentally and can be chaned in the future
+        timestamp_snapshot = time.perf_counter()
+        if (
+            timestamp_snapshot - self._timestamp > self._time_threshold
+            or len(self._send_async_handlers) > self._count_threshold
+        ):
+            self.check()
         self._send_async_handlers.extend(handlers_list)
 
     def check(self):
@@ -68,6 +81,8 @@ class AsyncOperations:
         self._send_async_handlers[:] = [
             tup for tup in self._send_async_handlers if not is_ready(tup[0])
         ]
+        # save check time to force check
+        self._timestamp = time.time()
 
     def finish(self):
         """Cancel all MPI async send requests."""

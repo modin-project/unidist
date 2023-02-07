@@ -161,7 +161,7 @@ def get_topology():
 
 def mpi_send_object(comm, data, dest_rank):
     """
-    Send Python object to another MPI rank in a blocking way.
+    Blocking send Python object to another MPI rank in a blocking way.
 
     Parameters
     ----------
@@ -171,6 +171,12 @@ def mpi_send_object(comm, data, dest_rank):
         Data to send.
     dest_rank : int
         Target MPI process to transfer data.
+
+    Notes
+    -----
+    A blocking send is used when waiting for a completion that is necessary
+    for the pipeline to continue, or when the receiver is waiting for a result.
+    Otherwise use non-blocking function ``mpi_isend_object``
     """
     comm.send(data, dest=dest_rank)
 
@@ -198,7 +204,7 @@ def mpi_isend_object(comm, data, dest_rank):
 
 def mpi_send_buffer(comm, buffer_size, buffer, dest_rank):
     """
-    Send buffer object to another MPI rank in a blocking way.
+    Blocking send buffer object to another MPI rank in a blocking way.
 
     Parameters
     ----------
@@ -210,6 +216,12 @@ def mpi_send_buffer(comm, buffer_size, buffer, dest_rank):
         Buffer object to send.
     dest_rank : int
         Target MPI process to transfer buffer.
+
+    Notes
+    -----
+    A blocking send is used when waiting for a completion that is necessary
+    for the pipeline to continue, or when the receiver is waiting for a result.
+    Otherwise use non-blocking function ``mpi_isend_buffer``
     """
     comm.send(buffer_size, dest=dest_rank)
     comm.Send([buffer, MPI.CHAR], dest=dest_rank)
@@ -237,7 +249,7 @@ def mpi_recv_buffer(comm, source_rank):
     return s_buffer
 
 
-def mpi_isend_buffer(comm, data, dest_rank):
+def mpi_isend_buffer(comm, buffer_size, buffer, dest_rank):
     """
     Send buffer object to another MPI rank in a non-blocking way.
 
@@ -255,7 +267,12 @@ def mpi_isend_buffer(comm, data, dest_rank):
     object
         A handler to MPI_Isend communication result.
     """
-    return comm.Isend([data, MPI.CHAR], dest=dest_rank)
+    requests = []
+    h1 = comm.isend(buffer_size, dest=dest_rank)
+    requests.append((h1, None))
+    h2 = comm.Isend([buffer, MPI.CHAR], dest=dest_rank)
+    requests.append((h2, buffer))
+    return requests
 
 
 def mpi_busy_wait_recv(comm, source_rank):
@@ -346,7 +363,7 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank):
 
 def send_complex_data(comm, data, dest_rank):
     """
-    Send the data that consists of different user provided complex types, lambdas and buffers.
+    Blocking send the data that consists of different user provided complex types, lambdas and buffers.
 
     Parameters
     ----------
@@ -365,6 +382,12 @@ def send_complex_data(comm, data, dest_rank):
         A list of pickle buffers.
     list
         A list of buffers amount for each object.
+
+    Notes
+    -----
+    A blocking send is used when waiting for a completion that is necessary
+    for the pipeline to continue, or when the receiver is waiting for a result.
+    Otherwise use non-blocking function ``isend_complex_data``
     """
     serializer = ComplexDataSerializer()
     # Main job
@@ -426,7 +449,7 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank)
     return handlers
 
 
-def _isend_complex_data(comm, data, dest_rank):
+def isend_complex_data(comm, data, dest_rank):
     """
     Send the data that consists of different user provided complex types, lambdas and buffers.
 
@@ -513,32 +536,9 @@ def recv_complex_data(comm, source_rank):
 # ---------- #
 
 
-def send_complex_operation(comm, operation_type, operation_data, dest_rank):
-    """
-    Send operation and data that consist of different user provided complex types, lambdas and buffers.
-
-    The data is serialized with ``unidist.core.backends.mpi.core.ComplexDataSerializer``.
-
-    Parameters
-    ----------
-    comm : object
-        MPI communicator object.
-    operation_type : ``unidist.core.backends.mpi.core.common.Operation``
-        Operation message type.
-    operation_data : object
-        Data object to send.
-    dest_rank : int
-        Target MPI process to transfer data.
-    """
-    # Send operation type
-    comm.send(operation_type, dest=dest_rank)
-    # Send complex dictionary data
-    send_complex_data(comm, operation_data, dest_rank)
-
-
 def send_simple_operation(comm, operation_type, operation_data, dest_rank):
     """
-    Send an operation and standard Python data types.
+    Blocking send an operation and standard Python data types.
 
     Parameters
     ----------
@@ -554,11 +554,48 @@ def send_simple_operation(comm, operation_type, operation_data, dest_rank):
     Notes
     -----
     Serialization is a simple pickle.dump in this case.
+    A blocking send is used when waiting for a completion that is necessary
+    for the pipeline to continue, or when the receiver is waiting for a result.
+    Otherwise use non-blocking function ``isend_simple_operation``
     """
     # Send operation type
     mpi_send_object(comm, operation_type, dest_rank)
     # Send request details
     mpi_send_object(comm, operation_data, dest_rank)
+
+
+def isend_simple_operation(comm, operation_type, operation_data, dest_rank):
+    """
+    Non blocking send an operation and standard Python data types.
+
+    Parameters
+    ----------
+    comm : object
+        MPI communicator object.
+    operation_type : unidist.core.backends.mpi.core.common.Operation
+        Operation message type.
+    operation_data : object
+        Data object to send.
+    dest_rank : int
+        Target MPI process to transfer data.
+
+    Returns
+    -------
+    list
+        A list of pairs, ``MPI_Isend`` handler and associated data to send.
+
+    Notes
+    -----
+    Serialization is a simple pickle.dump in this case.
+    """
+    # Send operation type
+    handlers = []
+    h1 = mpi_isend_object(comm, operation_type, dest_rank)
+    handlers.append((h1, operation_type))
+    # Send request details
+    h2 = mpi_isend_object(comm, operation_data, dest_rank)
+    handlers.append((h2, operation_data))
+    return handlers
 
 
 def recv_simple_operation(comm, source_rank):
@@ -582,91 +619,6 @@ def recv_simple_operation(comm, source_rank):
     De-serialization is a simple pickle.load in this case
     """
     return comm.recv(source=source_rank)
-
-
-def send_operation_data(comm, operation_data, dest_rank, is_serialized=False):
-    """
-    Send data that consists of different user provided complex types, lambdas and buffers.
-
-    The data is serialized with ``unidist.core.backends.mpi.core.ComplexDataSerializer``.
-    Function works with already serialized data.
-
-    Parameters
-    ----------
-    comm : object
-        MPI communicator object.
-    operation_data : object
-        Data object to send.
-    dest_rank : int
-        Target MPI process to transfer data.
-    is_serialized : bool
-        `operation_data` is already serialized or not.
-
-    Returns
-    -------
-    dict or None
-        Serialization data for caching purpose or nothing.
-
-    Notes
-    -----
-    Function returns ``None`` if `operation_data` is already serialized,
-    otherwise ``dict`` containing data serialized in this function.
-    """
-    if is_serialized:
-        # Send already serialized data
-        s_data = operation_data["s_data"]
-        raw_buffers = operation_data["raw_buffers"]
-        buffer_count = operation_data["buffer_count"]
-        _send_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank)
-        return None
-    else:
-        # Serialize and send the data
-        s_data, raw_buffers, buffer_count = send_complex_data(
-            comm, operation_data, dest_rank
-        )
-        return {
-            "s_data": s_data,
-            "raw_buffers": raw_buffers,
-            "buffer_count": buffer_count,
-        }
-
-
-def send_operation(
-    comm, operation_type, operation_data, dest_rank, is_serialized=False
-):
-    """
-    Send operation and data that consists of different user provided complex types, lambdas and buffers.
-
-    The data is serialized with ``unidist.core.backends.mpi.core.ComplexDataSerializer``.
-    Function works with already serialized data.
-
-    Parameters
-    ----------
-    comm : object
-        MPI communicator object.
-    operation_type : ``unidist.core.backends.mpi.core.common.Operation``
-        Operation message type.
-    operation_data : object
-        Data object to send.
-    dest_rank : int
-        Target MPI process to transfer data.
-    is_serialized : bool
-        `operation_data` is already serialized or not.
-
-    Returns
-    -------
-    dict or None
-        Serialization data for caching purpose.
-
-    Notes
-    -----
-    Function returns ``None`` if `operation_data` is already serialized,
-    otherwise ``dict`` containing data serialized in this function.
-    """
-    # Send operation type
-    mpi_send_object(comm, operation_type, dest_rank)
-    # Send operation data
-    return send_operation_data(comm, operation_data, dest_rank, is_serialized)
 
 
 def isend_complex_operation(
@@ -723,7 +675,7 @@ def isend_complex_operation(
         return handlers, None
     else:
         # Serialize and send the data
-        h2_list, s_data, raw_buffers, buffer_count = _isend_complex_data(
+        h2_list, s_data, raw_buffers, buffer_count = isend_complex_data(
             comm, operation_data, dest_rank
         )
         handlers.extend(h2_list)
@@ -734,28 +686,7 @@ def isend_complex_operation(
         }
 
 
-def send_remote_task_operation(comm, operation_type, operation_data, dest_rank):
-    """
-    Send operation and data that consist of different user provided complex types, lambdas and buffers.
-
-    Parameters
-    ----------
-    comm : object
-        MPI communicator object.
-    operation_type : ``unidist.core.backends.mpi.core.common.Operation``
-        Operation message type.
-    operation_data : object
-        Data object to send.
-    dest_rank : int
-        Target MPI process to transfer data.
-    """
-    # Send operation type
-    mpi_send_object(comm, operation_type, dest_rank)
-    # Serialize and send the complex data
-    send_complex_data(comm, operation_data, dest_rank)
-
-
-def send_serialized_operation(comm, operation_type, operation_data, dest_rank):
+def isend_serialized_operation(comm, operation_type, operation_data, dest_rank):
     """
     Send operation and serialized simple data.
 
@@ -769,11 +700,20 @@ def send_serialized_operation(comm, operation_type, operation_data, dest_rank):
         Data object to send.
     dest_rank : int
         Target MPI process to transfer data.
+
+    Returns
+    -------
+    list
+        A list of pairs, ``MPI_Isend`` handler and associated data to send.
     """
+    handlers = []
     # Send operation type
-    mpi_send_object(comm, operation_type, dest_rank)
+    h1 = mpi_isend_object(comm, operation_type, dest_rank)
+    handlers.append((h1, operation_type))
     # Send request details
-    mpi_send_buffer(comm, len(operation_data), operation_data, dest_rank)
+    h2_list = mpi_isend_buffer(comm, len(operation_data), operation_data, dest_rank)
+    handlers.extend(h2_list)
+    return handlers
 
 
 def recv_serialized_data(comm, source_rank):

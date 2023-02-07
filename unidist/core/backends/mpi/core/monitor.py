@@ -13,6 +13,7 @@ except ImportError:
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
+from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
@@ -65,12 +66,15 @@ def monitor_loop():
         if operation_type == common.Operation.TASK_DONE:
             task_counter.increment()
         elif operation_type == common.Operation.GET_TASK_COUNT:
+            # a blocking send is used, because the receiver is waiting for the result
             communication.mpi_send_object(
                 mpi_state.comm,
                 task_counter.task_counter,
                 source_rank,
             )
         elif operation_type == common.Operation.CANCEL:
+            async_operations = AsyncOperations.get_instance()
+            async_operations.finish()
             if not MPI.Is_finalized():
                 MPI.Finalize()
             break  # leave event loop and shutdown monitoring

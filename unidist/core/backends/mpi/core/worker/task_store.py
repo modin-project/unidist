@@ -10,6 +10,7 @@ import time
 from unidist.core.backends.common.data_id import is_data_id
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
+from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.worker.object_store import ObjectStore
 from unidist.core.backends.mpi.core.worker.request_store import RequestStore
 
@@ -136,12 +137,14 @@ class TaskStore:
             "id": data_id,
             "is_blocking_op": False,
         }
-        communication.send_simple_operation(
+        async_operations = AsyncOperations.get_instance()
+        h_list = communication.isend_simple_operation(
             communication.MPIState.get_instance().comm,
             operation_type,
             operation_data,
             dest_rank,
         )
+        async_operations.extend(h_list)
 
         # Save request in order to prevent massive communication during pending task checks
         RequestStore.get_instance().put(data_id, dest_rank, RequestStore.REQ_DATA_CACHE)
@@ -255,6 +258,7 @@ class TaskStore:
                             output_data_ids
                         )
                 # Monitor the task execution
+                # a blocking send is used because completion is necessary for processing to continue
                 communication.mpi_send_object(
                     communication.MPIState.get_instance().comm,
                     common.Operation.TASK_DONE,
@@ -311,6 +315,7 @@ class TaskStore:
                     else:
                         ObjectStore.get_instance().put(output_data_ids, output_values)
             # Monitor the task execution
+            # a blocking send is used because completion is necessary for processing to continue
             communication.mpi_send_object(
                 communication.MPIState.get_instance().comm,
                 common.Operation.TASK_DONE,

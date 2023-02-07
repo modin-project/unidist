@@ -6,6 +6,7 @@
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
+from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.controller.object_store import object_store
 from unidist.core.backends.mpi.core.controller.garbage_collector import (
     garbage_collector,
@@ -50,13 +51,14 @@ class ActorMethod:
             "output": common.master_data_ids_to_base(output_id),
             "handler": self._actor._handler_id.base_data_id(),
         }
-        communication.send_complex_operation(
+        async_operations = AsyncOperations.get_instance()
+        h_list, _ = communication.isend_complex_operation(
             communication.MPIState.get_instance().comm,
             operation_type,
             operation_data,
             self._actor._owner_rank,
         )
-
+        async_operations.extend(h_list)
         return output_id
 
 
@@ -112,12 +114,14 @@ class Actor:
                 "kwargs": kwargs,
                 "handler": self._handler_id.base_data_id(),
             }
-            communication.send_complex_operation(
+            async_operations = AsyncOperations.get_instance()
+            h_list, _ = communication.isend_complex_operation(
                 communication.MPIState.get_instance().comm,
                 operation_type,
                 operation_data,
                 self._owner_rank,
             )
+            async_operations.extend(h_list)
 
     def _serialization_helper(self):
         """

@@ -2,8 +2,8 @@ from collections import defaultdict
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
+from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.worker.object_store import ObjectStore
-from unidist.core.backends.mpi.core.worker.async_operations import AsyncOperations
 
 
 mpi_state = communication.MPIState.get_instance()
@@ -158,14 +158,20 @@ class RequestStore:
             for data_id in data_ids:
                 if data_id in self._wait_request:
                     # Data is already in DataMap, so not problem here
-                    communication.MPIState.get_instance().comm.send(
-                        data_id, dest=communication.MPIRank.ROOT
+                    # a blocking send is used, because the receiver is waiting for the result
+                    communication.mpi_send_object(
+                        communication.MPIState.get_instance().comm,
+                        data_id,
+                        communication.MPIRank.ROOT,
                     )
                     del self._wait_request[data_id]
         else:
             if data_ids in self._wait_request:
-                communication.MPIState.get_instance().comm.send(
-                    data_ids, dest=communication.MPIRank.ROOT
+                # a blocking send is used, because the receiver is waiting for the result
+                communication.mpi_send_object(
+                    communication.MPIState.get_instance().comm,
+                    data_ids,
+                    communication.MPIRank.ROOT,
                 )
                 del self._wait_request[data_ids]
 
@@ -186,8 +192,11 @@ class RequestStore:
         """
         if ObjectStore.get_instance().contains(data_id):
             # Executor wait just for signal
-            communication.MPIState.get_instance().comm.send(
-                data_id, dest=communication.MPIRank.ROOT
+            # a blocking send is used, because the receiver is waiting for the result
+            communication.mpi_send_object(
+                communication.MPIState.get_instance().comm,
+                data_id,
+                communication.MPIRank.ROOT,
             )
             logger.debug("Wait data {} id is ready".format(data_id._id))
         else:
@@ -222,6 +231,7 @@ class RequestStore:
                 # The controller or a requesting worker is blocked by the request
                 # which should be processed immediatly
                 operation_data = object_store.get(data_id)
+                # a blocking send is used, because the receiver is waiting for the result
                 communication.send_complex_data(
                     mpi_state.comm,
                     operation_data,
