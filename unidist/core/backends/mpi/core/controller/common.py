@@ -10,6 +10,7 @@ from unidist.core.backends.common.data_id import is_data_id
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.controller.object_store import object_store
+from collections import defaultdict
 
 logger = common.get_logger("common", "common.log")
 
@@ -255,3 +256,44 @@ def push_data(dest_rank, value):
             _push_data_owner(dest_rank, value)
         else:
             raise ValueError("Unknown DataID!")
+
+def push_data_owners(dest_rank, data_ids):
+    """
+    Parse and send data owners for all values to destination rank.
+
+    Send all ID associated location to the target rank.
+
+    Parameters
+    ----------
+    dest_rank : int
+        Rank where task data is needed.
+    data_ids : list
+        List of all data_ids required by the worker
+    """
+    for data_id in data_ids:
+        if object_store.contains_data_owner(data_id):
+            _push_data_owner(dest_rank, data_id)
+        else:
+            raise ValueError("Data owner not known")
+
+def choose_destination_rank(data_ids):
+    """
+    Choose destination rank considering which worker has the maximum share of data.
+
+    Get the data shares in each worker process
+
+    Parameters
+    ----------
+    data_ids : list
+        List of all data_ids required by the worker
+
+    Returns
+    -------
+    int
+        A rank number.
+    """
+    data_share = defaultdict(lambda : 0)
+    for data_id in data_ids:
+        data_share[object_store.get_data_owner(data_id)] += object_store.get_data_size(data_id)
+    rank_with_max_data = max(data_share, key=data_share.get)
+    return rank_with_max_data
