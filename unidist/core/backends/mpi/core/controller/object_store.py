@@ -319,4 +319,5 @@ class ObjectStore:
         """
         return self._identity_data_id_map[identity]
 
+
 object_store = ObjectStore.get_instance()

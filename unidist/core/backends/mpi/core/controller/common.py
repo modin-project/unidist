@@ -257,6 +257,7 @@ def push_data(dest_rank, value):
         else:
             raise ValueError("Unknown DataID!")
 
+
 def push_data_owners(dest_rank, data_ids):
     """
     Parse and send data owners for all values to destination rank.
@@ -276,6 +277,7 @@ def push_data_owners(dest_rank, data_ids):
         else:
             raise ValueError("Data owner not known")
 
+
 def choose_destination_rank(data_ids):
     """
     Choose destination rank considering which worker has the maximum share of data.
@@ -292,8 +294,10 @@ def choose_destination_rank(data_ids):
     int
         A rank number.
     """
-    data_share = defaultdict(lambda : 0)
+    data_share = defaultdict(lambda: 0)
     for data_id in data_ids:
-        data_share[object_store.get_data_owner(data_id)] += object_store.get_data_size(data_id)
+        data_share[object_store.get_data_owner(data_id)] += object_store.get_data_size(
+            data_id
+        )
     rank_with_max_data = max(data_share, key=data_share.get)
     return rank_with_max_data
