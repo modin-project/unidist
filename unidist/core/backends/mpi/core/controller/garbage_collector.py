@@ -62,8 +62,8 @@ class GarbageCollector:
         mpi_state = communication.MPIState.get_instance()
         # Cache serialized list of data IDs
         s_cleanup_list = SimpleDataSerializer().serialize_pickle(cleanup_list)
+        async_operations = AsyncOperations.get_instance()
         for rank_id in range(initial_worker_number, mpi_state.world_size):
-            async_operations = AsyncOperations.get_instance()
             h_list = communication.isend_serialized_operation(
                 mpi_state.comm,
                 common.Operation.CLEANUP,
@@ -108,6 +108,9 @@ class GarbageCollector:
                 (self._cleanup_counter % self._cleanup_threshold) == 0,
             )
         )
+        # clear completed non blocking operations
+        async_operations = AsyncOperations.get_instance()
+        async_operations.check()
         if len(self._cleanup_list) > self._cleanup_list_threshold:
             if self._cleanup_counter % self._cleanup_threshold == 0:
                 timestamp_snapshot = time.perf_counter()

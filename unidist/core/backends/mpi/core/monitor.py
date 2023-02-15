@@ -57,6 +57,7 @@ def monitor_loop():
     """
     task_counter = TaskCounter.get_instance()
     mpi_state = communication.MPIState.get_instance()
+    async_operations = AsyncOperations.get_instance()
 
     while True:
         # Listen receive operation from any source
@@ -73,10 +74,11 @@ def monitor_loop():
                 source_rank,
             )
         elif operation_type == common.Operation.CANCEL:
-            async_operations = AsyncOperations.get_instance()
             async_operations.finish()
             if not MPI.Is_finalized():
                 MPI.Finalize()
             break  # leave event loop and shutdown monitoring
         else:
             raise ValueError("Unsupported operation!")
+
+        async_operations.check()
