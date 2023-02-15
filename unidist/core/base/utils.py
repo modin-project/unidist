@@ -74,7 +74,6 @@ def get_backend_proxy():
     backend = BackendProxy.get_instance()
 
     if backend is None:
-
         backend_name = Backend.get()
         if backend_name == BackendName.RAY:
             from unidist.core.backends.ray.backend import RayBackend
