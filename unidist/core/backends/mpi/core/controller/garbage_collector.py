@@ -107,7 +107,6 @@ class GarbageCollector:
         )
         if len(self._cleanup_list) > self._cleanup_list_threshold:
             if self._cleanup_counter % self._cleanup_threshold == 0:
-
                 timestamp_snapshot = time.perf_counter()
                 if (timestamp_snapshot - self._timestamp) > self._time_threshold:
                     logger.debug("Cleanup counter {}".format(self._cleanup_counter))
