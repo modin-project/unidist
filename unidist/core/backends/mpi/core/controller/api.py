@@ -27,6 +27,7 @@ from unidist.core.backends.mpi.core.controller.common import (
     push_data_owners,
     RoundRobin,
     choose_destination_rank,
+    collect_all_data_id_from_args,
 )
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
@@ -373,13 +374,13 @@ def submit(task, *args, num_returns=1, **kwargs):
     unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
     unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
 
-    args_data_ids = list(map(put, unwrapped_args))
-    kwargs_data_ids = list(map(put, unwrapped_kwargs.values()))
-    all_data_ids = args_data_ids + kwargs_data_ids
+    collected_data_ids = []
+    collect_all_data_id_from_args(unwrapped_args, collected_data_ids)
+    collect_all_data_id_from_args(unwrapped_kwargs, collected_data_ids)
 
     # dest_rank = RoundRobin.get_instance().schedule_rank()
-    dest_rank = choose_destination_rank(all_data_ids)
-    push_data_owners(dest_rank, all_data_ids)
+    dest_rank = choose_destination_rank(collected_data_ids)
+    push_data_owners(dest_rank, collected_data_ids)
     output_ids = object_store.generate_output_data_id(
         dest_rank, garbage_collector, num_returns
     )

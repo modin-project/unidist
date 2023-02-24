@@ -301,3 +301,27 @@ def choose_destination_rank(data_ids):
         )
     rank_with_max_data = max(data_share, key=data_share.get)
     return rank_with_max_data
+
+
+def collect_all_data_id_from_args(value, collected_data_ids=[]):
+    """
+    Collect all data ids
+
+    Collect all data ids from the given value and save them to  collected_data_ids list.
+
+    Parameters
+    ----------
+    value : iterable or dict or object
+        Arguments to be sent.
+    collected_data_ids : list to store all collected data_ids
+
+    """
+    if isinstance(value, (list, tuple)):
+        for v in value:
+            collect_all_data_id_from_args(v, collected_data_ids)
+    elif isinstance(value, dict):
+        for v in value.values():
+            collect_all_data_id_from_args(v, collected_data_ids)
+    elif is_data_id(value):
+        if object_store.contains_data_owner(value):
+            collected_data_ids.append(value)
