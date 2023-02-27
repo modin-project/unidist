@@ -380,6 +380,7 @@ def submit(task, *args, num_returns=1, **kwargs):
 
     # dest_rank = RoundRobin.get_instance().schedule_rank()
     dest_rank = choose_destination_rank(collected_data_ids)
+    print(dest_rank, collected_data_ids)
     push_data_owners(dest_rank, collected_data_ids)
     output_ids = object_store.generate_output_data_id(
         dest_rank, garbage_collector, num_returns

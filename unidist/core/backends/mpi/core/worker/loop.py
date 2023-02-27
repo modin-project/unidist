@@ -4,6 +4,7 @@
 
 """Worker MPI process task processing functionality."""
 import asyncio
+import sys
 from functools import wraps, partial
 
 try:
@@ -29,7 +30,7 @@ mpi_state = communication.MPIState.get_instance()
 # When building documentation we do not have MPI initialized so
 # we use the condition to set "worker_0.log" in order to build it succesfully.
 log_file = "worker_{}.log".format(mpi_state.rank if mpi_state is not None else 0)
-w_logger = common.get_logger("worker", log_file)
+w_logger = common.get_logger("worker", sys.stdout, True)
 
 # Actors map {handle : actor}
 actor_map = {}

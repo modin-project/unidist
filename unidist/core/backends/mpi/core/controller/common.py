@@ -282,7 +282,8 @@ def choose_destination_rank(data_ids):
     """
     Choose destination rank considering which worker has the maximum share of data.
 
-    Get the data shares in each worker process
+    Get the data shares in each worker process and choose rank with the most data share.
+    If data_ids are empty choses the rank using the round robin approach.
 
     Parameters
     ----------
@@ -294,13 +295,16 @@ def choose_destination_rank(data_ids):
     int
         A rank number.
     """
+    if not data_ids:
+        chosen_rank = RoundRobin.get_instance().schedule_rank()
+        return chosen_rank
     data_share = defaultdict(lambda: 0)
     for data_id in data_ids:
         data_share[object_store.get_data_owner(data_id)] += object_store.get_data_size(
             data_id
         )
-    rank_with_max_data = max(data_share, key=data_share.get)
-    return rank_with_max_data
+    chosen_rank = max(data_share, key=data_share.get)
+    return chosen_rank
 
 
 def collect_all_data_id_from_args(value, collected_data_ids=[]):
