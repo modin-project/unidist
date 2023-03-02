@@ -145,7 +145,8 @@ def request_worker_data(data_id):
         # without any delay
         "is_blocking_op": True,
     }
-    # a blocking send is used because completion is necessary for processing to continue
+    # We use a blocking send here because we have to wait for
+    # completion of the communication, which is necessary for the pipeline to continue.
     communication.send_simple_operation(
         mpi_state.comm,
         operation_type,

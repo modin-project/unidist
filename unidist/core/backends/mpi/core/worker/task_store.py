@@ -258,7 +258,8 @@ class TaskStore:
                             output_data_ids
                         )
                 # Monitor the task execution
-                # a blocking send is used because completion is necessary for processing to continue
+                # We use a blocking send here because we have to wait for
+                # completion of the communication, which is necessary for the pipeline to continue.
                 communication.mpi_send_object(
                     communication.MPIState.get_instance().comm,
                     common.Operation.TASK_DONE,
@@ -314,8 +315,9 @@ class TaskStore:
                             ObjectStore.get_instance().put(output_id, value)
                     else:
                         ObjectStore.get_instance().put(output_data_ids, output_values)
-            # Monitor the task execution
-            # a blocking send is used because completion is necessary for processing to continue
+            # Monitor the task execution.
+            # We use a blocking send here because we have to wait for
+            # completion of the communication, which is necessary for the pipeline to continue.
             communication.mpi_send_object(
                 communication.MPIState.get_instance().comm,
                 common.Operation.TASK_DONE,

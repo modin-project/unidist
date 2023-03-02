@@ -108,8 +108,8 @@ class GarbageCollector:
                 (self._cleanup_counter % self._cleanup_threshold) == 0,
             )
         )
-        # clear completed non blocking operations
         async_operations = AsyncOperations.get_instance()
+        # Check completion status of previous async MPI routines
         async_operations.check()
         if len(self._cleanup_list) > self._cleanup_list_threshold:
             if self._cleanup_counter % self._cleanup_threshold == 0:
@@ -119,7 +119,8 @@ class GarbageCollector:
 
                     mpi_state = communication.MPIState.get_instance()
                     # Compare submitted and executed tasks
-                    # a blocking send is used because completion is necessary for processing to continue
+                    # We use a blocking send here because we have to wait for
+                    # completion of the communication, which is necessary for the pipeline to continue.
                     communication.mpi_send_object(
                         mpi_state.comm,
                         common.Operation.GET_TASK_COUNT,

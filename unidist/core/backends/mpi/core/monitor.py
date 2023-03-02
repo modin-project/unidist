@@ -67,7 +67,7 @@ def monitor_loop():
         if operation_type == common.Operation.TASK_DONE:
             task_counter.increment()
         elif operation_type == common.Operation.GET_TASK_COUNT:
-            # a blocking send is used, because the receiver is waiting for the result
+            # We use a blocking send here because the receiver is waiting for the result.
             communication.mpi_send_object(
                 mpi_state.comm,
                 task_counter.task_counter,
@@ -81,4 +81,5 @@ def monitor_loop():
         else:
             raise ValueError("Unsupported operation!")
 
+        # Check completion status of previous async MPI routines
         async_operations.check()

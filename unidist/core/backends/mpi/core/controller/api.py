@@ -182,7 +182,8 @@ def shutdown():
     mpi_state = communication.MPIState.get_instance()
     # Send shutdown commands to all ranks
     for rank_id in range(communication.MPIRank.MONITOR, mpi_state.world_size):
-        # a blocking send is used because completion is necessary for processing to continue
+        # We use a blocking send here because we have to wait for
+        # completion of the communication, which is necessary for the pipeline to continue.
         communication.mpi_send_object(mpi_state.comm, common.Operation.CANCEL, rank_id)
         logger.debug("Shutdown rank {}".format(rank_id))
     async_operations = AsyncOperations.get_instance()
@@ -305,7 +306,8 @@ def wait(data_ids, num_returns=1):
 
         operation_type = common.Operation.WAIT
         operation_data = {"id": data_id.base_data_id()}
-        # a blocking send is used because completion is necessary for processing to continue
+        # We use a blocking send here because we have to wait for
+        # completion of the communication, which is necessary for the pipeline to continue.
         communication.send_simple_operation(
             mpi_state.comm,
             operation_type,

@@ -157,8 +157,8 @@ class RequestStore:
         if isinstance(data_ids, (list, tuple)):
             for data_id in data_ids:
                 if data_id in self._wait_request:
-                    # Data is already in DataMap, so not problem here
-                    # a blocking send is used, because the receiver is waiting for the result
+                    # Data is already in DataMap, so not problem here.
+                    # We use a blocking send here because the receiver is waiting for the result.
                     communication.mpi_send_object(
                         communication.MPIState.get_instance().comm,
                         data_id,
@@ -167,7 +167,7 @@ class RequestStore:
                     del self._wait_request[data_id]
         else:
             if data_ids in self._wait_request:
-                # a blocking send is used, because the receiver is waiting for the result
+                # We use a blocking send here because the receiver is waiting for the result.
                 communication.mpi_send_object(
                     communication.MPIState.get_instance().comm,
                     data_ids,
@@ -192,7 +192,7 @@ class RequestStore:
         """
         if ObjectStore.get_instance().contains(data_id):
             # Executor wait just for signal
-            # a blocking send is used, because the receiver is waiting for the result
+            # We use a blocking send here because the receiver is waiting for the result.
             communication.mpi_send_object(
                 communication.MPIState.get_instance().comm,
                 data_id,
@@ -231,7 +231,7 @@ class RequestStore:
                 # The controller or a requesting worker is blocked by the request
                 # which should be processed immediatly
                 operation_data = object_store.get(data_id)
-                # a blocking send is used, because the receiver is waiting for the result
+                # We use a blocking send here because the receiver is waiting for the result.
                 communication.send_complex_data(
                     mpi_state.comm,
                     operation_data,

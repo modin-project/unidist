@@ -161,7 +161,7 @@ def get_topology():
 
 def mpi_send_object(comm, data, dest_rank):
     """
-    Blocking send Python object to another MPI rank in a blocking way.
+    Send Python object to another MPI rank in a blocking way.
 
     Parameters
     ----------
@@ -174,9 +174,9 @@ def mpi_send_object(comm, data, dest_rank):
 
     Notes
     -----
-    A blocking send is used when waiting for a completion that is necessary
-    for the pipeline to continue, or when the receiver is waiting for a result.
-    Otherwise use non-blocking function ``mpi_isend_object``
+    This blocking send is used when we have to wait for completion of the communication,
+    which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
+    Otherwise, use non-blocking ``mpi_isend_object``.
     """
     comm.send(data, dest=dest_rank)
 
@@ -204,7 +204,7 @@ def mpi_isend_object(comm, data, dest_rank):
 
 def mpi_send_buffer(comm, buffer_size, buffer, dest_rank):
     """
-    Blocking send buffer object to another MPI rank in a blocking way.
+    Send buffer object to another MPI rank in a blocking way.
 
     Parameters
     ----------
@@ -219,9 +219,9 @@ def mpi_send_buffer(comm, buffer_size, buffer, dest_rank):
 
     Notes
     -----
-    A blocking send is used when waiting for a completion that is necessary
-    for the pipeline to continue, or when the receiver is waiting for a result.
-    Otherwise use non-blocking function ``mpi_isend_buffer``
+    This blocking send is used when we have to wait for completion of the communication,
+    which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
+    Otherwise, use non-blocking ``mpi_isend_buffer``.
     """
     comm.send(buffer_size, dest=dest_rank)
     comm.Send([buffer, MPI.CHAR], dest=dest_rank)
@@ -363,7 +363,7 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank):
 
 def send_complex_data(comm, data, dest_rank):
     """
-    Blocking send the data that consists of different user provided complex types, lambdas and buffers.
+    Send the data that consists of different user provided complex types, lambdas and buffers in a blocking way.
 
     Parameters
     ----------
@@ -385,9 +385,9 @@ def send_complex_data(comm, data, dest_rank):
 
     Notes
     -----
-    A blocking send is used when waiting for a completion that is necessary
-    for the pipeline to continue, or when the receiver is waiting for a result.
-    Otherwise use non-blocking function ``isend_complex_data``
+    This blocking send is used when we have to wait for completion of the communication,
+    which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
+    Otherwise, use non-blocking ``isend_complex_data``.
     """
     serializer = ComplexDataSerializer()
     # Main job
@@ -451,7 +451,7 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank)
 
 def isend_complex_data(comm, data, dest_rank):
     """
-    Send the data that consists of different user provided complex types, lambdas and buffers.
+    Send the data that consists of different user provided complex types, lambdas and buffers in a non-blocking way.
 
     Non-blocking asynchronous interface.
 
@@ -538,7 +538,7 @@ def recv_complex_data(comm, source_rank):
 
 def send_simple_operation(comm, operation_type, operation_data, dest_rank):
     """
-    Blocking send an operation and standard Python data types.
+    Send an operation type and standard Python data types in a blocking way.
 
     Parameters
     ----------
@@ -553,20 +553,20 @@ def send_simple_operation(comm, operation_type, operation_data, dest_rank):
 
     Notes
     -----
-    Serialization is a simple pickle.dump in this case.
-    A blocking send is used when waiting for a completion that is necessary
-    for the pipeline to continue, or when the receiver is waiting for a result.
-    Otherwise use non-blocking function ``isend_simple_operation``
+    * This blocking send is used when we have to wait for completion of the communication,
+    which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
+    Otherwise, use non-blocking ``isend_simple_operation``.
+    * Serialization of the data to be sent takes place just using ``pickle.dump`` in this case.
     """
     # Send operation type
     mpi_send_object(comm, operation_type, dest_rank)
-    # Send request details
+    # Send the details of a communication request
     mpi_send_object(comm, operation_data, dest_rank)
 
 
 def isend_simple_operation(comm, operation_type, operation_data, dest_rank):
     """
-    Non blocking send an operation and standard Python data types.
+    Send an operation type and standard Python data types in a non-blocking way.
 
     Parameters
     ----------
@@ -586,13 +586,13 @@ def isend_simple_operation(comm, operation_type, operation_data, dest_rank):
 
     Notes
     -----
-    Serialization is a simple pickle.dump in this case.
+    Serialization of the data to be sent takes place just using ``pickle.dump`` in this case.
     """
     # Send operation type
     handlers = []
     h1 = mpi_isend_object(comm, operation_type, dest_rank)
     handlers.append((h1, operation_type))
-    # Send request details
+    # Send the details of a communication request
     h2 = mpi_isend_object(comm, operation_data, dest_rank)
     handlers.append((h2, operation_data))
     return handlers
@@ -710,7 +710,7 @@ def isend_serialized_operation(comm, operation_type, operation_data, dest_rank):
     # Send operation type
     h1 = mpi_isend_object(comm, operation_type, dest_rank)
     handlers.append((h1, operation_type))
-    # Send request details
+    # Send the details of a communication request
     h2_list = mpi_isend_buffer(comm, len(operation_data), operation_data, dest_rank)
     handlers.extend(h2_list)
     return handlers
