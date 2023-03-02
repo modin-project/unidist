@@ -9,6 +9,7 @@ import itertools
 from unidist.core.backends.common.data_id import is_data_id
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
+from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.controller.object_store import object_store
 
 logger = common.get_logger("common", "common.log")
@@ -144,6 +145,8 @@ def request_worker_data(data_id):
         # without any delay
         "is_blocking_op": True,
     }
+    # We use a blocking send here because we have to wait for
+    # completion of the communication, which is necessary for the pipeline to continue.
     communication.send_simple_operation(
         mpi_state.comm,
         operation_type,
@@ -176,11 +179,12 @@ def _push_local_data(dest_rank, data_id):
         logger.debug("PUT LOCAL {} id to {} rank".format(data_id._id, dest_rank))
 
         mpi_state = communication.MPIState.get_instance()
+        async_operations = AsyncOperations.get_instance()
         # Push the local master data to the target worker directly
         operation_type = common.Operation.PUT_DATA
         if object_store.is_already_serialized(data_id):
             serialized_data = object_store.get_serialized_data(data_id)
-            communication.send_operation(
+            h_list, _ = communication.isend_complex_operation(
                 mpi_state.comm,
                 operation_type,
                 serialized_data,
@@ -192,7 +196,7 @@ def _push_local_data(dest_rank, data_id):
                 "id": data_id,
                 "data": object_store.get(data_id),
             }
-            serialized_data = communication.send_operation(
+            h_list, serialized_data = communication.isend_complex_operation(
                 mpi_state.comm,
                 operation_type,
                 operation_data,
@@ -200,6 +204,7 @@ def _push_local_data(dest_rank, data_id):
                 is_serialized=False,
             )
             object_store.cache_serialized_data(data_id, serialized_data)
+        async_operations.extend(h_list)
         #  Remember pushed id
         object_store.cache_send_info(data_id, dest_rank)
 
@@ -220,12 +225,14 @@ def _push_data_owner(dest_rank, data_id):
         "id": data_id,
         "owner": object_store.get_data_owner(data_id),
     }
-    communication.send_simple_operation(
+    async_operations = AsyncOperations.get_instance()
+    h_list = communication.isend_simple_operation(
         communication.MPIState.get_instance().comm,
         operation_type,
         operation_data,
         dest_rank,
     )
+    async_operations.extend(h_list)
 
 
 def push_data(dest_rank, value):

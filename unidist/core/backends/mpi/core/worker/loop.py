@@ -18,7 +18,7 @@ import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.worker.object_store import ObjectStore
 from unidist.core.backends.mpi.core.worker.request_store import RequestStore
 from unidist.core.backends.mpi.core.worker.task_store import TaskStore
-from unidist.core.backends.mpi.core.worker.async_operations import AsyncOperations
+from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
