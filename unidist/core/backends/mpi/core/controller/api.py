@@ -23,11 +23,11 @@ from unidist.core.backends.mpi.core.controller.garbage_collector import (
 )
 from unidist.core.backends.mpi.core.controller.common import (
     request_worker_data,
-    push_data,
     push_data_owners,
     RoundRobin,
     choose_destination_rank,
     collect_all_data_id_from_args,
+    push_data_directly_to_worker,
 )
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
@@ -228,14 +228,11 @@ def put(data):
     """
     if is_data_id(data):
         return data
-    if object_store.get_data_id_from_identity(id(data)):
-        data_id = object_store.get_data_id_from_identity(id(data))
     else:
         data_id = object_store.generate_data_id(garbage_collector)
         dest_rank = RoundRobin.get_instance().schedule_rank()
-        object_store.put(data_id, data)
         object_store.put_data_owner(data_id, dest_rank)
-        push_data(dest_rank, data_id)
+        push_data_directly_to_worker(dest_rank, data_id, data)
 
     logger.debug("PUT {} id".format(data_id._id))
 

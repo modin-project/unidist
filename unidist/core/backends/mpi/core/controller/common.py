@@ -164,7 +164,6 @@ def request_worker_data(data_id):
 def _push_local_data(dest_rank, data_id):
     """
     Send local data associated with passed ID to target rank.
-
     Parameters
     ----------
     dest_rank : int
@@ -203,6 +202,34 @@ def _push_local_data(dest_rank, data_id):
             object_store.cache_serialized_data(data_id, serialized_data)
         #  Remember pushed id
         object_store.cache_send_info(data_id, dest_rank)
+
+
+def push_data_directly_to_worker(dest_rank, data_id, value):
+    """
+    Send local data_id and associated value to target rank.
+
+    Parameters
+    ----------
+    dest_rank : int
+        Target rank.
+    data_id : unidist.core.backends.mpi.core.common.MasterDataID
+        An ID to data.
+    value : value of the provided data_id
+
+    """
+    mpi_state = communication.MPIState.get_instance()
+    operation_type = common.Operation.PUT_DATA
+    operation_data = {
+        "id": data_id,
+        "data": value,
+    }
+    communication.send_operation(
+        mpi_state.comm,
+        operation_type,
+        operation_data,
+        dest_rank,
+        is_serialized=False,
+    )
 
 
 def _push_data_owner(dest_rank, data_id):
@@ -262,7 +289,7 @@ def push_data_owners(dest_rank, data_ids):
     """
     Parse and send data owners for all values to destination rank.
 
-    Send all ID associated location to the target rank.
+    Send  ID associated location to the target rank for all ranks that are not data owners.
 
     Parameters
     ----------
@@ -273,7 +300,8 @@ def push_data_owners(dest_rank, data_ids):
     """
     for data_id in data_ids:
         if object_store.contains_data_owner(data_id):
-            _push_data_owner(dest_rank, data_id)
+            if object_store.get_data_owner(data_id) != dest_rank:
+                _push_data_owner(dest_rank, data_id)
         else:
             raise ValueError("Data owner not known")
 
@@ -329,3 +357,5 @@ def collect_all_data_id_from_args(value, collected_data_ids=[]):
     elif is_data_id(value):
         if object_store.contains_data_owner(value):
             collected_data_ids.append(value)
+        else:
+            raise ValueError("Unknown DataID!")

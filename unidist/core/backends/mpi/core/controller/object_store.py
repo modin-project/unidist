@@ -36,8 +36,6 @@ class ObjectStore:
         self._serialization_cache = {}
         # Data sizes
         self._data_sizes = defaultdict(int)
-        # Mapping from python identity id() to DataID {id() : DataID}
-        self._identity_data_id_map = defaultdict(lambda: None)
 
     @classmethod
     def get_instance(cls):
@@ -65,7 +63,19 @@ class ObjectStore:
         """
         self._data_map[data_id] = data
         self._data_sizes[data_id] = sys.getsizeof(data)
-        self._identity_data_id_map[id(data)] = data_id
+
+    def put_data_size(self, data_id, data):
+        """
+        Put data and sizeof data to internal dictionary.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.mpi.core.common.MasterDataID
+            An ID to data.
+        data : object
+            Data to be put.
+        """
+        self._data_sizes[data_id] = sys.getsizeof(data)
 
     def put_data_owner(self, data_id, rank):
         """
@@ -303,21 +313,6 @@ class ObjectStore:
             Cached serialized data associated with `data_id`.
         """
         return self._serialization_cache[data_id]
-
-    def get_data_id_from_identity(self, identity):
-        """
-        Get data_id for a given python object identity.
-
-        Parameters
-        ----------
-        identity :  identity of a python object. Result of id()
-
-        Returns
-        -------
-        data_id
-            DataID corresponding to a python identity.
-        """
-        return self._identity_data_id_map[identity]
 
 
 object_store = ObjectStore.get_instance()
