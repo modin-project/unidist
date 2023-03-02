@@ -257,7 +257,9 @@ def mpi_isend_buffer(comm, buffer_size, buffer, dest_rank):
     ----------
     comm : object
         MPI communicator object.
-    data : object
+    buffer_size : int
+        Buffer size in bytes.
+    buffer : object
         Buffer object to send.
     dest_rank : int
         Target MPI process to transfer data.

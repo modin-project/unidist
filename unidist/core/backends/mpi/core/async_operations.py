@@ -51,8 +51,6 @@ class AsyncOperations:
         handler_list : list
             A list of pairs with handler and data reference.
         """
-        # force cheeck completed requests to avoid stack overflow
-        # the value of the criteria is determined experimentally and can be chaned in the future
         self._send_async_handlers.extend(handlers_list)
 
     def check(self):
