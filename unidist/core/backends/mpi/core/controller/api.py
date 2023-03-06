@@ -237,6 +237,7 @@ def put(data):
         data_id = object_store.generate_data_id(garbage_collector)
         dest_rank = RoundRobin.get_instance().schedule_rank()
         object_store.put_data_owner(data_id, dest_rank)
+        object_store.put_data_size(data_id, data)
         push_data_directly_to_worker(dest_rank, data_id, data)
 
     logger.debug("PUT {} id".format(data_id._id))

@@ -228,7 +228,7 @@ def push_data_directly_to_worker(dest_rank, data_id, value):
         "id": data_id,
         "data": value,
     }
-    communication.send_operation(
+    communication.isend_complex_operation(
         mpi_state.comm,
         operation_type,
         operation_data,
