@@ -323,6 +323,7 @@ def choose_destination_rank(data_ids):
     int
         A rank number.
     """
+    # If none of the workers have any data the next rank is chosen by following a round robin.
     if not data_ids:
         chosen_rank = RoundRobin.get_instance().schedule_rank()
         return chosen_rank

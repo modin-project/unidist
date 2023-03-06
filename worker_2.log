@@ -1,0 +1,828 @@
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_1']
+Is pending - False
+- Start task execution -
+Task evaluation time: 8.610077202320099e-07
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_0_id_1 id to 0 rank - PROCESSED
+common.Operation processing - 3
+PUT (RECV) rank_0_id_4 id from 0 rank
+Check pending tasks
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_0_id_4 id to 3 rank - PROCESSED
+CHECK ASYNC HANDLER <mpi4py.MPI.Request object at 0x7ff538a81e40> - ready
+CHECK ASYNC HANDLER <mpi4py.MPI.Request object at 0x7ff538a81940> - ready
+CHECK ASYNC HANDLER <mpi4py.MPI.Request object at 0x7ff538a8d0c0> - ready
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_8', 'rank_0_id_9']
+Is pending - False
+- Start task execution -
+Task evaluation time: 9.541399776935577e-07
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_0_id_8 id to 0 rank - PROCESSED
+common.Operation processing - 2
+Send requested rank_0_id_9 id to 0 rank - PROCESSED
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_13']
+Is pending - False
+- Start task execution -
+Task evaluation time: 8.502975106239319e-07
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_0_id_13 id to 0 rank - PROCESSED
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_17']
+Is pending - False
+- Start task execution -
+Task evaluation time: 8.353963494300842e-07
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_0_id_17 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_19']
+Is pending - False
+- Start task execution -
+Task evaluation time: 0.0007361192256212234
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_19 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_21']
+Is pending - False
+- Start task execution -
+Task evaluation time: 0.0005735033191740513
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_21 id to 0 rank - PROCESSED
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_3_id_0']
+Is pending - False
+- Start task execution -
+Task evaluation time: 9.75094735622406e-07
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_3_id_0 id to 3 rank - PROCESSED
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_3_id_1']
+Is pending - False
+- Start task execution -
+Task evaluation time: 8.312053978443146e-07
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_3_id_1 id to 3 rank - PROCESSED
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_28']
+Is pending - False
+Check pending actor tasks
+- Start task execution -
+Task evaluation time: 2.1280720829963684e-06
+- End task execution -
+common.Operation processing - 2
+Send requested rank_0_id_28 id to 0 rank - PROCESSED
+common.Operation processing - 3
+PUT (RECV) rank_0_id_31 id from 0 rank
+Check pending tasks
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_0_id_31 id to 3 rank - PROCESSED
+CHECK ASYNC HANDLER <mpi4py.MPI.Request object at 0x7ff538a94380> - ready
+CHECK ASYNC HANDLER <mpi4py.MPI.Request object at 0x7ff538a9aa80> - ready
+CHECK ASYNC HANDLER <mpi4py.MPI.Request object at 0x7ff538a9cd40> - ready
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_35', 'rank_0_id_36']
+Is pending - False
+Check pending actor tasks
+- Start task execution -
+Task evaluation time: 2.1816231310367584e-06
+- End task execution -
+common.Operation processing - 2
+Send requested rank_0_id_35 id to 0 rank - PROCESSED
+common.Operation processing - 2
+Send requested rank_0_id_36 id to 0 rank - PROCESSED
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_40']
+Is pending - False
+Check pending actor tasks
+- Start task execution -
+Task evaluation time: 1.952052116394043e-06
+- End task execution -
+common.Operation processing - 2
+Send requested rank_0_id_40 id to 0 rank - PROCESSED
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_44']
+Is pending - False
+Check pending actor tasks
+- Start task execution -
+Task evaluation time: 2.0260922610759735e-06
+- End task execution -
+common.Operation processing - 2
+Send requested rank_0_id_44 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_46']
+Is pending - False
+- Start task execution -
+Task evaluation time: 0.000543511938303709
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_46 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_48']
+Is pending - False
+- Start task execution -
+Task evaluation time: 0.0005778721533715725
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_48 id to 0 rank - PROCESSED
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_3_id_2']
+Is pending - False
+Check pending actor tasks
+- Start task execution -
+common.Operation processing - 2
+Pending request rank_3_id_2 id to 3 rank
+Task evaluation time: 5.0054347068071365
+- End task execution -
+Send requested rank_3_id_2 id to 3 rank - PROCESSED
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_54']
+Is pending - False
+- Start task execution -
+Task evaluation time: 2.7958303689956665e-06
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_0_id_54 id to 0 rank - PROCESSED
+common.Operation processing - 7
+REMOTE args: [None]
+REMOTE outputs: ['rank_3_id_3']
+Is pending - False
+Check pending actor tasks
+- Start task execution -
+Task evaluation time: 3.655906766653061e-06
+- End task execution -
+common.Operation processing - 2
+Send requested rank_3_id_3 id to 3 rank - PROCESSED
+common.Operation processing - 7
+REMOTE args: [None]
+REMOTE outputs: ['rank_3_id_4']
+Is pending - False
+- Start task execution -
+Task evaluation time: 1.7476268112659454e-06
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_3_id_4 id to 3 rank - PROCESSED
+common.Operation processing - 7
+REMOTE args: [None]
+REMOTE outputs: ['rank_3_id_5']
+Is pending - False
+Check pending actor tasks
+- Start task execution -
+Task evaluation time: 2.7050264179706573e-06
+- End task execution -
+common.Operation processing - 2
+Send requested rank_3_id_5 id to 3 rank - PROCESSED
+common.Operation processing - 7
+REMOTE args: [None]
+REMOTE outputs: ['rank_3_id_6']
+Is pending - False
+- Start task execution -
+Task evaluation time: 1.6940757632255554e-06
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_3_id_6 id to 3 rank - PROCESSED
+common.Operation processing - 3
+PUT (RECV) rank_0_id_57 id from 0 rank
+Check pending tasks
+Check pending actor tasks
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_60']
+Is pending - False
+- Start task execution -
+Task evaluation time: 1.6689300537109375e-06
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 1
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_62']
+Is pending - False
+- Start task execution -
+Task evaluation time: 3.003092106897384
+- End task execution -
+Check pending tasks
+common.Operation processing - 5
+WAIT for rank_0_id_62 id
+Wait data rank_0_id_62 id is ready
+common.Operation processing - 3
+PUT (RECV) rank_0_id_64 id from 0 rank
+Check pending tasks
+Check pending actor tasks
+common.Operation processing - 1
+REMOTE args: ['rank_0_id_64']
+REMOTE outputs: ['rank_0_id_65']
+Is pending - False
+- Start task execution -
+Task evaluation time: 9.159557521343231e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 1
+REMOTE args: ['rank_0_id_64']
+REMOTE outputs: ['rank_0_id_66']
+Is pending - False
+- Start task execution -
+Task evaluation time: 7.897615432739258e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 1
+REMOTE args: ['rank_0_id_64']
+REMOTE outputs: ['rank_0_id_67']
+Is pending - False
+- Start task execution -
+Task evaluation time: 8.00006091594696e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 1
+REMOTE args: ['rank_0_id_64']
+REMOTE outputs: ['rank_0_id_68']
+Is pending - False
+- Start task execution -
+Task evaluation time: 7.846392691135406e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_65 id to 0 rank - PROCESSED
+common.Operation processing - 2
+Send requested rank_0_id_66 id to 0 rank - PROCESSED
+common.Operation processing - 2
+Send requested rank_0_id_67 id to 0 rank - PROCESSED
+common.Operation processing - 2
+Send requested rank_0_id_68 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_71', 'rank_0_id_72']
+Is pending - False
+- Start task execution -
+Task evaluation time: 9.075738489627838e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_71 id to 0 rank - PROCESSED
+common.Operation processing - 2
+Send requested rank_0_id_72 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_75']
+Is pending - False
+- Start task execution -
+Task evaluation time: 3.00309204030782
+- End task execution -
+Check pending tasks
+common.Operation processing - 1
+REMOTE args: ['rank_0_id_75']
+REMOTE outputs: ['rank_0_id_76']
+Is pending - False
+- Start task execution -
+Task evaluation time: 8.898787200450897e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_76 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_77']
+Is pending - False
+- Start task execution -
+Exception - division by zero
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_77 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_79']
+Is pending - False
+- Start task execution -
+Task evaluation time: 0.0007768003270030022
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_79 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_81']
+Is pending - False
+- Start task execution -
+Task evaluation time: 7.557682693004608e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_81 id to 0 rank - PROCESSED
+common.Operation processing - 11
+Exit worker event loop
+common.Operation processing - 3
+PUT (RECV) rank_0_id_0 id from 0 rank
+Check pending tasks
+Check pending actor tasks
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_3']
+Is pending - False
+- Start task execution -
+Task evaluation time: 1.6987323760986328e-06
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 1
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_5']
+Is pending - False
+- Start task execution -
+Task evaluation time: 3.003088278695941
+- End task execution -
+Check pending tasks
+common.Operation processing - 5
+WAIT for rank_0_id_5 id
+Wait data rank_0_id_5 id is ready
+common.Operation processing - 11
+Exit worker event loop
+common.Operation processing - 1
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_0']
+Is pending - False
+- Start task execution -
+Task evaluation time: 1.0039657354354858e-06
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_0 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_6', 'rank_0_id_7']
+Is pending - False
+- Start task execution -
+Task evaluation time: 8.01868736743927e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_6 id to 0 rank - PROCESSED
+common.Operation processing - 2
+Send requested rank_0_id_7 id to 0 rank - PROCESSED
+common.Operation processing - 3
+PUT (RECV) rank_0_id_10 id from 0 rank
+Check pending tasks
+Check pending actor tasks
+common.Operation processing - 1
+REMOTE args: ['rank_0_id_10']
+REMOTE outputs: ['rank_0_id_11']
+Is pending - False
+- Start task execution -
+Task evaluation time: 1.0221265256404877e-06
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_11 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: []
+REMOTE outputs: [None]
+Is pending - False
+- Start task execution -
+Task evaluation time: 1.2777745723724365e-06
+- End task execution -
+Check pending tasks
+common.Operation processing - 1
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_15']
+Is pending - False
+- Start task execution -
+Task evaluation time: 7.469207048416138e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_15 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: [None]
+REMOTE outputs: ['rank_3_id_0']
+Is pending - False
+- Start task execution -
+Task evaluation time: 9.168870747089386e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_3_id_0 id to 3 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_17']
+Is pending - False
+- Start task execution -
+Task evaluation time: 8.847564458847046e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_17 id to 0 rank - PROCESSED
+common.Operation processing - 11
+Exit worker event loop
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_1']
+Is pending - False
+- Start task execution -
+Task evaluation time: 1.0277144610881805e-06
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_0_id_1 id to 0 rank - PROCESSED
+common.Operation processing - 3
+PUT (RECV) rank_0_id_4 id from 0 rank
+Check pending tasks
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_0_id_4 id to 3 rank - PROCESSED
+CHECK ASYNC HANDLER <mpi4py.MPI.Request object at 0x7fded0286840> - ready
+CHECK ASYNC HANDLER <mpi4py.MPI.Request object at 0x7fdecaeb99c0> - ready
+CHECK ASYNC HANDLER <mpi4py.MPI.Request object at 0x7fdeca84bc40> - ready
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_8', 'rank_0_id_9']
+Is pending - False
+- Start task execution -
+Task evaluation time: 7.650814950466156e-07
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_0_id_8 id to 0 rank - PROCESSED
+common.Operation processing - 2
+Send requested rank_0_id_9 id to 0 rank - PROCESSED
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_13']
+Is pending - False
+- Start task execution -
+Task evaluation time: 8.530914783477783e-07
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_0_id_13 id to 0 rank - PROCESSED
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_17']
+Is pending - False
+- Start task execution -
+Task evaluation time: 8.051283657550812e-07
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_0_id_17 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_19']
+Is pending - False
+- Start task execution -
+Task evaluation time: 0.0005851546302437782
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_19 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_21']
+Is pending - False
+- Start task execution -
+Task evaluation time: 0.0005111629143357277
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_21 id to 0 rank - PROCESSED
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_3_id_0']
+Is pending - False
+- Start task execution -
+Task evaluation time: 7.627531886100769e-07
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_3_id_0 id to 3 rank - PROCESSED
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_3_id_1']
+Is pending - False
+- Start task execution -
+Task evaluation time: 7.511116564273834e-07
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_3_id_1 id to 3 rank - PROCESSED
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_28']
+Is pending - False
+Check pending actor tasks
+- Start task execution -
+Task evaluation time: 1.676846295595169e-06
+- End task execution -
+common.Operation processing - 2
+Send requested rank_0_id_28 id to 0 rank - PROCESSED
+common.Operation processing - 3
+PUT (RECV) rank_0_id_31 id from 0 rank
+Check pending tasks
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_0_id_31 id to 3 rank - PROCESSED
+CHECK ASYNC HANDLER <mpi4py.MPI.Request object at 0x7fdeca8633c0> - ready
+CHECK ASYNC HANDLER <mpi4py.MPI.Request object at 0x7fdeca863400> - ready
+CHECK ASYNC HANDLER <mpi4py.MPI.Request object at 0x7fdeca866a00> - ready
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_35', 'rank_0_id_36']
+Is pending - False
+Check pending actor tasks
+- Start task execution -
+Task evaluation time: 2.007000148296356e-06
+- End task execution -
+common.Operation processing - 2
+Send requested rank_0_id_35 id to 0 rank - PROCESSED
+common.Operation processing - 2
+Send requested rank_0_id_36 id to 0 rank - PROCESSED
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_40']
+Is pending - False
+Check pending actor tasks
+- Start task execution -
+Task evaluation time: 1.7350539565086365e-06
+- End task execution -
+common.Operation processing - 2
+Send requested rank_0_id_40 id to 0 rank - PROCESSED
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_44']
+Is pending - False
+Check pending actor tasks
+- Start task execution -
+Task evaluation time: 1.7327256500720978e-06
+- End task execution -
+common.Operation processing - 2
+Send requested rank_0_id_44 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_46']
+Is pending - False
+- Start task execution -
+Task evaluation time: 0.0007281741127371788
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_46 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_48']
+Is pending - False
+- Start task execution -
+Task evaluation time: 0.0006989450193941593
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_48 id to 0 rank - PROCESSED
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: []
+REMOTE outputs: ['rank_3_id_2']
+Is pending - False
+Check pending actor tasks
+- Start task execution -
+common.Operation processing - 2
+Pending request rank_3_id_2 id to 3 rank
+Task evaluation time: 5.005361226852983
+- End task execution -
+Send requested rank_3_id_2 id to 3 rank - PROCESSED
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_54']
+Is pending - False
+- Start task execution -
+Task evaluation time: 2.5099143385887146e-06
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_0_id_54 id to 0 rank - PROCESSED
+common.Operation processing - 7
+REMOTE args: [None]
+REMOTE outputs: ['rank_3_id_3']
+Is pending - False
+Check pending actor tasks
+- Start task execution -
+Task evaluation time: 3.552064299583435e-06
+- End task execution -
+common.Operation processing - 2
+Send requested rank_3_id_3 id to 3 rank - PROCESSED
+common.Operation processing - 7
+REMOTE args: [None]
+REMOTE outputs: ['rank_3_id_4']
+Is pending - False
+- Start task execution -
+Task evaluation time: 1.8007121980190277e-06
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_3_id_4 id to 3 rank - PROCESSED
+common.Operation processing - 7
+REMOTE args: [None]
+REMOTE outputs: ['rank_3_id_5']
+Is pending - False
+Check pending actor tasks
+- Start task execution -
+Task evaluation time: 2.5993213057518005e-06
+- End task execution -
+common.Operation processing - 2
+Send requested rank_3_id_5 id to 3 rank - PROCESSED
+common.Operation processing - 7
+REMOTE args: [None]
+REMOTE outputs: ['rank_3_id_6']
+Is pending - False
+- Start task execution -
+Task evaluation time: 1.701992005109787e-06
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 2
+Send requested rank_3_id_6 id to 3 rank - PROCESSED
+common.Operation processing - 3
+PUT (RECV) rank_0_id_57 id from 0 rank
+Check pending tasks
+Check pending actor tasks
+common.Operation processing - 6
+common.Operation processing - 7
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_60']
+Is pending - False
+- Start task execution -
+Task evaluation time: 1.5641562640666962e-06
+- End task execution -
+Check pending actor tasks
+common.Operation processing - 1
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_62']
+Is pending - False
+- Start task execution -
+Task evaluation time: 3.003092911094427
+- End task execution -
+Check pending tasks
+common.Operation processing - 5
+WAIT for rank_0_id_62 id
+Wait data rank_0_id_62 id is ready
+common.Operation processing - 3
+PUT (RECV) rank_0_id_64 id from 0 rank
+Check pending tasks
+Check pending actor tasks
+common.Operation processing - 1
+REMOTE args: ['rank_0_id_64']
+REMOTE outputs: ['rank_0_id_65']
+Is pending - False
+- Start task execution -
+Task evaluation time: 8.330680429935455e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 1
+REMOTE args: ['rank_0_id_64']
+REMOTE outputs: ['rank_0_id_66']
+Is pending - False
+- Start task execution -
+Task evaluation time: 6.943009793758392e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 1
+REMOTE args: ['rank_0_id_64']
+REMOTE outputs: ['rank_0_id_67']
+Is pending - False
+- Start task execution -
+Task evaluation time: 6.849877536296844e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 1
+REMOTE args: ['rank_0_id_64']
+REMOTE outputs: ['rank_0_id_68']
+Is pending - False
+- Start task execution -
+Task evaluation time: 6.803311407566071e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_65 id to 0 rank - PROCESSED
+common.Operation processing - 2
+Send requested rank_0_id_66 id to 0 rank - PROCESSED
+common.Operation processing - 2
+Send requested rank_0_id_67 id to 0 rank - PROCESSED
+common.Operation processing - 2
+Send requested rank_0_id_68 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_71', 'rank_0_id_72']
+Is pending - False
+- Start task execution -
+Task evaluation time: 7.632188498973846e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_71 id to 0 rank - PROCESSED
+common.Operation processing - 2
+Send requested rank_0_id_72 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: []
+REMOTE outputs: ['rank_0_id_75']
+Is pending - False
+- Start task execution -
+Task evaluation time: 3.0031022960320115
+- End task execution -
+Check pending tasks
+common.Operation processing - 1
+REMOTE args: ['rank_0_id_75']
+REMOTE outputs: ['rank_0_id_76']
+Is pending - False
+- Start task execution -
+Task evaluation time: 7.953494787216187e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_76 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_77']
+Is pending - False
+- Start task execution -
+Exception - division by zero
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_77 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_79']
+Is pending - False
+- Start task execution -
+Task evaluation time: 0.0007683439180254936
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_79 id to 0 rank - PROCESSED
+common.Operation processing - 1
+REMOTE args: [None]
+REMOTE outputs: ['rank_0_id_81']
+Is pending - False
+- Start task execution -
+Task evaluation time: 6.319023668766022e-07
+- End task execution -
+Check pending tasks
+common.Operation processing - 2
+Send requested rank_0_id_81 id to 0 rank - PROCESSED
+common.Operation processing - 11
+Exit worker event loop

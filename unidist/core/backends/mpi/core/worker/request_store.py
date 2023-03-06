@@ -121,6 +121,9 @@ class RequestStore:
         """
 
         def check_request(data_id):
+            # Dont process the get request if data ID still not available.
+            if not ObjectStore.get_instance().contains(data_id):
+                return
             # Check non-blocking data requests for one of the workers
             if data_id in self._data_request:
                 ranks_with_get_request = self._data_request[data_id]
