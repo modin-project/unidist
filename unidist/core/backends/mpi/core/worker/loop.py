@@ -4,7 +4,6 @@
 
 """Worker MPI process task processing functionality."""
 import asyncio
-import sys
 from functools import wraps, partial
 
 try:
@@ -125,6 +124,8 @@ async def worker_loop():
             task_store.check_pending_tasks()
             # Check pending actor requests also.
             task_store.check_pending_actor_tasks()
+
+            RequestStore.get_instance().check_pending_get_requests(request["id"])
 
         elif operation_type == common.Operation.PUT_OWNER:
             request = communication.recv_simple_operation(mpi_state.comm, source_rank)

@@ -180,7 +180,7 @@ class TaskStore:
                         self.request_worker_data(owner_rank, arg)
                 return arg, True
             else:
-                raise ValueError("DataID is missing!")
+                raise ValueError("DataID is missing! {}".format(arg))
         else:
             return arg, False
 
@@ -357,6 +357,12 @@ class TaskStore:
         w_logger.debug("Is pending - {}".format(is_pending))
 
         if is_pending or is_kw_pending:
+            current_rank = communication.MPIState.get_instance().rank
+            if isinstance(output_ids, (list, tuple)):
+                for output_id in output_ids:
+                    ObjectStore.get_instance().put_data_owner(output_id, current_rank)
+            else:
+                ObjectStore.get_instance().put_data_owner(output_ids, current_rank)
             request["args"] = args
             request["kwargs"] = kwargs
             return request
