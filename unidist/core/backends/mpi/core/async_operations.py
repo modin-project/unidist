@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import unidist.core.backends.mpi.core.common as common
-import unidist.core.backends.mpi.core.communication as communication
 
 logger = common.get_logger("async_operations", "async_operations.log")
 
