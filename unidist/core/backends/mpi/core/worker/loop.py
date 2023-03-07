@@ -29,9 +29,9 @@ mpi_state = communication.MPIState.get_instance()
 # Logger configuration
 # When building documentation we do not have MPI initialized so
 # we use the condition to set "worker_0.log" in order to build it succesfully.
-log_file = "worker_{}.log".format(mpi_state.rank if mpi_state is not None else 0)
-w_logger = common.get_logger("worker", sys.stdout, True)
-
+logger_name = "worker_{}".format(mpi_state.rank if mpi_state is not None else 0)
+log_file = "{}.log".format(logger_name)
+w_logger = common.get_logger(logger_name, log_file)
 # Actors map {handle : actor}
 actor_map = {}
 
