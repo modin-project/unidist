@@ -3,17 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import unidist.core.backends.mpi.core.common as common
-import unidist.core.backends.mpi.core.communication as communication
 
-# Logger configuration
-# When building documentation we do not have MPI initialized so
-# we use the condition to set "worker_0.log" in order to build it succesfully.
-log_file = "worker_{}.log".format(
-    communication.MPIState.get_instance().rank
-    if communication.MPIState.get_instance() is not None
-    else 0
-)
-logger = common.get_logger("worker", log_file)
+logger = common.get_logger("async_operations", "async_operations.log")
 
 
 class AsyncOperations:
