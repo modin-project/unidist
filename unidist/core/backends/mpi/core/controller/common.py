@@ -222,19 +222,21 @@ def push_data_directly_to_worker(dest_rank, data_id, value):
     value : value of the provided data_id
 
     """
+    async_operations = AsyncOperations.get_instance()
     mpi_state = communication.MPIState.get_instance()
     operation_type = common.Operation.PUT_DATA
     operation_data = {
         "id": data_id,
         "data": value,
     }
-    communication.isend_complex_operation(
+    h_list, _ = communication.isend_complex_operation(
         mpi_state.comm,
         operation_type,
         operation_data,
         dest_rank,
         is_serialized=False,
     )
+    async_operations.extend(h_list)
 
 
 def _push_data_owner(dest_rank, data_id):
