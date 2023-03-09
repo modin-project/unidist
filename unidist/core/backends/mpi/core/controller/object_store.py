@@ -75,7 +75,15 @@ class ObjectStore:
         data : object
             Data to be put.
         """
-        self._data_sizes[data_id] = sys.getsizeof(data)
+        # if conditions are a temprary fix as pandas sizeof has an issue
+        # https://github.com/pandas-dev/pandas/issues/51858
+        if "DataFrame" in str(type(data)):
+            size = data.memory_usage().sum()
+        elif "Series" in str(type(data)):
+            size = data.memory_usage()
+        else:
+            size = sys.getsizeof(data)
+        self._data_sizes[data_id] = size
 
     def put_data_owner(self, data_id, rank):
         """
