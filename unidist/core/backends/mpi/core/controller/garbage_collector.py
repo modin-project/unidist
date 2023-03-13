@@ -64,13 +64,14 @@ class GarbageCollector:
         s_cleanup_list = SimpleDataSerializer().serialize_pickle(cleanup_list)
         async_operations = AsyncOperations.get_instance()
         for rank_id in range(initial_worker_number, mpi_state.world_size):
-            h_list = communication.isend_serialized_operation(
-                mpi_state.comm,
-                common.Operation.CLEANUP,
-                s_cleanup_list,
-                rank_id,
-            )
-            async_operations.extend(h_list)
+            if rank_id != mpi_state.rank:
+                h_list = communication.isend_serialized_operation(
+                    mpi_state.comm,
+                    common.Operation.CLEANUP,
+                    s_cleanup_list,
+                    rank_id,
+                )
+                async_operations.extend(h_list)
 
     def increment_task_counter(self):
         """
