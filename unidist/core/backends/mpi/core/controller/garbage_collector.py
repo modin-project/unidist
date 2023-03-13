@@ -63,7 +63,6 @@ class GarbageCollector:
         # Cache serialized list of data IDs
         s_cleanup_list = SimpleDataSerializer().serialize_pickle(cleanup_list)
         async_operations = AsyncOperations.get_instance()
-        mpi_state = communication.MPIState.get_instance()
         cur_rank = mpi_state.rank if mpi_state is not None else 0
         for rank_id in range(initial_worker_number, mpi_state.world_size):
             if rank_id != cur_rank:
