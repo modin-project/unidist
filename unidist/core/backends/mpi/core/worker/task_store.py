@@ -168,14 +168,16 @@ class TaskStore:
         If the data ID could not be resolved, the function returns ``True``.
         """
         if is_data_id(arg):
-            if ObjectStore.get_instance().contains(arg):
+            object_store = ObjectStore.get_instance()
+            arg = object_store.synchronize_data_id(arg)
+            if object_store.contains(arg):
                 value = ObjectStore.get_instance().get(arg)
                 # Data is already local or was pushed from master
                 return value, False
-            elif ObjectStore.get_instance().contains_data_owner(arg):
+            elif object_store.contains_data_owner(arg):
                 if not RequestStore.get_instance().is_already_requested(arg):
                     # Request the data from an owner worker
-                    owner_rank = ObjectStore.get_instance().get_data_owner(arg)
+                    owner_rank = object_store.get_data_owner(arg)
                     if owner_rank != communication.MPIState.get_instance().rank:
                         self.request_worker_data(owner_rank, arg)
                 return arg, True
@@ -203,6 +205,7 @@ class TaskStore:
         -----
         Exceptions are stored in output data IDs as value.
         """
+        object_store = ObjectStore.get_instance()
         if inspect.iscoroutinefunction(task):
 
             async def execute():
@@ -235,9 +238,11 @@ class TaskStore:
                         and len(output_data_ids) > 1
                     ):
                         for output_id in output_data_ids:
-                            ObjectStore.get_instance().put(output_id, e)
+                            data_id = object_store.synchronize_data_id(output_id)
+                            object_store.put(data_id, e)
                     else:
-                        ObjectStore.get_instance().put(output_data_ids, e)
+                        data_id = object_store.synchronize_data_id(output_data_ids)
+                        object_store.put(data_id, e)
                 else:
                     if output_data_ids is not None:
                         if (
@@ -245,11 +250,11 @@ class TaskStore:
                             and len(output_data_ids) > 1
                         ):
                             for output_id, value in zip(output_data_ids, output_values):
-                                ObjectStore.get_instance().put(output_id, value)
+                                data_id = object_store.synchronize_data_id(output_id)
+                                object_store.put(data_id, value)
                         else:
-                            ObjectStore.get_instance().put(
-                                output_data_ids, output_values
-                            )
+                            data_id = object_store.synchronize_data_id(output_data_ids)
+                            object_store.put(data_id, output_values)
 
                         RequestStore.get_instance().check_pending_get_requests(
                             output_data_ids
@@ -299,9 +304,11 @@ class TaskStore:
                     and len(output_data_ids) > 1
                 ):
                     for output_id in output_data_ids:
-                        ObjectStore.get_instance().put(output_id, e)
+                        data_id = object_store.synchronize_data_id(output_id)
+                        object_store.put(data_id, e)
                 else:
-                    ObjectStore.get_instance().put(output_data_ids, e)
+                    data_id = object_store.synchronize_data_id(output_data_ids)
+                    object_store.put(data_id, e)
             else:
                 if output_data_ids is not None:
                     if (
@@ -309,9 +316,11 @@ class TaskStore:
                         and len(output_data_ids) > 1
                     ):
                         for output_id, value in zip(output_data_ids, output_values):
-                            ObjectStore.get_instance().put(output_id, value)
+                            data_id = object_store.synchronize_data_id(output_id)
+                            object_store.put(data_id, value)
                     else:
-                        ObjectStore.get_instance().put(output_data_ids, output_values)
+                        data_id = object_store.synchronize_data_id(output_data_ids)
+                        object_store.put(data_id, output_values)
             # Monitor the task execution.
             # We use a blocking send here because we have to wait for
             # completion of the communication, which is necessary for the pipeline to continue.

@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import weakref
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 
@@ -28,9 +29,11 @@ class ObjectStore:
 
     def __init__(self):
         # Add local data {DataId : Data}
-        self._data_map = {}
+        self._data_map = weakref.WeakKeyDictionary()
+        # strong references from other workers
+        self._worker_references = weakref.WeakKeyDictionary()
         # Data owner {DataId : Rank}
-        self._data_owner_map = {}
+        self._data_owner_map = weakref.WeakKeyDictionary()
         # Data serialized cache
         self._serialization_cache = {}
 
@@ -137,24 +140,44 @@ class ObjectStore:
         """
         return data_id in self._data_owner_map
 
+    def synchronize_data_id(self, data_id):
+        """
+        Return the stored strong reference to the data ID if it is already stored locally.
+        Otherwise, the received reference to the data ID is saved.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+            An ID to data.
+
+        Returns
+        -------
+        unidist.core.backends.common.data_id.DataID
+            Stored an ID to data
+
+        Notes
+        -----
+        We need to use a unique data ID reference for the garbage colleactor to work correctly.
+        """
+        if data_id not in self._worker_references:
+            self._worker_references[data_id] = data_id
+        return self._worker_references[data_id]
+
     def clear(self, cleanup_list):
         """
-        Clear all local dictionary data ID instances from `cleanup_list`.
+        Clear stored strong references from other workers for each data ID instances from `cleanup_list`.
 
         Parameters
         ----------
         cleanup_list : list
             List of data IDs.
+
+        Notes
+        -----
+        The data will be collected later when no strong reference is stored locally in the current worker.
         """
         for data_id in cleanup_list:
-            if data_id in self._data_map:
-                logger.debug("CLEANUP DataMap id {}".format(data_id._id))
-                del self._data_map[data_id]
-            if data_id in self._data_owner_map:
-                logger.debug("CLEANUP DataOwnerMap id {}".format(data_id._id))
-                del self._data_owner_map[data_id]
-            if data_id in self._serialization_cache:
-                del self._serialization_cache[data_id]
+            self._worker_references.pop(data_id, None)
 
     def cache_serialized_data(self, data_id, data):
         """
