@@ -9,7 +9,7 @@ import atexit
 import signal
 import asyncio
 from collections import defaultdict
-
+from datetime import datetime
 try:
     import mpi4py
 except ImportError:
@@ -50,6 +50,89 @@ topology = dict()
 # The global variable is responsible for if MPI backend has already been initialized
 is_mpi_initialized = False
 
+import queue
+import threading
+import time
+
+exitFlag = 0
+
+class myThread (threading.Thread):
+   def __init__(self, threadID, name, q):
+      threading.Thread.__init__(self)
+      self.threadID = threadID
+      self.name = name
+      self.q = q
+   def run(self):
+      print ("Starting " + self.name)
+      print(workQueue.qsize())
+      process_data(self.name, self.q)
+      print ("Exiting " + self.name)
+
+def process_data(threadName, q):
+    while not exitFlag:
+        queueLock.acquire()
+        #print("queue size is {} , time ={}".format(workQueue.qsize(),datetime.fromtimestamp(time.time())))
+        if not workQueue.empty():
+            flag, data = q.get()
+            
+            queueLock.release()
+            if flag==1:
+                dest_rank, value = data
+                push_data(dest_rank, value)
+            if flag==2:
+                comm, operation_type, operation_data, dest_rank = data
+                async_operations = AsyncOperations.get_instance()
+                h_list, _ = communication.isend_complex_operation(
+                comm,
+                operation_type,
+                operation_data,
+                dest_rank,
+                )
+                async_operations.extend(h_list)
+                
+            #print ("%s processing %s" % (threadName, value))
+        else:
+            queueLock.release()
+        #time.sleep(.1)
+    print("exited")
+
+threadList = ["Thread-1"]
+queueLock = threading.Lock()
+workQueue = queue.Queue(10)
+threads = []
+
+
+
+# Notify threads it's time to exit
+
+
+# Wait for all threads to complete
+# for t in threads:
+#    t.join()
+# print ("Exiting Main Thread")
+
+def test(comm):
+
+    output_id=common.MasterDataID("data_id_dada", garbage_collector)
+    task = lambda  : 1
+    operation_type = 1
+    operation_data = {
+        "task": task,
+        "args": [],
+        "kwargs": {},
+        "output":output_id,
+    }
+    async_operations = AsyncOperations.get_instance()
+    h_list, _ = communication.isend_complex_operation(
+        comm,
+        operation_type,
+        operation_data,
+        2,
+    )
+    async_operations.extend(h_list)
+
+
+
 
 def init():
     """
@@ -79,9 +162,27 @@ def init():
     rank = comm.Get_rank()
 
     parent_comm = MPI.Comm.Get_parent()
-
+    
     # path to dynamically spawn MPI processes
     if rank == 0 and parent_comm == MPI.COMM_NULL:
+        # Create new threads
+        for tName in threadList:
+            thread = myThread(1, tName, workQueue)
+            thread.start()
+            threads.append(thread)
+            
+        
+        # Fill the queue
+        
+        
+        # Wait for queue to empty
+        
+        
+
+# Wait for all threads to complete
+       
+        
+        
         if IsMpiSpawnWorkers.get():
             nprocs_to_spawn = CpuCount.get() + 1  # +1 for monitor process
             args = ["-c"]
@@ -179,6 +280,11 @@ def shutdown():
     -----
     Sends cancelation operation to all workers and monitor processes.
     """
+    global exitFlag
+    exitFlag = 1
+    print("here")
+    for t in threads:
+        t.join()
     mpi_state = communication.MPIState.get_instance()
     # Send shutdown commands to all ranks
     for rank_id in range(communication.MPIRank.MONITOR, mpi_state.world_size):
@@ -190,6 +296,7 @@ def shutdown():
     async_operations.finish()
     if not MPI.Is_finalized():
         MPI.Finalize()
+    
 
 
 def cluster_resources():
@@ -388,7 +495,17 @@ def submit(task, *args, num_returns=1, **kwargs):
     unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
     unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
 
-    push_data(dest_rank, unwrapped_args)
+    
+    # Fill the queue
+    
+    global workQueue
+    queueLock.acquire()
+    print(workQueue.qsize())
+    workQueue.put([1,(dest_rank, unwrapped_args)])
+    
+    print(workQueue.qsize())
+
+    # push_data(dest_rank, unwrapped_args)
     push_data(dest_rank, unwrapped_kwargs)
 
     operation_type = common.Operation.EXECUTE
@@ -398,15 +515,12 @@ def submit(task, *args, num_returns=1, **kwargs):
         "kwargs": unwrapped_kwargs,
         "output": common.master_data_ids_to_base(output_ids),
     }
-    async_operations = AsyncOperations.get_instance()
-    h_list, _ = communication.isend_complex_operation(
-        communication.MPIState.get_instance().comm,
+    workQueue.put([2,(communication.MPIState.get_instance().comm,
         operation_type,
         operation_data,
-        dest_rank,
-    )
-    async_operations.extend(h_list)
-
+        dest_rank,)])
+    
+    queueLock.release()
     # Track the task execution
     garbage_collector.increment_task_counter()
 
@@ -416,6 +530,8 @@ def submit(task, *args, num_returns=1, **kwargs):
 # ---------------------------- #
 # unidist termination handling #
 # ---------------------------- #
+#!/usr/bin/python
+
 
 
 def _termination_handler():

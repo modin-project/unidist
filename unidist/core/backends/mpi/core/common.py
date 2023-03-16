@@ -133,7 +133,7 @@ class MasterDataID(DataID):
         return DataID(self._id)
 
 
-def get_logger(logger_name, file_name, activate=False):
+def get_logger(logger_name, file_name, activate=True):
     """
     Configure logger and get it's instance.
 
