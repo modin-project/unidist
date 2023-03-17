@@ -68,12 +68,27 @@ class myThread (threading.Thread):
       process_data(self.name, self.q)
       print ("Exiting " + self.name)
 
+
+class ThreadSafeDict(dict) :
+    def __init__(self, * p_arg, ** n_arg) :
+        dict.__init__(self, * p_arg, ** n_arg)
+        self._lock = threading.Lock()
+
+    def __enter__(self) :
+        self._lock.acquire()
+        return self
+
+    def __exit__(self, type, value, traceback) :
+        self._lock.release()
+getRequests=ThreadSafeDict()
 def process_data(threadName, q):
+    global getRequests
     while not exitFlag:
         queueLock.acquire()
         #print("queue size is {} , time ={}".format(workQueue.qsize(),datetime.fromtimestamp(time.time())))
         if not workQueue.empty():
             flag, data = q.get()
+            print("order========================================================== {}".format(flag))
             
             queueLock.release()
             if flag==1:
@@ -89,6 +104,9 @@ def process_data(threadName, q):
                 dest_rank,
                 )
                 async_operations.extend(h_list)
+            if flag == 3:
+                data_id = data
+                getQueue.put(request_worker_data(data_id))
                 
             #print ("%s processing %s" % (threadName, value))
         else:
@@ -99,6 +117,7 @@ def process_data(threadName, q):
 threadList = ["Thread-1"]
 queueLock = threading.Lock()
 workQueue = queue.Queue(10)
+getQueue = queue.Queue(10)
 threads = []
 
 
@@ -162,14 +181,16 @@ def init():
     rank = comm.Get_rank()
 
     parent_comm = MPI.Comm.Get_parent()
-    
-    # path to dynamically spawn MPI processes
-    if rank == 0 and parent_comm == MPI.COMM_NULL:
-        # Create new threads
+    if not threads:
         for tName in threadList:
             thread = myThread(1, tName, workQueue)
             thread.start()
             threads.append(thread)
+    
+    # path to dynamically spawn MPI processes
+    if rank == 0 and parent_comm == MPI.COMM_NULL:
+        # Create new threads
+
             
         
         # Fill the queue
@@ -358,10 +379,31 @@ def get(data_ids):
     """
 
     def get_impl(data_id):
+        global getRequests
         if object_store.contains(data_id):
             value = object_store.get(data_id)
         else:
-            value = request_worker_data(data_id)
+            queueLock.acquire()
+            print(workQueue.qsize())
+            workQueue.put([3,(data_id)])  
+            queueLock.release()
+    
+            
+            #raise ValueError(getQueue.qsize())
+            while True:
+                queueLock.acquire()
+                if not getQueue.empty():
+                    value = getQueue.get()
+                    queueLock.release()
+                    break
+                queueLock.release()
+            
+                    
+                
+            
+            
+                
+            
 
         if isinstance(value, Exception):
             raise value
