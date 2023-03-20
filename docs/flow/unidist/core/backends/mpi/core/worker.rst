@@ -35,7 +35,7 @@ Local Object Storage
 ====================
 
 MPI :py:class:`~unidist.core.backends.mpi.core.worker.object_store.ObjectStore` stores the data for each process in a local dict.
-:py:class:`~unidist.core.backends.mpi.core.worker.async_operations.AsyncOperations` stores ``MPI_Isend`` asynchronous handlers and holds
+:py:class:`~unidist.core.backends.mpi.core.async_operations.AsyncOperations` stores ``MPI_Isend`` asynchronous handlers and holds
 a reference to the sending data to prolong lifetime until the operation completed.
 
 API
@@ -43,7 +43,7 @@ API
 
 .. autoclass:: unidist.core.backends.mpi.core.worker.object_store.ObjectStore
   :members:
-.. autoclass:: unidist.core.backends.mpi.core.worker.async_operations.AsyncOperations
+.. autoclass:: unidist.core.backends.mpi.core.async_operations.AsyncOperations
   :members:
 
 Request Storage
