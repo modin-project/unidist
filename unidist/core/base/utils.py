@@ -42,20 +42,20 @@ def init_backend():
 
         initialize_mpi()
         backend_cls = MPIBackend()
-    elif backend_name == BackendName.MP:
-        from unidist.core.backends.multiprocessing.backend import MultiProcessingBackend
-        from unidist.core.backends.multiprocessing.utils import (
-            initialize_multiprocessing,
+    elif backend_name == BackendName.PYMP:
+        from unidist.core.backends.pymp.backend import PyMpBackend
+        from unidist.core.backends.pymp.utils import (
+            initialize_pymp,
         )
 
-        initialize_multiprocessing()
-        backend_cls = MultiProcessingBackend()
-    elif backend_name == BackendName.PY:
-        from unidist.core.backends.python.backend import PythonBackend
-        from unidist.core.backends.python.utils import initialize_python
+        initialize_pymp()
+        backend_cls = PyMpBackend()
+    elif backend_name == BackendName.PYSEQ:
+        from unidist.core.backends.pyseq.backend import PySeqBackend
+        from unidist.core.backends.pyseq.utils import initialize_pyseq
 
-        initialize_python()
-        backend_cls = PythonBackend()
+        initialize_pyseq()
+        backend_cls = PySeqBackend()
     else:
         raise ImportError("Unrecognized execution backend.")
 
@@ -87,16 +87,16 @@ def get_backend_proxy():
             from unidist.core.backends.mpi.backend import MPIBackend
 
             backend_cls = MPIBackend()
-        elif backend_name == BackendName.MP:
-            from unidist.core.backends.multiprocessing.backend import (
-                MultiProcessingBackend,
+        elif backend_name == BackendName.PYMP:
+            from unidist.core.backends.pymp.backend import (
+                PyMpBackend,
             )
 
-            backend_cls = MultiProcessingBackend()
-        elif backend_name == BackendName.PY:
-            from unidist.core.backends.python.backend import PythonBackend
+            backend_cls = PyMpBackend()
+        elif backend_name == BackendName.PYSEQ:
+            from unidist.core.backends.pyseq.backend import PySeqBackend
 
-            backend_cls = PythonBackend()
+            backend_cls = PySeqBackend()
         else:
             raise ValueError("Unrecognized execution backend.")
 

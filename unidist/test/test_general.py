@@ -15,11 +15,11 @@ unidist.init()
 
 
 @pytest.mark.skipif(
-    Backend.get() == BackendName.MP,
-    reason="Hangs on `multiprocessing` backend. Details are in https://github.com/modin-project/unidist/issues/64.",
+    Backend.get() == BackendName.PYMP,
+    reason="Hangs on `pymp` backend. Details are in https://github.com/modin-project/unidist/issues/64.",
 )
 @pytest.mark.skipif(
-    sys.platform == "win32" and Backend.get() == BackendName.MP,
+    sys.platform == "win32" and Backend.get() == BackendName.PYMP,
     reason="Details are in https://github.com/modin-project/unidist/issues/70.",
 )
 @pytest.mark.parametrize(
@@ -37,8 +37,8 @@ def test_is_object_ref(source):
 
 
 @pytest.mark.skipif(
-    Backend.get() == BackendName.MP,
-    reason="Hangs on `multiprocessing` backend. Details are in https://github.com/modin-project/unidist/issues/64.",
+    Backend.get() == BackendName.PYMP,
+    reason="Hangs on `pymp` backend. Details are in https://github.com/modin-project/unidist/issues/64.",
 )
 def test_wait():
     @unidist.remote
@@ -66,7 +66,7 @@ def test_get_ip():
 
 
 def test_num_cpus():
-    if Backend.get() == BackendName.PY:
+    if Backend.get() == BackendName.PYSEQ:
         assert_equal(unidist.num_cpus(), 1)
     else:
         assert_equal(unidist.num_cpus(), CpuCount.get())

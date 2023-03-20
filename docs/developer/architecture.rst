@@ -23,8 +23,8 @@ When calling an operation of the :doc:`API </flow/unidist/api>` provided by the 
 the :py:class:`~unidist.core.base.backend.BackendProxy` object that dispatches the call to
 the concrete backend class instance (:py:class:`~unidist.core.backends.ray.backend.RayBackend`,
 :py:class:`~unidist.core.backends.dask.backend.DaskBackend`,
-:py:class:`~unidist.core.backends.multiprocessing.backend.MultiProcessingBackend`,
-:py:class:`~unidist.core.backends.python.backend.PythonBackend` or :py:class:`~unidist.core.backends.mpi.backend.MPIBackend`).
+:py:class:`~unidist.core.backends.pymp.backend.PyMpBackend`,
+:py:class:`~unidist.core.backends.pyseq.backend.PySeqBackend` or :py:class:`~unidist.core.backends.mpi.backend.MPIBackend`).
 These classes are childs of the :py:class:`~unidist.core.base.backend.Backend` interface and should override
 operations declared in it. Then, the concrete backend performs passed operation and hands over the result back to
 the :py:class:`~unidist.core.base.backend.BackendProxy` that postprocesses it if necessary and returns it to the user.
@@ -70,22 +70,22 @@ details just pick module you are interested in.
            |   │   ├─── :doc:`actor </flow/unidist/core/backends/mpi/actor>`
            |   │   ├─── :doc:`backend </flow/unidist/core/backends/mpi/backend>`
            |   │   └─── :doc:`remote_function </flow/unidist/core/backends/mpi/remote_function>`
-           |   ├───multiprocessing
+           |   ├───pymp
            │   |   ├───core
-           │   │   │    ├─── :doc:`actor </flow/unidist/core/backends/multiprocessing/core/actor>`
-           │   │   │    ├─── :doc:`api </flow/unidist/core/backends/multiprocessing/core/api>`
-           │   │   │    ├─── :doc:`object_store </flow/unidist/core/backends/multiprocessing/core/object_store>`
-           │   │   │    └─── :doc:`process_manager </flow/unidist/core/backends/multiprocessing/core/process_manager>`
-           │   │   ├─── :doc:`actor </flow/unidist/core/backends/multiprocessing/actor>`
-           │   │   ├─── :doc:`backend </flow/unidist/core/backends/multiprocessing/backend>`
-           │   │   └─── :doc:`remote_function </flow/unidist/core/backends/multiprocessing/remote_function>`
-           │   ├───python
+           │   │   │    ├─── :doc:`actor </flow/unidist/core/backends/pymp/core/actor>`
+           │   │   │    ├─── :doc:`api </flow/unidist/core/backends/pymp/core/api>`
+           │   │   │    ├─── :doc:`object_store </flow/unidist/core/backends/pymp/core/object_store>`
+           │   │   │    └─── :doc:`process_manager </flow/unidist/core/backends/pymp/core/process_manager>`
+           │   │   ├─── :doc:`actor </flow/unidist/core/backends/pymp/actor>`
+           │   │   ├─── :doc:`backend </flow/unidist/core/backends/pymp/backend>`
+           │   │   └─── :doc:`remote_function </flow/unidist/core/backends/pymp/remote_function>`
+           │   ├───pyseq
            │   |   ├───core
-           │   │   │    ├─── :doc:`api </flow/unidist/core/backends/python/core/api>`
-           │   │   │    └─── :doc:`object_store </flow/unidist/core/backends/python/core/object_store>`
-           │   │   ├─── :doc:`actor </flow/unidist/core/backends/python/actor>`
-           │   │   ├─── :doc:`backend </flow/unidist/core/backends/python/backend>`
-           │   │   └─── :doc:`remote_function </flow/unidist/core/backends/python/remote_function>`
+           │   │   │    ├─── :doc:`api </flow/unidist/core/backends/pyseq/core/api>`
+           │   │   │    └─── :doc:`object_store </flow/unidist/core/backends/pyseq/core/object_store>`
+           │   │   ├─── :doc:`actor </flow/unidist/core/backends/pyseq/actor>`
+           │   │   ├─── :doc:`backend </flow/unidist/core/backends/pyseq/backend>`
+           │   │   └─── :doc:`remote_function </flow/unidist/core/backends/pyseq/remote_function>`
            │   └───ray
            │       ├─── :doc:`actor </flow/unidist/core/backends/ray/actor>`
            │       ├─── :doc:`backend </flow/unidist/core/backends/ray/backend>`
