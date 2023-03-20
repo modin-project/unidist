@@ -11,7 +11,7 @@ import sys
 # -- Project information -----------------------------------------------------
 
 project = "unidist"
-copyright = "2021-2022, Modin Authors"
+copyright = "2021-2023, Modin Authors"
 author = "unidist contributors"
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
