@@ -23,7 +23,7 @@ To install the most recent stable release run the following:
 
 .. code-block:: bash
 
-  pip install unidist # Install unidist with dependencies for Multiprocessing and sequential Python backends
+  pip install unidist # Install unidist with dependencies for Python Multiprocessing and Python Sequential backends
 
 unidist can also be used with Dask, MPI or Ray execution backend.
 If you don't have Dask_, MPI_ or Ray_ installed, you will need to install unidist with one of the targets:
@@ -33,7 +33,7 @@ If you don't have Dask_, MPI_ or Ray_ installed, you will need to install unidis
   pip install unidist[all] # Install unidist with dependencies for all the backends
   pip install unidist[dask] # Install unidist with dependencies for Dask backend
   pip install unidist[mpi] # Install unidist with dependencies for MPI backend
-  pip install unidist[ray] # Install unidist with dependencies for Multiprocessing and sequential Python backends
+  pip install unidist[ray] # Install unidist with dependencies for Ray backend
 
 unidist automatically detects which execution backends are installed and uses that for
 scheduling computation!
@@ -114,7 +114,7 @@ also use ``pip``.
 
 .. code-block:: bash
 
-  # Install unidist with dependencies for Multiprocessing and sequential Python backends
+  # Install unidist with dependencies for Python Multiprocessing and Python Sequential backends
   pip install git+https://github.com/modin-project/unidist
   # Install unidist with dependencies for all the backends
   pip install git+https://github.com/modin-project/unidist#egg=unidist[all]
@@ -148,7 +148,7 @@ Once cloned, ``cd`` into the ``unidist`` directory and use ``pip`` to install:
 .. code-block:: bash
 
   cd unidist
-  # Install unidist with dependencies for Multiprocessing and sequential Python backends
+  # Install unidist with dependencies for Python Multiprocessing and Python Sequential backends
   pip install -e .
   # Install unidist with dependencies for all the backends
   pip install -e .[all]

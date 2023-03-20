@@ -27,11 +27,11 @@ def call_gc_collect():
 
 
 @pytest.mark.skipif(
-    Backend.get() in (BackendName.MP, BackendName.PY),
-    reason="MP and PY backends do not support execution of coroutines.",
+    Backend.get() in (BackendName.PYMP, BackendName.PYSEQ),
+    reason="`pymp` and `pyseq` backends do not support execution of coroutines.",
 )
 @pytest.mark.skipif(
-    sys.platform == "win32" and Backend.get() == BackendName.MP,
+    sys.platform == "win32" and Backend.get() == BackendName.PYMP,
     reason="Details are in https://github.com/modin-project/unidist/issues/70.",
 )
 @pytest.mark.parametrize("is_default_constructor", [True, False])
@@ -43,11 +43,11 @@ def test_actor_constructor(is_default_constructor):
 
 
 @pytest.mark.skipif(
-    Backend.get() in (BackendName.MP, BackendName.PY),
-    reason="MP and PY backends do not support execution of coroutines.",
+    Backend.get() in (BackendName.PYMP, BackendName.PYSEQ),
+    reason="`pymp` and `pyseq` backends do not support execution of coroutines.",
 )
 @pytest.mark.skipif(
-    sys.platform == "win32" and Backend.get() == BackendName.MP,
+    sys.platform == "win32" and Backend.get() == BackendName.PYMP,
     reason="Details are in https://github.com/modin-project/unidist/issues/70.",
 )
 def test_chaining():
@@ -57,11 +57,11 @@ def test_chaining():
 
 
 @pytest.mark.skipif(
-    Backend.get() in (BackendName.MP, BackendName.PY),
-    reason="MP and PY backends do not support execution of coroutines.",
+    Backend.get() in (BackendName.PYMP, BackendName.PYSEQ),
+    reason="`pymp` and `pyseq` backends do not support execution of coroutines.",
 )
 @pytest.mark.skipif(
-    sys.platform == "win32" and Backend.get() == BackendName.MP,
+    sys.platform == "win32" and Backend.get() == BackendName.PYMP,
     reason="Details are in https://github.com/modin-project/unidist/issues/70.",
 )
 def test_num_returns():
@@ -72,15 +72,15 @@ def test_num_returns():
 
 
 @pytest.mark.skipif(
-    Backend.get() in (BackendName.MP, BackendName.PY),
-    reason="MP and PY backends do not support execution of coroutines.",
+    Backend.get() in (BackendName.PYMP, BackendName.PYSEQ),
+    reason="`pymp` and `pyseq` backends do not support execution of coroutines.",
 )
 @pytest.mark.skipif(
-    Backend.get() == BackendName.MP,
-    reason="`multiprocessing` backend incorrectly frees grabbed actors. Details are in https://github.com/modin-project/unidist/issues/65.",
+    Backend.get() == BackendName.PYMP,
+    reason="`pymp` backend incorrectly frees grabbed actors. Details are in https://github.com/modin-project/unidist/issues/65.",
 )
 @pytest.mark.skipif(
-    sys.platform == "win32" and Backend.get() == BackendName.MP,
+    sys.platform == "win32" and Backend.get() == BackendName.PYMP,
     reason="Details are in https://github.com/modin-project/unidist/issues/70.",
 )
 @pytest.mark.parametrize("is_use_options", [True, False])
@@ -104,8 +104,8 @@ def test_address_space(is_use_options):
 
 
 @pytest.mark.skipif(
-    Backend.get() in (BackendName.MP, BackendName.PY),
-    reason="Proper serialization/deserialization is not implemented yet for multiprocessing and python",
+    Backend.get() in (BackendName.PYMP, BackendName.PYSEQ),
+    reason="Proper serialization/deserialization is not implemented yet for `pymp` and `pyseq`",
 )
 def test_global_capture():
     actor = TestAsyncActor.remote(0)
@@ -121,8 +121,8 @@ def test_global_capture():
 
 
 @pytest.mark.skipif(
-    Backend.get() in (BackendName.MP, BackendName.PY),
-    reason="Proper serialization/deserialization is not implemented yet for multiprocessing and python",
+    Backend.get() in (BackendName.PYMP, BackendName.PYSEQ),
+    reason="Proper serialization/deserialization is not implemented yet for `pymp` and `pyseq`",
 )
 def test_direct_capture():
     actor = TestAsyncActor.remote(0)
@@ -138,7 +138,7 @@ def test_direct_capture():
 
 
 @pytest.mark.skipif(
-    Backend.get() in (BackendName.MP, BackendName.PY),
+    Backend.get() in (BackendName.PYMP, BackendName.PYSEQ),
     reason="Details are in https://github.com/modin-project/unidist/issues/70.",
 )
 def test_return_none():
@@ -147,8 +147,8 @@ def test_return_none():
 
 
 @pytest.mark.skipif(
-    Backend.get() in (BackendName.MP, BackendName.PY),
-    reason="MP and PY backends do not support execution of coroutines.",
+    Backend.get() in (BackendName.PYMP, BackendName.PYSEQ),
+    reason="`pymp` and `pyseq` backends do not support execution of coroutines.",
 )
 def test_pending_get():
     @unidist.remote
@@ -171,8 +171,8 @@ def test_pending_get():
     reason="Unexpected exception `There is no current event loop in thread` is raised",
 )
 @pytest.mark.skipif(
-    Backend.get() == BackendName.MP,
-    reason="Run of a remote task inside of an async actor method is not implemented yet for multiprocessing",
+    Backend.get() == BackendName.PYMP,
+    reason="Run of a remote task inside of an async actor method is not implemented yet for `pymp`",
 )
 def test_signal_actor():
     @unidist.remote

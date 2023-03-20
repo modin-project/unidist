@@ -13,8 +13,8 @@ class BackendName:
     RAY = "ray"
     MPI = "mpi"
     DASK = "dask"
-    MP = "multiprocessing"
-    PY = "python"
+    PYMP = "pymp"
+    PYSEQ = "pyseq"
 
 
 def filter_arguments(*args, **kwargs):

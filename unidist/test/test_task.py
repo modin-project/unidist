@@ -85,8 +85,8 @@ def test_return_none():
 
 
 @pytest.mark.skipif(
-    Backend.get() == BackendName.MP,
-    reason="Run of a remote task inside of another one is not implemented yet for multiprocessing",
+    Backend.get() == BackendName.PYMP,
+    reason="Run of a remote task inside of another one is not implemented yet for pymp",
 )
 def test_internal_remote():
     @unidist.remote
@@ -98,8 +98,8 @@ def test_internal_remote():
 
 
 @pytest.mark.skipif(
-    Backend.get() == BackendName.MP,
-    reason="Serialization of `dict_keys` is not properly implemented yet for multiprocessing",
+    Backend.get() == BackendName.PYMP,
+    reason="Serialization of `dict_keys` is not properly implemented yet for pymp",
 )
 def test_serialize_dict_keys():
     @unidist.remote

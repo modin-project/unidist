@@ -18,8 +18,8 @@ class Backend(EnvironmentVariable, type=str):
         BackendName.RAY,
         BackendName.DASK,
         BackendName.MPI,
-        BackendName.MP,
-        BackendName.PY,
+        BackendName.PYMP,
+        BackendName.PYSEQ,
     )
 
     @classmethod
@@ -66,7 +66,7 @@ class Backend(EnvironmentVariable, type=str):
                     "Please `pip install unidist[mpi]` to install compatible MPI version."
                 )
             return BackendName.MPI
-        return BackendName.MP
+        return BackendName.PYMP
 
 
 class CpuCount(EnvironmentVariable, type=int):

@@ -11,8 +11,8 @@ This page contains information on how to choose a concrete execution backend and
 - :doc:`Unidist on Ray <unidist_on_ray>`
 - :doc:`Unidist on MPI <unidist_on_mpi>`
 - :doc:`Unidist on Dask <unidist_on_dask>`
-- :doc:`Unidist on Python Multiprocessing <unidist_on_python_multiprocessing>`
-- :doc:`Unidist on Python <unidist_on_python>`
+- :doc:`Unidist on PyMp <unidist_on_pymp>`
+- :doc:`Unidist on PySeq <unidist_on_pyseq>`
 
 Libraries powered by Unidist
 """"""""""""""""""""""""""""

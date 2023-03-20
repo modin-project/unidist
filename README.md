@@ -29,7 +29,7 @@ Also, the framework provides a sequential ``Python`` backend, that can be used f
 unidist can be installed with `pip` on Linux, Windows and MacOS:
 
 ```bash
-pip install unidist # Install unidist with dependencies for Multiprocessing and sequential Python backends
+pip install unidist # Install unidist with dependencies for Python Multiprocessing and Python Sequential backends
 ```
 
 unidist can also be used with Dask, MPI or Ray execution backend.
