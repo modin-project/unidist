@@ -31,7 +31,8 @@ class ObjectStore:
         # Add local data {DataId : Data}
         self._data_map = weakref.WeakKeyDictionary()
         # "strong" references to data IDs {DataId : DataId}
-        self._data_id_map = weakref.WeakKeyDictionary()
+        # we are using dict here to improve performance when getting an element from this container.
+        self._data_id_map = {}
         # Data owner {DataId : Rank}
         self._data_owner_map = weakref.WeakKeyDictionary()
         # Data serialized cache
