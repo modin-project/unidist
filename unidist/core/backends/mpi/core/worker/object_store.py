@@ -30,8 +30,8 @@ class ObjectStore:
     def __init__(self):
         # Add local data {DataId : Data}
         self._data_map = weakref.WeakKeyDictionary()
-        # strong references from other workers
-        self._worker_references = weakref.WeakKeyDictionary()
+        # "strong" references to data IDs {DataId : DataId}
+        self._data_id_map = weakref.WeakKeyDictionary()
         # Data owner {DataId : Rank}
         self._data_owner_map = weakref.WeakKeyDictionary()
         # Data serialized cache
@@ -140,10 +140,11 @@ class ObjectStore:
         """
         return data_id in self._data_owner_map
 
-    def synchronize_data_id(self, data_id):
+    def get_unique_data_id(self, data_id):
         """
-        Return the stored strong reference to the data ID if it is already stored locally.
-        Otherwise, the received reference to the data ID is saved.
+        Get the "strong" reference to the data ID if it is already stored locally.
+
+        If the passed data ID is not stored locally yet, save and return it.
 
         Parameters
         ----------
@@ -153,19 +154,19 @@ class ObjectStore:
         Returns
         -------
         unidist.core.backends.common.data_id.DataID
-            Stored an ID to data
+            The unique ID to data.
 
         Notes
         -----
         We need to use a unique data ID reference for the garbage colleactor to work correctly.
         """
-        if data_id not in self._worker_references:
-            self._worker_references[data_id] = data_id
-        return self._worker_references[data_id]
+        if data_id not in self._data_id_map:
+            self._data_id_map[data_id] = data_id
+        return self._data_id_map[data_id]
 
     def clear(self, cleanup_list):
         """
-        Clear stored strong references from other workers for each data ID instances from `cleanup_list`.
+        Clear "strong" references to data IDs from `cleanup_list`.
 
         Parameters
         ----------
@@ -174,10 +175,11 @@ class ObjectStore:
 
         Notes
         -----
-        The data will be collected later when no strong reference is stored locally in the current worker.
+        The actual data will be collected later when there is no weak or
+        strong reference to data in the current worker.
         """
         for data_id in cleanup_list:
-            self._worker_references.pop(data_id, None)
+            self._data_id_map.pop(data_id, None)
 
     def cache_serialized_data(self, data_id, data):
         """

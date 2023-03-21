@@ -106,7 +106,7 @@ async def worker_loop():
 
         elif operation_type == common.Operation.GET:
             request = communication.recv_simple_operation(mpi_state.comm, source_rank)
-            request["id"] = object_store.synchronize_data_id(request["id"])
+            request["id"] = object_store.get_unique_data_id(request["id"])
             request_store.process_get_request(
                 request["source"], request["id"], request["is_blocking_op"]
             )
@@ -116,7 +116,7 @@ async def worker_loop():
             w_logger.debug(
                 "PUT (RECV) {} id from {} rank".format(request["id"]._id, source_rank)
             )
-            request["id"] = object_store.synchronize_data_id(request["id"])
+            request["id"] = object_store.get_unique_data_id(request["id"])
             object_store.put(request["id"], request["data"])
 
             # Clear cached request to another worker, if data_id became available
@@ -129,7 +129,7 @@ async def worker_loop():
 
         elif operation_type == common.Operation.PUT_OWNER:
             request = communication.recv_simple_operation(mpi_state.comm, source_rank)
-            request["id"] = object_store.synchronize_data_id(request["id"])
+            request["id"] = object_store.get_unique_data_id(request["id"])
             object_store.put_data_owner(request["id"], request["owner"])
 
             w_logger.debug(
@@ -141,7 +141,7 @@ async def worker_loop():
         elif operation_type == common.Operation.WAIT:
             request = communication.recv_simple_operation(mpi_state.comm, source_rank)
             w_logger.debug("WAIT for {} id".format(request["id"]._id))
-            request["id"] = object_store.synchronize_data_id(request["id"])
+            request["id"] = object_store.get_unique_data_id(request["id"])
             request_store.process_wait_request(request["id"])
 
         elif operation_type == common.Operation.ACTOR_CREATE:

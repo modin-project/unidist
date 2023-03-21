@@ -169,7 +169,7 @@ class TaskStore:
         """
         if is_data_id(arg):
             object_store = ObjectStore.get_instance()
-            arg = object_store.synchronize_data_id(arg)
+            arg = object_store.get_unique_data_id(arg)
             if object_store.contains(arg):
                 value = ObjectStore.get_instance().get(arg)
                 # Data is already local or was pushed from master
@@ -238,10 +238,10 @@ class TaskStore:
                         and len(output_data_ids) > 1
                     ):
                         for output_id in output_data_ids:
-                            data_id = object_store.synchronize_data_id(output_id)
+                            data_id = object_store.get_unique_data_id(output_id)
                             object_store.put(data_id, e)
                     else:
-                        data_id = object_store.synchronize_data_id(output_data_ids)
+                        data_id = object_store.get_unique_data_id(output_data_ids)
                         object_store.put(data_id, e)
                 else:
                     if output_data_ids is not None:
@@ -250,10 +250,10 @@ class TaskStore:
                             and len(output_data_ids) > 1
                         ):
                             for output_id, value in zip(output_data_ids, output_values):
-                                data_id = object_store.synchronize_data_id(output_id)
+                                data_id = object_store.get_unique_data_id(output_id)
                                 object_store.put(data_id, value)
                         else:
-                            data_id = object_store.synchronize_data_id(output_data_ids)
+                            data_id = object_store.get_unique_data_id(output_data_ids)
                             object_store.put(data_id, output_values)
 
                         RequestStore.get_instance().check_pending_get_requests(
@@ -304,10 +304,10 @@ class TaskStore:
                     and len(output_data_ids) > 1
                 ):
                     for output_id in output_data_ids:
-                        data_id = object_store.synchronize_data_id(output_id)
+                        data_id = object_store.get_unique_data_id(output_id)
                         object_store.put(data_id, e)
                 else:
-                    data_id = object_store.synchronize_data_id(output_data_ids)
+                    data_id = object_store.get_unique_data_id(output_data_ids)
                     object_store.put(data_id, e)
             else:
                 if output_data_ids is not None:
@@ -316,10 +316,10 @@ class TaskStore:
                         and len(output_data_ids) > 1
                     ):
                         for output_id, value in zip(output_data_ids, output_values):
-                            data_id = object_store.synchronize_data_id(output_id)
+                            data_id = object_store.get_unique_data_id(output_id)
                             object_store.put(data_id, value)
                     else:
-                        data_id = object_store.synchronize_data_id(output_data_ids)
+                        data_id = object_store.get_unique_data_id(output_data_ids)
                         object_store.put(data_id, output_values)
             # Monitor the task execution.
             # We use a blocking send here because we have to wait for
