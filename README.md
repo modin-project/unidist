@@ -20,7 +20,7 @@ unidist is a framework that is intended to provide the unified API for distribut
 
 unidist is designed to work in a [task-based parallel](https://en.wikipedia.org/wiki/Task_parallelism) model.
 
-Also, the framework provides a sequential ``Python`` backend, that can be used for debugging.
+Also, the framework provides a Python Sequential backend (`pyseq`), that can be used for debugging.
 
 ### Installation
 
