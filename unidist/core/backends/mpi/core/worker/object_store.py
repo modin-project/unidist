@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import weakref
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 
@@ -28,9 +29,13 @@ class ObjectStore:
 
     def __init__(self):
         # Add local data {DataId : Data}
-        self._data_map = {}
+        self._data_map = weakref.WeakKeyDictionary()
+        # "strong" references to data IDs {DataId : DataId}
+        # we are using dict here to improve performance when getting an element from it,
+        # whereas other containers would require O(n) complexity
+        self._data_id_map = {}
         # Data owner {DataId : Rank}
-        self._data_owner_map = {}
+        self._data_owner_map = weakref.WeakKeyDictionary()
         # Data serialized cache
         self._serialization_cache = {}
 
@@ -137,24 +142,46 @@ class ObjectStore:
         """
         return data_id in self._data_owner_map
 
+    def get_unique_data_id(self, data_id):
+        """
+        Get the "strong" reference to the data ID if it is already stored locally.
+
+        If the passed data ID is not stored locally yet, save and return it.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+            An ID to data.
+
+        Returns
+        -------
+        unidist.core.backends.common.data_id.DataID
+            The unique ID to data.
+
+        Notes
+        -----
+        We need to use a unique data ID reference for the garbage colleactor to work correctly.
+        """
+        if data_id not in self._data_id_map:
+            self._data_id_map[data_id] = data_id
+        return self._data_id_map[data_id]
+
     def clear(self, cleanup_list):
         """
-        Clear all local dictionary data ID instances from `cleanup_list`.
+        Clear "strong" references to data IDs from `cleanup_list`.
 
         Parameters
         ----------
         cleanup_list : list
             List of data IDs.
+
+        Notes
+        -----
+        The actual data will be collected later when there is no weak or
+        strong reference to data in the current worker.
         """
         for data_id in cleanup_list:
-            if data_id in self._data_map:
-                logger.debug("CLEANUP DataMap id {}".format(data_id._id))
-                del self._data_map[data_id]
-            if data_id in self._data_owner_map:
-                logger.debug("CLEANUP DataOwnerMap id {}".format(data_id._id))
-                del self._data_owner_map[data_id]
-            if data_id in self._serialization_cache:
-                del self._serialization_cache[data_id]
+            self._data_id_map.pop(data_id, None)
 
     def cache_serialized_data(self, data_id, data):
         """
