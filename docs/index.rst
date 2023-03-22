@@ -18,7 +18,7 @@ execution by supporting various performant execution backends. At the moment the
 * `Dask Distributed`_
 * `Python Multiprocessing`_
 
-Also, the framework provides a sequential :doc:`Python Sequential backend <flow/unidist/core/backends/pyseq/backend>`,
+Also, the framework provides a Python Sequential backend (:doc:`pyseq <flow/unidist/core/backends/pyseq/backend>`),
 that can be used for debugging.
 
 unidist is designed to work in a `task-based parallel model`_. The framework mimics `Ray`_ API and expands the existing frameworks
