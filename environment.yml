@@ -17,7 +17,7 @@ dependencies:
       # for development
       # we install ray from PyPI for now as the package is broken in conda-forge
       # see details in https://github.com/modin-project/unidist/issues/219
-      - ray[default]>=1.4.0
+      - ray[default]>=1.13.0
       # for building the documentation
       - sphinx
       - sphinx_rtd_theme

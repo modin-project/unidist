@@ -4,10 +4,10 @@ dask[complete]>=2.22.0
 distributed>=2.22.0
 mpi4py-mpich
 msgpack>=1.0.0
+ray[default]>=1.13.0
 packaging
 psutil
 pytest
-ray[default]>=1.4.0
 # for building the documentation
 sphinx
 sphinx_rtd_theme
