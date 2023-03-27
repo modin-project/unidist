@@ -12,7 +12,7 @@ from unidist.core.backends.mpi.core.controller.garbage_collector import (
     garbage_collector,
 )
 from unidist.core.backends.mpi.core.controller.common import push_data, RoundRobin
-
+from .api import workQueue
 
 class ActorMethod:
     """
@@ -40,9 +40,13 @@ class ActorMethod:
         unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
         unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
 
-        push_data(self._actor._owner_rank, unwrapped_args)
-        push_data(self._actor._owner_rank, unwrapped_kwargs)
-
+        #push_data(self._actor._owner_rank, unwrapped_args)
+        #push_data(self._actor._owner_rank, unwrapped_kwargs)
+        from unidist.core.backends.common.data_id import DataID
+        breakpoint()
+        workQueue.put([1,(self._actor._owner_rank, [DataID("dadada")])])
+        workQueue.put([1,(self._actor._owner_rank, unwrapped_args)])
+        workQueue.put([1,(self._actor._owner_rank, unwrapped_kwargs)])
         operation_type = common.Operation.ACTOR_EXECUTE
         operation_data = {
             "task": self._method_name,
@@ -51,14 +55,12 @@ class ActorMethod:
             "output": common.master_data_ids_to_base(output_id),
             "handler": self._actor._handler_id.base_data_id(),
         }
-        async_operations = AsyncOperations.get_instance()
-        h_list, _ = communication.isend_complex_operation(
-            communication.MPIState.get_instance().comm,
-            operation_type,
-            operation_data,
-            self._actor._owner_rank,
-        )
-        async_operations.extend(h_list)
+        
+        workQueue.put([2,(communication.MPIState.get_instance().comm,
+        operation_type,
+        operation_data,
+        self._actor._owner_rank,)])
+        
         return output_id
 
 
