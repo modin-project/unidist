@@ -313,7 +313,6 @@ def get(data_ids):
             value = object_store.get(data_id)
         else:
             queueLock.acquire()
-            print("size {} data_id={}".format(workQueue.qsize(), data_id))
             future = futures.Future()
             workQueue.put([future, [request_worker_data, [data_id]]])
             queueLock.release()
