@@ -261,4 +261,4 @@ def push_data(dest_rank, value):
         elif object_store.contains_data_owner(value):
             _push_data_owner(dest_rank, value)
         else:
-            raise ValueError("Unknown DataID!")
+            raise ValueError("Unknown DataID! {}".format(value))
