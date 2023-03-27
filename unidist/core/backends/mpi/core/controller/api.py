@@ -65,7 +65,6 @@ class myThread (threading.Thread):
       self.q = q
    def run(self):
       print ("Starting " + self.name)
-      print(workQueue.qsize())
       process_data(self.name, self.q)
       print ("Exiting " + self.name)
 
@@ -79,8 +78,7 @@ def process_data(threadName, q):
         #print("queue size is {} , time ={}".format(workQueue.qsize(),datetime.fromtimestamp(time.time())))
         if not workQueue.empty():
             flag, future, data = q.get()
-            print("order========================================================== {}".format(flag))
-            
+            print("order========================================================== {}".format(flag))            
             queueLock.release()
             if flag==1:
                 dest_rank, value = data
@@ -343,21 +341,13 @@ def get(data_ids):
             value = object_store.get(data_id)
         else:
             queueLock.acquire()
-            print("size {} data_id={}".format(workQueue.qsize(), data_id))
-            workQueue.put([3, None, (data_id)])  
-            
+            print("size {} data_id={}".format(workQueue.qsize(), data_id)) 
+            future = futures.Future()    
+            workQueue.put([5,future, [ request_worker_data, [data_id] ] ])
             queueLock.release()
-    
+            value = future.result()     
             
-            #raise ValueError(getQueue.qsize())
-            while True:
-                queueLock.acquire()
-                
-                if not getQueue.empty():
-                    value = getQueue.get()
-                    queueLock.release()
-                    break
-                queueLock.release()
+            
         print("got  {}".format( data_id))
         print("value {}".format( value))
                     
