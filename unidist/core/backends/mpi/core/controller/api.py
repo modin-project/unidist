@@ -69,17 +69,26 @@ class myThread(threading.Thread):
         print("Starting " + self.name)
         process_data(self.name, self.q)
         print("Exiting " + self.name)
+threadList = ["Thread-1"]
+queueLock = threading.Lock()
+workQueue = queue.Queue(0)
+threads = []
 
 
 def process_data(threadName, q):
-    global getRequests
+    global workQueue
+    
     while not exitFlag:
         queueLock.acquire()
+        
         # print("queue size is {} , time ={}".format(workQueue.qsize(),datetime.fromtimestamp(time.time())))
         if not workQueue.empty():
+            breakpoint()
+            
             future, data = q.get()
             queueLock.release()
             function, args = data
+            print(function.__name__)
             result = function(*args)
             if future:
                 future.set_result(result)
@@ -89,10 +98,6 @@ def process_data(threadName, q):
     print("exited")
 
 
-threadList = ["Thread-1"]
-queueLock = threading.Lock()
-workQueue = queue.Queue(0)
-threads = []
 
 
 def init():
@@ -122,7 +127,7 @@ def init():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     parent_comm = MPI.Comm.Get_parent()
-    if not threads and rank == 0 and parent_comm == MPI.COMM_NULL:
+    if not threads  and parent_comm == MPI.COMM_NULL:
         for tName in threadList:
             thread = myThread(1, tName, workQueue)
             thread.start()
@@ -282,11 +287,16 @@ def put(data):
         An ID of an object in object storage.
     """
     # data_id = object_store.generate_data_id(garbage_collector)
+    global workQueue
+    queueLock.acquire()
     data_id = futures.Future()
     workQueue.put([data_id, [object_store.generate_data_id, [garbage_collector]]])
+    queueLock.release()
+    breakpoint()
     data_id = data_id.result()
+    queueLock.acquire()
     workQueue.put([None, [object_store.put, [data_id, data]]])
-
+    queueLock.release()
     logger.debug("PUT {} id".format(data_id._id))
 
     return data_id
@@ -434,7 +444,9 @@ def submit(task, *args, num_returns=1, **kwargs):
     # output_ids = object_store.generate_output_data_id(
     #     dest_rank, garbage_collector, num_returns
     # )
+    breakpoint()
     global workQueue
+    queueLock.acquire()
     output_ids = futures.Future()
     workQueue.put(
         [
@@ -445,6 +457,7 @@ def submit(task, *args, num_returns=1, **kwargs):
             ],
         ]
     )
+    queueLock.release()
     output_ids = output_ids.result()
     logger.debug("REMOTE OPERATION")
     logger.debug(
@@ -461,8 +474,8 @@ def submit(task, *args, num_returns=1, **kwargs):
     unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
     unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
 
-    queueLock.acquire()
     print(workQueue.qsize())
+    queueLock.acquire()
     workQueue.put([None, [push_data, [dest_rank, unwrapped_args]]])
 
     print(unwrapped_args, time.time())
@@ -475,6 +488,7 @@ def submit(task, *args, num_returns=1, **kwargs):
         "kwargs": unwrapped_kwargs,
         "output": common.master_data_ids_to_base(output_ids),
     }
+    
 
     def send_operation_impl(comm, operation_type, operation_data, dest_rank):
         async_operations = AsyncOperations.get_instance()

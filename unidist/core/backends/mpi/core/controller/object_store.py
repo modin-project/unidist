@@ -24,9 +24,9 @@ class ObjectStore:
 
     def __init__(self):
         # Add local data {DataID : Data}
-        self._data_map = weakref.WeakKeyDictionary()
+        self._data_map = {}
         # Data owner {DataID : Rank}
-        self._data_owner_map = weakref.WeakKeyDictionary()
+        self._data_owner_map = {}
         # Data was already sent to this ranks {DataID : [ranks]}
         self._sent_data_map = defaultdict(set)
         # Data id generator
