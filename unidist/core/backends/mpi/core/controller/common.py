@@ -5,6 +5,8 @@
 """Common functionality related to `controller`."""
 
 import itertools
+import threading
+from mpi4py import futures
 
 from unidist.core.backends.common.data_id import is_data_id
 import unidist.core.backends.mpi.core.common as common
@@ -262,3 +264,19 @@ def push_data(dest_rank, value):
             _push_data_owner(dest_rank, value)
         else:
             raise ValueError("Unknown DataID! {}".format(value))
+queueLock = threading.Lock()
+def queue_or_execute(comm, workQueue, function, args, blocking=False):
+    if 0 == comm.Get_rank():
+        queueLock.acquire()
+        future = futures.Future()
+        workQueue.put([future, [function, args]])
+        queueLock.release()
+        if blocking:
+            return future.result()
+    else:
+        result=function(*args)
+        logger.debug("dsadadadad{} function={}, args={}".format(result,function, args))
+        return result
+        
+    
+    

@@ -29,6 +29,7 @@ from unidist.core.backends.mpi.core.controller.common import (
     request_worker_data,
     push_data,
     RoundRobin,
+    queue_or_execute,
 )
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
@@ -73,7 +74,7 @@ threadList = ["Thread-1"]
 queueLock = threading.Lock()
 workQueue = queue.Queue(0)
 threads = []
-
+comm = MPI.COMM_WORLD
 
 def process_data(threadName, q):
     global workQueue
@@ -83,7 +84,6 @@ def process_data(threadName, q):
         
         # print("queue size is {} , time ={}".format(workQueue.qsize(),datetime.fromtimestamp(time.time())))
         if not workQueue.empty():
-            breakpoint()
             
             future, data = q.get()
             queueLock.release()
@@ -127,7 +127,7 @@ def init():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     parent_comm = MPI.Comm.Get_parent()
-    if not threads  and parent_comm == MPI.COMM_NULL:
+    if rank == 0  and not threads  and parent_comm == MPI.COMM_NULL:
         for tName in threadList:
             thread = myThread(1, tName, workQueue)
             thread.start()
@@ -287,16 +287,17 @@ def put(data):
         An ID of an object in object storage.
     """
     # data_id = object_store.generate_data_id(garbage_collector)
+    
     global workQueue
-    queueLock.acquire()
-    data_id = futures.Future()
-    workQueue.put([data_id, [object_store.generate_data_id, [garbage_collector]]])
-    queueLock.release()
-    breakpoint()
-    data_id = data_id.result()
-    queueLock.acquire()
-    workQueue.put([None, [object_store.put, [data_id, data]]])
-    queueLock.release()
+    
+    
+    data_id = queue_or_execute(comm, workQueue, object_store.generate_data_id, [garbage_collector], True)
+    
+    
+    
+    queue_or_execute(comm, workQueue, object_store.put,[data_id, data] )
+    #workQueue.put([None, [object_store.put, [data_id, data]]])
+    
     logger.debug("PUT {} id".format(data_id._id))
 
     return data_id
@@ -322,11 +323,9 @@ def get(data_ids):
         if object_store.contains(data_id):
             value = object_store.get(data_id)
         else:
-            queueLock.acquire()
-            future = futures.Future()
-            workQueue.put([future, [request_worker_data, [data_id]]])
-            queueLock.release()
-            value = future.result()
+            value = queue_or_execute(comm, workQueue, request_worker_data,[data_id], True )
+            #workQueue.put([future, [request_worker_data, [data_id]]])
+            
 
         if isinstance(value, Exception):
             raise value
@@ -444,21 +443,19 @@ def submit(task, *args, num_returns=1, **kwargs):
     # output_ids = object_store.generate_output_data_id(
     #     dest_rank, garbage_collector, num_returns
     # )
-    breakpoint()
     global workQueue
-    queueLock.acquire()
-    output_ids = futures.Future()
-    workQueue.put(
-        [
-            output_ids,
-            [
-                object_store.generate_output_data_id,
-                [dest_rank, garbage_collector, num_returns],
-            ],
-        ]
-    )
-    queueLock.release()
-    output_ids = output_ids.result()
+    
+    # workQueue.put(
+    #     [
+    #         output_ids,
+    #         [
+    #             object_store.generate_output_data_id,
+    #             [dest_rank, garbage_collector, num_returns],
+    #         ],
+    #     ]
+    # )
+    output_ids = queue_or_execute(comm, workQueue, object_store.generate_output_data_id,[dest_rank, garbage_collector, num_returns], True )
+    
     logger.debug("REMOTE OPERATION")
     logger.debug(
         "REMOTE args to {} rank: {}".format(
@@ -475,11 +472,14 @@ def submit(task, *args, num_returns=1, **kwargs):
     unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
 
     print(workQueue.qsize())
-    queueLock.acquire()
-    workQueue.put([None, [push_data, [dest_rank, unwrapped_args]]])
+    
+    #workQueue.put([None, [push_data, [dest_rank, unwrapped_args]]])
+    
+    queue_or_execute(comm, workQueue, push_data, [dest_rank, unwrapped_args] )
 
     print(unwrapped_args, time.time())
-    workQueue.put([None, [push_data, [dest_rank, unwrapped_kwargs]]])
+    queue_or_execute(comm, workQueue, push_data, [dest_rank, unwrapped_kwargs] )
+    #workQueue.put([None, [push_data, [dest_rank, unwrapped_kwargs]]])
 
     operation_type = common.Operation.EXECUTE
     operation_data = {
@@ -500,12 +500,15 @@ def submit(task, *args, num_returns=1, **kwargs):
         )
         async_operations.extend(h_list)
 
-    comm = communication.MPIState.get_instance().comm
-    workQueue.put(
-        [None, [send_operation_impl, [comm, operation_type, operation_data, dest_rank]]]
-    )
+    comm1 = communication.MPIState.get_instance().comm
+    
+    # workQueue.put(
+    #     [None, [send_operation_impl, [comm, operation_type, operation_data, dest_rank]]]
+    # )
+    queue_or_execute(comm, workQueue, send_operation_impl, [comm1, operation_type, operation_data, dest_rank] )
+    
 
-    queueLock.release()
+    
     # Track the task execution
     garbage_collector.increment_task_counter()
 

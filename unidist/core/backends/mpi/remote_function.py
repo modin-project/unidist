@@ -70,7 +70,6 @@ class MPIRemoteFunction(RemoteFunction):
 
         unwrapped_args = [unwrap_object_refs(arg) for arg in args]
         unwrapped_kwargs = {k: unwrap_object_refs(v) for k, v in kwargs.items()}
-
         data_ids = mpi.submit(
             self._remote_function,
             *unwrapped_args,
