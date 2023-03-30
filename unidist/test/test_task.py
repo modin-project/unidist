@@ -91,7 +91,6 @@ def test_return_none():
 def test_internal_remote():
     @unidist.remote
     def foo(x):
-        
         o_r = task.remote(x)
         return unidist.get(o_r) + 10
 

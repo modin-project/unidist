@@ -15,7 +15,6 @@ from collections import defaultdict
 
 try:
     import mpi4py
-    from mpi4py import futures
 except ImportError:
     raise ImportError(
         "Missing dependency 'mpi4py'. Use pip or conda to install it."
@@ -62,14 +61,13 @@ BACKOFF = 0.001
 
 
 def _getopt_backoff(options):
-    backoff = options.get('backoff')
+    backoff = options.get("backoff")
     if backoff is None:
         backoff = BACKOFF
     return float(backoff)
 
 
 class Backoff:
-
     def __init__(self, seconds=BACKOFF):
         self.tval = 0.0
         self.tmax = max(float(seconds), 0.0)
@@ -85,7 +83,7 @@ class Backoff:
 
 class myThread(threading.Thread):
     def __init__(self, threadID, name, q):
-        threading.Thread.__init__(self,daemon=True)
+        threading.Thread.__init__(self, daemon=True)
         self.threadID = threadID
         self.name = name
         self.q = q
@@ -94,6 +92,8 @@ class myThread(threading.Thread):
         print("Starting " + self.name)
         process_data(self.name, self.q)
         print("Exiting " + self.name)
+
+
 threadList = ["Thread-1"]
 queueLock = threading.Lock()
 workQueue = queue.Queue(0)
@@ -101,21 +101,21 @@ threads = []
 comm = MPI.COMM_WORLD
 queue_process_time_unblocked = 0
 sleep_time = 0
-queue_process_time_blocked =0 
+queue_process_time_blocked = 0
+
 
 def process_data(threadName, q):
     global workQueue
-    global queue_process_time_unblocked,sleep_time,queue_process_time_blocked
+    global queue_process_time_unblocked, sleep_time, queue_process_time_blocked
     backoff = Backoff()
-    
-    
+
     while not exitFlag:
         # queueLock.acquire()
-        
+
         # print("queue size is {} , time ={}".format(workQueue.qsize(),datetime.fromtimestamp(time.time())))
         if not workQueue.empty():
             start = time.time()
-            
+
             future, data = q.get()
             backoff.reset()
             # queueLock.release()
@@ -124,21 +124,23 @@ def process_data(threadName, q):
             if future:
                 future.set_result(result)
                 end = time.time()
-                queue_process_time_blocked += start-end
-                
+                queue_process_time_blocked += start - end
+
             else:
                 end = time.time()
-                queue_process_time_unblocked += start-end
+                queue_process_time_unblocked += start - end
 
         else:
             start = time.time()
             # queueLock.release()
             backoff.sleep()
             end = time.time()
-            sleep_time += start-end
-    print("exited queue_process_time_unblocked={} queue_process_time_blocked={} sleep_time={}".format(queue_process_time_unblocked,queue_process_time_blocked,sleep_time))
-
-
+            sleep_time += start - end
+    print(
+        "exited queue_process_time_unblocked={} queue_process_time_blocked={} sleep_time={}".format(
+            queue_process_time_unblocked, queue_process_time_blocked, sleep_time
+        )
+    )
 
 
 def init():
@@ -168,7 +170,7 @@ def init():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     parent_comm = MPI.Comm.Get_parent()
-    if rank == 0  and not threads  and parent_comm == MPI.COMM_NULL:
+    if rank == 0 and not threads and parent_comm == MPI.COMM_NULL:
         for tName in threadList:
             thread = myThread(1, tName, workQueue)
             thread.deamon = True
@@ -278,11 +280,6 @@ def shutdown():
     """
     global exitFlag
     exitFlag = 1
-    # for t in threads:
-    #     t.join()
-    #     print("=========================###############(((((((((((())))))))))))")
-    #     print("exited queue_process_time_unblocked={} queue_process_time_blocked={} sleep_time={}".format(queue_process_time_unblocked,queue_process_time_blocked,sleep_time))
-    #     print("=========================###############(((((((((((())))))))))))")
     mpi_state = communication.MPIState.get_instance()
     # Send shutdown commands to all ranks
     for rank_id in range(communication.MPIRank.MONITOR, mpi_state.world_size):
@@ -332,17 +329,15 @@ def put(data):
         An ID of an object in object storage.
     """
     # data_id = object_store.generate_data_id(garbage_collector)
-    
+
     global workQueue
-    
-    
-    data_id = queue_or_execute(comm, workQueue, object_store.generate_data_id, [garbage_collector], True)
-    
-    
-    
-    queue_or_execute(comm, workQueue, object_store.put,[data_id, data] )
-    #workQueue.put([None, [object_store.put, [data_id, data]]])
-    
+
+    data_id = queue_or_execute(
+        comm, workQueue, object_store.generate_data_id, [garbage_collector], True
+    )
+
+    queue_or_execute(comm, workQueue, object_store.put, [data_id, data])
+
     logger.debug("PUT {} id".format(data_id._id))
 
     return data_id
@@ -368,9 +363,9 @@ def get(data_ids):
         if object_store.contains(data_id):
             value = object_store.get(data_id)
         else:
-            value = queue_or_execute(comm, workQueue, request_worker_data,[data_id], True )
-            #workQueue.put([future, [request_worker_data, [data_id]]])
-            
+            value = queue_or_execute(
+                comm, workQueue, request_worker_data, [data_id], True
+            )
 
         if isinstance(value, Exception):
             raise value
@@ -485,22 +480,14 @@ def submit(task, *args, num_returns=1, **kwargs):
 
     dest_rank = RoundRobin.get_instance().schedule_rank()
 
-    # output_ids = object_store.generate_output_data_id(
-    #     dest_rank, garbage_collector, num_returns
-    # )
-    global workQueue
-    
-    # workQueue.put(
-    #     [
-    #         output_ids,
-    #         [
-    #             object_store.generate_output_data_id,
-    #             [dest_rank, garbage_collector, num_returns],
-    #         ],
-    #     ]
-    # )
-    output_ids = queue_or_execute(comm, workQueue, object_store.generate_output_data_id,[dest_rank, garbage_collector, num_returns], True )
-    
+    output_ids = queue_or_execute(
+        comm,
+        workQueue,
+        object_store.generate_output_data_id,
+        [dest_rank, garbage_collector, num_returns],
+        True,
+    )
+
     logger.debug("REMOTE OPERATION")
     logger.debug(
         "REMOTE args to {} rank: {}".format(
@@ -516,14 +503,9 @@ def submit(task, *args, num_returns=1, **kwargs):
     unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
     unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
 
-    
-    #workQueue.put([None, [push_data, [dest_rank, unwrapped_args]]])
-    
-    queue_or_execute(comm, workQueue, push_data, [dest_rank, unwrapped_args] )
+    queue_or_execute(comm, workQueue, push_data, [dest_rank, unwrapped_args])
 
-
-    queue_or_execute(comm, workQueue, push_data, [dest_rank, unwrapped_kwargs] )
-    #workQueue.put([None, [push_data, [dest_rank, unwrapped_kwargs]]])
+    queue_or_execute(comm, workQueue, push_data, [dest_rank, unwrapped_kwargs])
 
     operation_type = common.Operation.EXECUTE
     operation_data = {
@@ -532,7 +514,6 @@ def submit(task, *args, num_returns=1, **kwargs):
         "kwargs": unwrapped_kwargs,
         "output": common.master_data_ids_to_base(output_ids),
     }
-    
 
     def send_operation_impl(comm, operation_type, operation_data, dest_rank):
         async_operations = AsyncOperations.get_instance()
@@ -545,14 +526,14 @@ def submit(task, *args, num_returns=1, **kwargs):
         async_operations.extend(h_list)
 
     comm1 = communication.MPIState.get_instance().comm
-    
-    # workQueue.put(
-    #     [None, [send_operation_impl, [comm, operation_type, operation_data, dest_rank]]]
-    # )
-    queue_or_execute(comm, workQueue, send_operation_impl, [comm1, operation_type, operation_data, dest_rank] )
-    
 
-    
+    queue_or_execute(
+        comm,
+        workQueue,
+        send_operation_impl,
+        [comm1, operation_type, operation_data, dest_rank],
+    )
+
     # Track the task execution
     garbage_collector.increment_task_counter()
 

@@ -4,7 +4,7 @@
 
 """`ObjectStore` functionality."""
 
-import weakref
+
 from collections import defaultdict
 
 import unidist.core.backends.mpi.core.common as common

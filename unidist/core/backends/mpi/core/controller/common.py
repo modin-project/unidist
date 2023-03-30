@@ -5,7 +5,6 @@
 """Common functionality related to `controller`."""
 
 import itertools
-import threading
 from mpi4py import futures
 
 from unidist.core.backends.common.data_id import is_data_id
@@ -235,7 +234,7 @@ def _push_data_owner(dest_rank, data_id):
         dest_rank,
     )
     async_operations.extend(h_list)
-import time
+
 
 def push_data(dest_rank, value):
     """
@@ -264,22 +263,38 @@ def push_data(dest_rank, value):
             _push_data_owner(dest_rank, value)
         else:
             raise ValueError("Unknown DataID! {}".format(value))
-queueLock = threading.Lock()
+
+
 def queue_or_execute(comm, workQueue, function, args, blocking=False):
+    """
+    Put the reciveved function in background queue for rank 0,
+    or execute the function as is for the workers
+
+    Process all arguments recursivelly and send all ID associated data or it's location
+    to the target rank.
+
+    Parameters
+    ----------
+    comm : communicator
+        Communicator to determine the caller calls the function from mainthread or worker threads
+    workQueue : Queue
+        The queue shared between background and main thread.
+    function : function
+        Function to be executed.
+    args : list
+        Arguments to the function.
+    bolcking : boolean
+        If the function passed needs a value returned immediately.
+
+
+    """
     if 0 == comm.Get_rank():
-        
         future = futures.Future()
-        
-    
         if blocking:
             workQueue.put([future, [function, args]])
             return future.result()
         else:
             workQueue.put([None, [function, args]])
     else:
-        result=function(*args)
-        logger.debug("dsadadadad{} function={}, args={}".format(result,function, args))
+        result = function(*args)
         return result
-        
-    
-    
