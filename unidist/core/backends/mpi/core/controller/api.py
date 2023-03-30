@@ -85,7 +85,7 @@ class Backoff:
 
 class myThread(threading.Thread):
     def __init__(self, threadID, name, q):
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self,daemon=True)
         self.threadID = threadID
         self.name = name
         self.q = q
@@ -127,7 +127,6 @@ def process_data(threadName, q):
                 queue_process_time_blocked += start-end
                 
             else:
-                future.set_result(result)
                 end = time.time()
                 queue_process_time_unblocked += start-end
 
@@ -172,6 +171,7 @@ def init():
     if rank == 0  and not threads  and parent_comm == MPI.COMM_NULL:
         for tName in threadList:
             thread = myThread(1, tName, workQueue)
+            thread.deamon = True
             thread.start()
             threads.append(thread)
 
@@ -278,11 +278,11 @@ def shutdown():
     """
     global exitFlag
     exitFlag = 1
-    for t in threads:
-        t.join()
-        print("=========================###############(((((((((((())))))))))))")
-        print("exited queue_process_time_unblocked={} queue_process_time_blocked={} sleep_time={}".format(queue_process_time_unblocked,queue_process_time_blocked,sleep_time))
-        print("=========================###############(((((((((((())))))))))))")
+    # for t in threads:
+    #     t.join()
+    #     print("=========================###############(((((((((((())))))))))))")
+    #     print("exited queue_process_time_unblocked={} queue_process_time_blocked={} sleep_time={}".format(queue_process_time_unblocked,queue_process_time_blocked,sleep_time))
+    #     print("=========================###############(((((((((((())))))))))))")
     mpi_state = communication.MPIState.get_instance()
     # Send shutdown commands to all ranks
     for rank_id in range(communication.MPIRank.MONITOR, mpi_state.world_size):

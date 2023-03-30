@@ -235,7 +235,7 @@ def _push_data_owner(dest_rank, data_id):
         dest_rank,
     )
     async_operations.extend(h_list)
-
+import time
 
 def push_data(dest_rank, value):
     """
@@ -269,10 +269,13 @@ def queue_or_execute(comm, workQueue, function, args, blocking=False):
     if 0 == comm.Get_rank():
         
         future = futures.Future()
-        workQueue.put([future, [function, args]])
+        
     
         if blocking:
+            workQueue.put([future, [function, args]])
             return future.result()
+        else:
+            workQueue.put([None, [function, args]])
     else:
         result=function(*args)
         logger.debug("dsadadadad{} function={}, args={}".format(result,function, args))
