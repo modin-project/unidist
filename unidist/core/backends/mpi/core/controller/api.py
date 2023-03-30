@@ -99,15 +99,22 @@ queueLock = threading.Lock()
 workQueue = queue.Queue(0)
 threads = []
 comm = MPI.COMM_WORLD
+queue_process_time_unblocked = 0
+sleep_time = 0
+queue_process_time_blocked =0 
 
 def process_data(threadName, q):
     global workQueue
+    global queue_process_time_unblocked,sleep_time,queue_process_time_blocked
     backoff = Backoff()
+    
+    
     while not exitFlag:
         # queueLock.acquire()
         
         # print("queue size is {} , time ={}".format(workQueue.qsize(),datetime.fromtimestamp(time.time())))
         if not workQueue.empty():
+            start = time.time()
             
             future, data = q.get()
             backoff.reset()
@@ -116,10 +123,21 @@ def process_data(threadName, q):
             result = function(*args)
             if future:
                 future.set_result(result)
+                end = time.time()
+                queue_process_time_blocked += start-end
+                
+            else:
+                future.set_result(result)
+                end = time.time()
+                queue_process_time_unblocked += start-end
+
         else:
+            start = time.time()
             # queueLock.release()
             backoff.sleep()
-    print("exited")
+            end = time.time()
+            sleep_time += start-end
+    print("exited queue_process_time_unblocked={} queue_process_time_blocked={} sleep_time={}".format(queue_process_time_unblocked,queue_process_time_blocked,sleep_time))
 
 
 
@@ -262,6 +280,9 @@ def shutdown():
     exitFlag = 1
     for t in threads:
         t.join()
+        print("=========================###############(((((((((((())))))))))))")
+        print("exited queue_process_time_unblocked={} queue_process_time_blocked={} sleep_time={}".format(queue_process_time_unblocked,queue_process_time_blocked,sleep_time))
+        print("=========================###############(((((((((((())))))))))))")
     mpi_state = communication.MPIState.get_instance()
     # Send shutdown commands to all ranks
     for rank_id in range(communication.MPIRank.MONITOR, mpi_state.world_size):
