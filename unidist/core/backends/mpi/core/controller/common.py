@@ -267,10 +267,10 @@ def push_data(dest_rank, value):
 queueLock = threading.Lock()
 def queue_or_execute(comm, workQueue, function, args, blocking=False):
     if 0 == comm.Get_rank():
-        queueLock.acquire()
+        
         future = futures.Future()
         workQueue.put([future, [function, args]])
-        queueLock.release()
+    
         if blocking:
             return future.result()
     else:

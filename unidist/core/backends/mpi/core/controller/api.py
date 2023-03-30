@@ -58,6 +58,30 @@ is_mpi_initialized = False
 
 exitFlag = 0
 
+BACKOFF = 0.001
+
+
+def _getopt_backoff(options):
+    backoff = options.get('backoff')
+    if backoff is None:
+        backoff = BACKOFF
+    return float(backoff)
+
+
+class Backoff:
+
+    def __init__(self, seconds=BACKOFF):
+        self.tval = 0.0
+        self.tmax = max(float(seconds), 0.0)
+        self.tmin = self.tmax / (1 << 10)
+
+    def reset(self):
+        self.tval = 0.0
+
+    def sleep(self):
+        time.sleep(self.tval)
+        self.tval = min(self.tmax, max(self.tmin, self.tval * 2))
+
 
 class myThread(threading.Thread):
     def __init__(self, threadID, name, q):
@@ -78,23 +102,23 @@ comm = MPI.COMM_WORLD
 
 def process_data(threadName, q):
     global workQueue
-    
+    backoff = Backoff()
     while not exitFlag:
-        queueLock.acquire()
+        # queueLock.acquire()
         
         # print("queue size is {} , time ={}".format(workQueue.qsize(),datetime.fromtimestamp(time.time())))
         if not workQueue.empty():
             
             future, data = q.get()
-            queueLock.release()
+            backoff.reset()
+            # queueLock.release()
             function, args = data
-            print(function.__name__)
             result = function(*args)
             if future:
                 future.set_result(result)
         else:
-            queueLock.release()
-        # time.sleep(.1)
+            # queueLock.release()
+            backoff.sleep()
     print("exited")
 
 
@@ -471,13 +495,12 @@ def submit(task, *args, num_returns=1, **kwargs):
     unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
     unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
 
-    print(workQueue.qsize())
     
     #workQueue.put([None, [push_data, [dest_rank, unwrapped_args]]])
     
     queue_or_execute(comm, workQueue, push_data, [dest_rank, unwrapped_args] )
 
-    print(unwrapped_args, time.time())
+
     queue_or_execute(comm, workQueue, push_data, [dest_rank, unwrapped_kwargs] )
     #workQueue.put([None, [push_data, [dest_rank, unwrapped_kwargs]]])
 
