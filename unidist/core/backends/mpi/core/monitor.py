@@ -66,6 +66,12 @@ def monitor_loop():
         # Proceed the request
         if operation_type == common.Operation.TASK_DONE:
             task_counter.increment()
+            communication.mpi_isend_object(
+                mpi_state.comm,
+                source_rank,
+                communication.MPIRank.ROOT,
+                1
+            )
         elif operation_type == common.Operation.GET_TASK_COUNT:
             # We use a blocking send here because the receiver is waiting for the result.
             communication.mpi_send_object(

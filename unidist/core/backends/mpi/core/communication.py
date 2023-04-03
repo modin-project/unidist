@@ -181,7 +181,7 @@ def mpi_send_object(comm, data, dest_rank):
     comm.send(data, dest=dest_rank)
 
 
-def mpi_isend_object(comm, data, dest_rank):
+def mpi_isend_object(comm, data, dest_rank, tag=0):
     """
     Send Python object to another MPI rank in a non-blocking way.
 
@@ -199,7 +199,7 @@ def mpi_isend_object(comm, data, dest_rank):
     object
         A handler to MPI_Isend communication result.
     """
-    return comm.isend(data, dest=dest_rank)
+    return comm.isend(data, dest=dest_rank, tag=tag)
 
 
 def mpi_send_buffer(comm, buffer_size, buffer, dest_rank):

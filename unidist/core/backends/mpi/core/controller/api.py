@@ -8,7 +8,9 @@ import sys
 import atexit
 import signal
 import asyncio
+import time
 from collections import defaultdict
+import threading
 
 try:
     import mpi4py
@@ -49,6 +51,54 @@ logger = common.get_logger("api", "api.log")
 topology = dict()
 # The global variable is responsible for if MPI backend has already been initialized
 is_mpi_initialized = False
+threads=[]
+BACKOFF = 0.001
+exitFlag = False
+def _getopt_backoff(options):
+    backoff = options.get("backoff")
+    if backoff is None:
+        backoff = BACKOFF
+    return float(backoff)
+
+
+class Backoff:
+    def __init__(self, seconds=BACKOFF):
+        self.tval = 0.0
+        self.tmax = max(float(seconds), 0.0)
+        self.tmin = self.tmax / (1 << 10)
+
+    def reset(self):
+        self.tval = 0.0
+
+    def sleep(self):
+        time.sleep(self.tval)
+        self.tval = min(self.tmax, max(self.tmin, self.tval * 2))
+
+
+class myThread(threading.Thread):
+    def __init__(self, threadID, name, comm):
+        threading.Thread.__init__(self, daemon=True)
+        self.threadID = threadID
+        self.name = name
+        self.comm = comm 
+
+    def run(self):
+        print("Starting " + self.name)
+        poll_tasks_completed(self.name, self.comm)
+        print("Exiting " + self.name)
+
+
+def poll_tasks_completed(threadName, comm):
+    global task_per_worker,exitFlag
+    backoff = Backoff()
+    while not exitFlag:
+        if comm.iprobe(source=communication.MPIRank.MONITOR, tag=1):
+            task_completed = comm.recv(source=communication.MPIRank.MONITOR, tag=1)
+            task_per_worker[task_completed] -= 1
+            backoff.reset()
+        else: 
+            backoff.sleep()
+
 
 
 def init():
@@ -122,6 +172,13 @@ def init():
     # path for spawned MPI processes to be merged with the parent communicator
     if parent_comm != MPI.COMM_NULL:
         comm = parent_comm.Merge(high=True)
+    global task_per_worker
+    if rank == 0 and not threads and parent_comm == MPI.COMM_NULL:        
+        thread = myThread(1, "tName",comm)
+        thread.start()
+        threads.append(thread)
+        world_size = comm.Get_size()
+        task_per_worker =  {k: 0 for k in range(2,world_size)}
 
     mpi_state = communication.MPIState.get_instance(
         comm, comm.Get_rank(), comm.Get_size()
@@ -179,7 +236,11 @@ def shutdown():
     -----
     Sends cancelation operation to all workers and monitor processes.
     """
+    global exitFlag,threads
+    exitFlag = True
     mpi_state = communication.MPIState.get_instance()
+    for thread in threads:
+        thread.join()
     # Send shutdown commands to all ranks
     for rank_id in range(communication.MPIRank.MONITOR, mpi_state.world_size):
         # We use a blocking send here because we have to wait for
@@ -366,9 +427,11 @@ def submit(task, *args, num_returns=1, **kwargs):
     # Initiate reference count based cleanup
     # if all the tasks were completed
     garbage_collector.regular_cleanup()
-
-    dest_rank = RoundRobin.get_instance().schedule_rank()
-
+    global task_per_worker
+    # dest_rank = RoundRobin.get_instance().schedule_rank()
+    worker_with_min_tasks = min(task_per_worker, key=task_per_worker.get)
+    task_per_worker[worker_with_min_tasks] += 1
+    dest_rank = worker_with_min_tasks
     output_ids = object_store.generate_output_data_id(
         dest_rank, garbage_collector, num_returns
     )
