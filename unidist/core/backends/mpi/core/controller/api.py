@@ -26,7 +26,7 @@ from unidist.core.backends.mpi.core.controller.garbage_collector import (
 from unidist.core.backends.mpi.core.controller.common import (
     request_worker_data,
     push_data,
-    RoundRobin,
+    Scheduler,
 )
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
@@ -89,12 +89,13 @@ class myThread(threading.Thread):
 
 
 def poll_tasks_completed(threadName, comm):
-    global task_per_worker,exitFlag
+    global exitFlag
+    scheduler = Scheduler.get_instance()
     backoff = Backoff()
     while not exitFlag:
         if comm.iprobe(source=communication.MPIRank.MONITOR, tag=1):
-            task_completed = comm.recv(source=communication.MPIRank.MONITOR, tag=1)
-            task_per_worker[task_completed] -= 1
+            task_completed_rank = comm.recv(source=communication.MPIRank.MONITOR, tag=1)
+            scheduler.decrement_tasks_on_worker(task_completed_rank)
             backoff.reset()
         else: 
             backoff.sleep()
@@ -172,17 +173,17 @@ def init():
     # path for spawned MPI processes to be merged with the parent communicator
     if parent_comm != MPI.COMM_NULL:
         comm = parent_comm.Merge(high=True)
-    global task_per_worker
+    
+        
+
+    mpi_state = communication.MPIState.get_instance(
+        comm, comm.Get_rank(), comm.Get_size()
+    )
     if rank == 0 and not threads and parent_comm == MPI.COMM_NULL:        
         thread = myThread(1, "tName",comm)
         thread.start()
         threads.append(thread)
         world_size = comm.Get_size()
-        task_per_worker =  {k: 0 for k in range(2,world_size)}
-
-    mpi_state = communication.MPIState.get_instance(
-        comm, comm.Get_rank(), comm.Get_size()
-    )
 
     global topology
     if not topology:
@@ -427,11 +428,10 @@ def submit(task, *args, num_returns=1, **kwargs):
     # Initiate reference count based cleanup
     # if all the tasks were completed
     garbage_collector.regular_cleanup()
-    global task_per_worker
-    # dest_rank = RoundRobin.get_instance().schedule_rank()
-    worker_with_min_tasks = min(task_per_worker, key=task_per_worker.get)
-    task_per_worker[worker_with_min_tasks] += 1
-    dest_rank = worker_with_min_tasks
+    
+    scheduler = Scheduler.get_instance()
+    dest_rank = scheduler.schedule_rank()
+    scheduler.increment_tasks_on_worker(dest_rank)
     output_ids = object_store.generate_output_data_id(
         dest_rank, garbage_collector, num_returns
     )
