@@ -51,9 +51,11 @@ logger = common.get_logger("api", "api.log")
 topology = dict()
 # The global variable is responsible for if MPI backend has already been initialized
 is_mpi_initialized = False
-threads=[]
+threads = []
 BACKOFF = 0.001
 exitFlag = False
+
+
 def _getopt_backoff(options):
     backoff = options.get("backoff")
     if backoff is None:
@@ -80,7 +82,7 @@ class myThread(threading.Thread):
         threading.Thread.__init__(self, daemon=True)
         self.threadID = threadID
         self.name = name
-        self.comm = comm 
+        self.comm = comm
 
     def run(self):
         print("Starting " + self.name)
@@ -97,9 +99,8 @@ def poll_tasks_completed(threadName, comm):
             task_completed_rank = comm.recv(source=communication.MPIRank.MONITOR, tag=1)
             scheduler.decrement_tasks_on_worker(task_completed_rank)
             backoff.reset()
-        else: 
+        else:
             backoff.sleep()
-
 
 
 def init():
@@ -173,17 +174,14 @@ def init():
     # path for spawned MPI processes to be merged with the parent communicator
     if parent_comm != MPI.COMM_NULL:
         comm = parent_comm.Merge(high=True)
-    
-        
 
     mpi_state = communication.MPIState.get_instance(
         comm, comm.Get_rank(), comm.Get_size()
     )
-    if rank == 0 and not threads and parent_comm == MPI.COMM_NULL:        
-        thread = myThread(1, "tName",comm)
+    if rank == 0 and not threads and parent_comm == MPI.COMM_NULL:
+        thread = myThread(1, "tName", comm)
         thread.start()
         threads.append(thread)
-        world_size = comm.Get_size()
 
     global topology
     if not topology:
@@ -237,7 +235,7 @@ def shutdown():
     -----
     Sends cancelation operation to all workers and monitor processes.
     """
-    global exitFlag,threads
+    global exitFlag, threads
     exitFlag = True
     mpi_state = communication.MPIState.get_instance()
     for thread in threads:
@@ -428,7 +426,7 @@ def submit(task, *args, num_returns=1, **kwargs):
     # Initiate reference count based cleanup
     # if all the tasks were completed
     garbage_collector.regular_cleanup()
-    
+
     scheduler = Scheduler.get_instance()
     dest_rank = scheduler.schedule_rank()
     scheduler.increment_tasks_on_worker(dest_rank)

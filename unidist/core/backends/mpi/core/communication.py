@@ -193,6 +193,9 @@ def mpi_isend_object(comm, data, dest_rank, tag=0):
         Data to send.
     dest_rank : int
         Target MPI process to transfer data.
+    tag : int
+        To recive only data with a label
+        Used when background thread polls for data with a specific label
 
     Returns
     -------

@@ -4,8 +4,6 @@
 
 """Common functionality related to `controller`."""
 
-import itertools
-
 from unidist.core.backends.common.data_id import is_data_id
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
@@ -25,21 +23,22 @@ class Scheduler:
 
     def __init__(self):
         self.reserved_ranks = []
-        self.task_per_worker =  {k: 0 for k in range(initial_worker_number,communication.MPIState.get_instance().world_size)}
-        l= range(
-                    initial_worker_number,
-                    communication.MPIState.get_instance().world_size,
-                )
-        
+        self.task_per_worker = {
+            k: 0
+            for k in range(
+                initial_worker_number, communication.MPIState.get_instance().world_size
+            )
+        }
+
         self.rank_to_schedule = [
-                rank
-                for rank in range(
-                    initial_worker_number,
-                    communication.MPIState.get_instance().world_size,
-                )
-                # check if a rank to schedule is not equal to the rank
-                # of the current process to not get into recursive scheduling
-                if rank != communication.MPIState.get_instance().rank
+            rank
+            for rank in range(
+                initial_worker_number,
+                communication.MPIState.get_instance().world_size,
+            )
+            # check if a rank to schedule is not equal to the rank
+            # of the current process to not get into recursive scheduling
+            if rank != communication.MPIState.get_instance().rank
         ]
         logger.debug(
             f"Scheduler init for {communication.MPIState.get_instance().rank} rank"
@@ -67,8 +66,10 @@ class Scheduler:
         int
             A rank number.
         """
-        next_rank = min(self.rank_to_schedule, key=self.task_per_worker.get,default=None)     
-        
+        next_rank = min(
+            self.rank_to_schedule, key=self.task_per_worker.get, default=None
+        )
+
         if next_rank is None:
             raise Exception("All ranks blocked")
 
@@ -87,7 +88,7 @@ class Scheduler:
             A rank number.
         """
         if rank in self.rank_to_schedule:
-            self.rank_to_schedule.remove(rank)        
+            self.rank_to_schedule.remove(rank)
         self.reserved_ranks.append(rank)
         logger.debug(
             f"Scheduler reserve rank {rank} for actor "
@@ -105,14 +106,14 @@ class Scheduler:
         rank : int
             A rank number.
         """
-        
+
         self.reserved_ranks.remove(rank)
         self.rank_to_schedule.append(rank)
         logger.debug(
             f"Scheduler release rank {rank} reserved for actor "
             + f"on worker with rank {communication.MPIState.get_instance().rank}"
         )
-    
+
     def increment_tasks_on_worker(self, rank):
         """
         Increments the count of tasks submitted to a worker.
@@ -125,7 +126,7 @@ class Scheduler:
             A rank number.
         """
         self.task_per_worker[rank] += 1
-    
+
     def decrement_tasks_on_worker(self, rank):
         """
         Decrement the count of tasks submitted to a worker.
@@ -137,7 +138,7 @@ class Scheduler:
         rank : int
             A rank number.
         """
-        self.task_per_worker[rank] -= 1  
+        self.task_per_worker[rank] -= 1
 
 
 def request_worker_data(data_id):
