@@ -41,7 +41,6 @@ class Scheduler:
                 # of the current process to not get into recursive scheduling
                 if rank != communication.MPIState.get_instance().rank
         ]
-        print(self.rank_to_schedule)
         logger.debug(
             f"Scheduler init for {communication.MPIState.get_instance().rank} rank"
         )
@@ -68,7 +67,6 @@ class Scheduler:
         int
             A rank number.
         """
-
         next_rank = min(self.rank_to_schedule, key=self.task_per_worker.get,default=None)     
         
         if next_rank is None:
@@ -88,11 +86,9 @@ class Scheduler:
         rank : int
             A rank number.
         """
-        
-        self.rank_to_schedule.remove(rank)        
+        if rank in self.rank_to_schedule:
+            self.rank_to_schedule.remove(rank)        
         self.reserved_ranks.append(rank)
-        print(self.reserved_ranks)
-        print("======")
         logger.debug(
             f"Scheduler reserve rank {rank} for actor "
             + f"on worker with rank {communication.MPIState.get_instance().rank}"
@@ -109,7 +105,7 @@ class Scheduler:
         rank : int
             A rank number.
         """
-        print("======")
+        
         self.reserved_ranks.remove(rank)
         self.rank_to_schedule.append(rank)
         logger.debug(
