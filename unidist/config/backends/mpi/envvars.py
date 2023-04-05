@@ -25,3 +25,10 @@ class MpiPickleThreshold(EnvironmentVariable, type=int):
 
     default = 1024**2 // 4  # 0.25 MiB
     varname = "UNIDIST_MPI_PICKLE_THRESHOLD"
+
+
+class BackOff(EnvironmentVariable, type=int):
+    """Minimum buffer size for serialization with pickle 5 protocol"""
+
+    default = 0.001
+    varname = "BackOff"
