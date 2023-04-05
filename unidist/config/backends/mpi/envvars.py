@@ -28,7 +28,7 @@ class MpiPickleThreshold(EnvironmentVariable, type=int):
 
 
 class BackOff(EnvironmentVariable, type=int):
-    """Minimum buffer size for serialization with pickle 5 protocol"""
+    """Backoff value for sleeping background threads when thread idle"""
 
     default = 0.001
     varname = "BackOff"

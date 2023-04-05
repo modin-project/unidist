@@ -194,8 +194,8 @@ def mpi_isend_object(comm, data, dest_rank, tag=0):
     dest_rank : int
         Target MPI process to transfer data.
     tag : int
-        To recive only data with a label
-        Used when background thread polls for data with a specific label
+        To recieve only data with a label.
+        Used when background thread polls for data with a specific label.
 
     Returns
     -------
