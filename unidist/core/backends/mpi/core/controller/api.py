@@ -89,7 +89,8 @@ class myThread(threading.Thread):
         self.q = q
 
     def run(self):
-        print("Starting " + self.name)
+        print("Starting. " + self.name)
+        
         process_data(self.name, self.q)
         print("Exiting " + self.name)
 
@@ -107,6 +108,8 @@ queue_process_time_blocked = 0
 def process_data(threadName, q):
     global workQueue
     global queue_process_time_unblocked, sleep_time, queue_process_time_blocked
+   
+ 
     backoff = Backoff()
 
     while not exitFlag:
@@ -114,13 +117,19 @@ def process_data(threadName, q):
 
         # print("queue size is {} , time ={}".format(workQueue.qsize(),datetime.fromtimestamp(time.time())))
         if not workQueue.empty():
+            
             start = time.time()
 
             future, data = q.get()
+            
+            
+            
             backoff.reset()
             # queueLock.release()
             function, args = data
             result = function(*args)
+            
+            
             if future:
                 future.set_result(result)
                 end = time.time()
@@ -332,11 +341,10 @@ def put(data):
 
     global workQueue
 
-    data_id = queue_or_execute(
-        comm, workQueue, object_store.generate_data_id, [garbage_collector], True
-    )
-
-    queue_or_execute(comm, workQueue, object_store.put, [data_id, data])
+    
+    data_id = object_store.generate_data_id(garbage_collector)
+    object_store.put(data_id, data)
+    
 
     logger.debug("PUT {} id".format(data_id._id))
 
@@ -363,9 +371,8 @@ def get(data_ids):
         if object_store.contains(data_id):
             value = object_store.get(data_id)
         else:
-            value = queue_or_execute(
-                comm, workQueue, request_worker_data, [data_id], True
-            )
+            value = request_worker_data(data_id)
+            
 
         if isinstance(value, Exception):
             raise value
@@ -424,6 +431,7 @@ def wait(data_ids, num_returns=1):
             operation_type,
             operation_data,
             owner_rank,
+            tag=3,
         )
 
         logger.debug("WAIT {} id from {} rank".format(data_id._id, owner_rank))
@@ -476,17 +484,12 @@ def submit(task, *args, num_returns=1, **kwargs):
     """
     # Initiate reference count based cleanup
     # if all the tasks were completed
+    global workQueue
     garbage_collector.regular_cleanup()
-
     dest_rank = RoundRobin.get_instance().schedule_rank()
 
-    output_ids = queue_or_execute(
-        comm,
-        workQueue,
-        object_store.generate_output_data_id,
-        [dest_rank, garbage_collector, num_returns],
-        True,
-    )
+    
+    output_ids = object_store.generate_output_data_id(dest_rank, garbage_collector, num_returns)
 
     logger.debug("REMOTE OPERATION")
     logger.debug(
@@ -502,10 +505,10 @@ def submit(task, *args, num_returns=1, **kwargs):
 
     unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
     unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
+    
+    queue_or_execute(comm, workQueue, push_data, [dest_rank, unwrapped_args, 1])
 
-    queue_or_execute(comm, workQueue, push_data, [dest_rank, unwrapped_args])
-
-    queue_or_execute(comm, workQueue, push_data, [dest_rank, unwrapped_kwargs])
+    queue_or_execute(comm, workQueue, push_data, [dest_rank, unwrapped_kwargs, 1])
 
     operation_type = common.Operation.EXECUTE
     operation_data = {
@@ -522,6 +525,7 @@ def submit(task, *args, num_returns=1, **kwargs):
             operation_type,
             operation_data,
             dest_rank,
+            tag=1
         )
         async_operations.extend(h_list)
 

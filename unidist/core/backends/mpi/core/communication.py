@@ -159,7 +159,7 @@ def get_topology():
 # ---------------------------- #
 
 
-def mpi_send_object(comm, data, dest_rank):
+def mpi_send_object(comm, data, dest_rank, tag=2):
     """
     Send Python object to another MPI rank in a blocking way.
 
@@ -178,10 +178,10 @@ def mpi_send_object(comm, data, dest_rank):
     which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
     Otherwise, use non-blocking ``mpi_isend_object``.
     """
-    comm.send(data, dest=dest_rank)
+    comm.send(data, dest=dest_rank, tag=tag)
 
 
-def mpi_isend_object(comm, data, dest_rank):
+def mpi_isend_object(comm, data, dest_rank, tag=2):
     """
     Send Python object to another MPI rank in a non-blocking way.
 
@@ -199,10 +199,10 @@ def mpi_isend_object(comm, data, dest_rank):
     object
         A handler to MPI_Isend communication result.
     """
-    return comm.isend(data, dest=dest_rank)
+    return comm.isend(data, dest=dest_rank, tag=tag)
 
 
-def mpi_send_buffer(comm, buffer_size, buffer, dest_rank):
+def mpi_send_buffer(comm, buffer_size, buffer, dest_rank, tag=2):
     """
     Send buffer object to another MPI rank in a blocking way.
 
@@ -223,11 +223,11 @@ def mpi_send_buffer(comm, buffer_size, buffer, dest_rank):
     which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
     Otherwise, use non-blocking ``mpi_isend_buffer``.
     """
-    comm.send(buffer_size, dest=dest_rank)
-    comm.Send([buffer, MPI.CHAR], dest=dest_rank)
+    comm.send(buffer_size, dest=dest_rank, tag=tag)
+    comm.Send([buffer, MPI.CHAR], dest=dest_rank, tag=tag)
 
 
-def mpi_recv_buffer(comm, source_rank):
+def mpi_recv_buffer(comm, source_rank, tag=2):
     """
     Receive data buffer.
 
@@ -243,13 +243,13 @@ def mpi_recv_buffer(comm, source_rank):
     object
         Array buffer or serialized object.
     """
-    buf_size = comm.recv(source=source_rank)
+    buf_size = comm.recv(source=source_rank, tag = tag)
     s_buffer = bytearray(buf_size)
-    comm.Recv([s_buffer, MPI.CHAR], source=source_rank)
+    comm.Recv([s_buffer, MPI.CHAR], source=source_rank, tag = tag)
     return s_buffer
 
 
-def mpi_isend_buffer(comm, buffer_size, buffer, dest_rank):
+def mpi_isend_buffer(comm, buffer_size, buffer, dest_rank, tag=2):
     """
     Send buffer object to another MPI rank in a non-blocking way.
 
@@ -270,14 +270,14 @@ def mpi_isend_buffer(comm, buffer_size, buffer, dest_rank):
         A handler to MPI_Isend communication result.
     """
     requests = []
-    h1 = comm.isend(buffer_size, dest=dest_rank)
+    h1 = comm.isend(buffer_size, dest=dest_rank, tag=tag)
     requests.append((h1, None))
-    h2 = comm.Isend([buffer, MPI.CHAR], dest=dest_rank)
+    h2 = comm.Isend([buffer, MPI.CHAR], dest=dest_rank, tag=tag)
     requests.append((h2, buffer))
     return requests
 
 
-def mpi_busy_wait_recv(comm, source_rank):
+def mpi_busy_wait_recv(comm, source_rank, tag=2):
     """
     Wait for receive operation result in a custom busy wait loop.
 
@@ -288,7 +288,7 @@ def mpi_busy_wait_recv(comm, source_rank):
     source_rank : int
         Source MPI process to receive data.
     """
-    req_handle = comm.irecv(source=source_rank)
+    req_handle = comm.irecv(source=source_rank, tag=tag)
     while True:
         status, data = req_handle.test()
         if status:
@@ -297,7 +297,7 @@ def mpi_busy_wait_recv(comm, source_rank):
             time.sleep(sleep_time)
 
 
-def recv_operation_type(comm):
+def recv_operation_type(comm, tag=3):
     """
     Worker receive operation type interface.
 
@@ -316,7 +316,7 @@ def recv_operation_type(comm):
         Source rank.
     """
     status = MPI.Status()
-    req_handle = comm.irecv(source=MPI.ANY_SOURCE)
+    req_handle = comm.irecv(source=MPI.ANY_SOURCE, tag=tag)
     while True:
         is_ready, op_type = req_handle.test(status=status)
         if is_ready:
@@ -331,7 +331,7 @@ def recv_operation_type(comm):
 # --------------------------------- #
 
 
-def _send_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank):
+def _send_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank, tag=2):
     """
     Send already serialized complex data.
 
@@ -356,11 +356,11 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank):
         "raw_buffers_len": [len(sbuf) for sbuf in raw_buffers],
     }
 
-    comm.send(info, dest=dest_rank)
+    comm.send(info, dest=dest_rank, tag=tag)
     with pkl5._bigmpi as bigmpi:
-        comm.Send(bigmpi(s_data), dest=dest_rank)
+        comm.Send(bigmpi(s_data), dest=dest_rank, tag=tag)
         for sbuf in raw_buffers:
-            comm.Send(bigmpi(sbuf), dest=dest_rank)
+            comm.Send(bigmpi(sbuf), dest=dest_rank, tag=tag)
 
 
 def send_complex_data(comm, data, dest_rank):
@@ -405,7 +405,7 @@ def send_complex_data(comm, data, dest_rank):
     return s_data, raw_buffers, buffer_count
 
 
-def _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank):
+def _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank, tag=2):
     """
     Send serialized complex data.
 
@@ -438,20 +438,20 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank)
         "raw_buffers_len": [len(sbuf) for sbuf in raw_buffers],
     }
 
-    h1 = comm.isend(info, dest=dest_rank)
+    h1 = comm.isend(info, dest=dest_rank, tag=tag)
     handlers.append((h1, None))
 
     with pkl5._bigmpi as bigmpi:
-        h2 = comm.Isend(bigmpi(s_data), dest=dest_rank)
+        h2 = comm.Isend(bigmpi(s_data), dest=dest_rank, tag=tag)
         handlers.append((h2, s_data))
         for sbuf in raw_buffers:
-            h_sbuf = comm.Isend(bigmpi(sbuf), dest=dest_rank)
+            h_sbuf = comm.Isend(bigmpi(sbuf), dest=dest_rank, tag=tag)
             handlers.append((h_sbuf, sbuf))
 
     return handlers
 
 
-def isend_complex_data(comm, data, dest_rank):
+def isend_complex_data(comm, data, dest_rank, tag):
     """
     Send the data that consists of different user provided complex types, lambdas and buffers in a non-blocking way.
 
@@ -488,13 +488,13 @@ def isend_complex_data(comm, data, dest_rank):
 
     # Send message pack bytestring
     handlers.extend(
-        _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank)
+        _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank, tag)
     )
 
     return handlers, s_data, raw_buffers, buffer_count
 
 
-def recv_complex_data(comm, source_rank):
+def recv_complex_data(comm, source_rank, tag=2):
     """
     Receive the data that may consist of different user provided complex types, lambdas and buffers.
 
@@ -516,15 +516,17 @@ def recv_complex_data(comm, source_rank):
     # First MPI call uses busy wait loop to remove possible contention
     # in a long running data receive operations.
 
-    info = comm.recv(source=source_rank)
-
-    msgpack_buffer = bytearray(info["s_data_len"])
+    info = comm.recv(source=source_rank, tag=tag)
+    try:
+        msgpack_buffer = bytearray(info["s_data_len"])
+    except:
+        raise ValueError("{}  tag= {}".format(info,tag))
     buffer_count = info["buffer_count"]
     raw_buffers = list(map(bytearray, info["raw_buffers_len"]))
     with pkl5._bigmpi as bigmpi:
-        comm.Recv(bigmpi(msgpack_buffer), source=source_rank)
+        comm.Recv(bigmpi(msgpack_buffer), source=source_rank, tag=tag)
         for rbuf in raw_buffers:
-            comm.Recv(bigmpi(rbuf), source=source_rank)
+            comm.Recv(bigmpi(rbuf), source=source_rank, tag=tag)
 
     # Set the necessary metadata for unpacking
     deserializer = ComplexDataSerializer(raw_buffers, buffer_count)
@@ -561,12 +563,12 @@ def send_simple_operation(comm, operation_type, operation_data, dest_rank):
     * Serialization of the data to be sent takes place just using ``pickle.dump`` in this case.
     """
     # Send operation type
-    mpi_send_object(comm, operation_type, dest_rank)
+    mpi_send_object(comm, operation_type, dest_rank, tag=3)
     # Send the details of a communication request
     mpi_send_object(comm, operation_data, dest_rank)
 
 
-def isend_simple_operation(comm, operation_type, operation_data, dest_rank):
+def isend_simple_operation(comm, operation_type, operation_data, dest_rank , tag=2):
     """
     Send an operation type and standard Python data types in a non-blocking way.
 
@@ -592,15 +594,16 @@ def isend_simple_operation(comm, operation_type, operation_data, dest_rank):
     """
     # Send operation type
     handlers = []
-    h1 = mpi_isend_object(comm, operation_type, dest_rank)
+    h1 = mpi_isend_object(comm, operation_type, dest_rank, tag=3)
     handlers.append((h1, operation_type))
     # Send the details of a communication request
-    h2 = mpi_isend_object(comm, operation_data, dest_rank)
+    h2 = mpi_isend_object(comm, operation_data, dest_rank, tag=tag)
     handlers.append((h2, operation_data))
     return handlers
 
-
-def recv_simple_operation(comm, source_rank):
+def test():
+    print("hi")
+def recv_simple_operation(comm, source_rank, tag=2):
     """
     Receive an object of a standard Python data type.
 
@@ -620,11 +623,11 @@ def recv_simple_operation(comm, source_rank):
     -----
     De-serialization is a simple pickle.load in this case
     """
-    return comm.recv(source=source_rank)
+    return comm.recv(source=source_rank, tag= tag)
 
 
 def isend_complex_operation(
-    comm, operation_type, operation_data, dest_rank, is_serialized=False
+    comm, operation_type, operation_data, dest_rank, is_serialized=False, tag=2
 ):
     """
     Send operation and data that consists of different user provided complex types, lambdas and buffers.
@@ -659,7 +662,7 @@ def isend_complex_operation(
     """
     # Send operation type
     handlers = []
-    h1 = mpi_isend_object(comm, operation_type, dest_rank)
+    h1 = mpi_isend_object(comm, operation_type, dest_rank, tag=3)
     handlers.append((h1, None))
 
     # Send operation data
@@ -670,7 +673,7 @@ def isend_complex_operation(
         buffer_count = operation_data["buffer_count"]
 
         h2_list = _isend_complex_data_impl(
-            comm, s_data, raw_buffers, buffer_count, dest_rank
+            comm, s_data, raw_buffers, buffer_count, dest_rank, tag
         )
         handlers.extend(h2_list)
 
@@ -678,7 +681,7 @@ def isend_complex_operation(
     else:
         # Serialize and send the data
         h2_list, s_data, raw_buffers, buffer_count = isend_complex_data(
-            comm, operation_data, dest_rank
+            comm, operation_data, dest_rank, tag
         )
         handlers.extend(h2_list)
         return handlers, {
@@ -710,7 +713,7 @@ def isend_serialized_operation(comm, operation_type, operation_data, dest_rank):
     """
     handlers = []
     # Send operation type
-    h1 = mpi_isend_object(comm, operation_type, dest_rank)
+    h1 = mpi_isend_object(comm, operation_type, dest_rank, tag=3)
     handlers.append((h1, operation_type))
     # Send the details of a communication request
     h2_list = mpi_isend_buffer(comm, len(operation_data), operation_data, dest_rank)

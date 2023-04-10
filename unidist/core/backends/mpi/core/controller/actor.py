@@ -57,6 +57,7 @@ class ActorMethod:
             operation_type,
             operation_data,
             self._actor._owner_rank,
+            tag=3
         )
         async_operations.extend(h_list)
         return output_id
@@ -119,7 +120,7 @@ class Actor:
                 communication.MPIState.get_instance().comm,
                 operation_type,
                 operation_data,
-                self._owner_rank,
+                self._owner_rank
             )
             async_operations.extend(h_list)
 
