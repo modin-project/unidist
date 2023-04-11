@@ -57,9 +57,7 @@ is_mpi_initialized = False
 
 exit_flag = False
 
-BACKOFF = 0.1
-
-
+BACKOFF = 0.01
 
 
 class Backoff:
@@ -84,7 +82,7 @@ class myThread(threading.Thread):
         self.q = q
 
     def run(self):
-        print("Starting. " + self.name)        
+        print("Starting. " + self.name)
         process_data(self.name, self.q)
         print("Exiting " + self.name)
 
@@ -104,15 +102,13 @@ def process_data(threadName, q):
     backoff = Backoff()
     while not exit_flag:
         if not q.empty():
-            start = time.time()
             future, data = q.get()
             backoff.reset()
             function, args = data
             function(*args)
         else:
             backoff.sleep()
-        
-            
+
     print(
         "exited queue_process_time_unblocked={} queue_process_time_blocked={} sleep_time={}".format(
             queue_process_time_unblocked, queue_process_time_blocked, sleep_time
@@ -255,15 +251,16 @@ def shutdown():
     -----
     Sends cancelation operation to all workers and monitor processes.
     """
-    
-    
+
     mpi_state = communication.MPIState.get_instance()
-    
+
     # Send shutdown commands to all ranks
     for rank_id in range(communication.MPIRank.MONITOR, mpi_state.world_size):
         # We use a blocking send here because we have to wait for
         # completion of the communication, which is necessary for the pipeline to continue.
-        communication.mpi_send_object(mpi_state.comm, common.Operation.CANCEL, rank_id, tag=3)
+        communication.mpi_send_object(
+            mpi_state.comm, common.Operation.CANCEL, rank_id, tag=3
+        )
         logger.debug("Shutdown rank {}".format(rank_id))
     async_operations = AsyncOperations.get_instance()
     async_operations.finish()
@@ -310,10 +307,8 @@ def put(data):
 
     global work_queue
 
-    
     data_id = object_store.generate_data_id(garbage_collector)
     object_store.put(data_id, data)
-    
 
     logger.debug("PUT {} id".format(data_id._id))
 
@@ -341,7 +336,6 @@ def get(data_ids):
             value = object_store.get(data_id)
         else:
             value = request_worker_data(data_id)
-            
 
         if isinstance(value, Exception):
             raise value
@@ -400,7 +394,7 @@ def wait(data_ids, num_returns=1):
             operation_type,
             operation_data,
             owner_rank,
-            tag=3,
+            tag=2,
         )
 
         logger.debug("WAIT {} id from {} rank".format(data_id._id, owner_rank))
@@ -457,8 +451,9 @@ def submit(task, *args, num_returns=1, **kwargs):
     garbage_collector.regular_cleanup()
     dest_rank = RoundRobin.get_instance().schedule_rank()
 
-    
-    output_ids = object_store.generate_output_data_id(dest_rank, garbage_collector, num_returns)
+    output_ids = object_store.generate_output_data_id(
+        dest_rank, garbage_collector, num_returns
+    )
 
     logger.debug("REMOTE OPERATION")
     logger.debug(
@@ -474,7 +469,7 @@ def submit(task, *args, num_returns=1, **kwargs):
 
     unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
     unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
-    
+
     queue_or_execute(comm, work_queue, push_data, [dest_rank, unwrapped_args, 1])
 
     queue_or_execute(comm, work_queue, push_data, [dest_rank, unwrapped_kwargs, 1])
@@ -490,11 +485,7 @@ def submit(task, *args, num_returns=1, **kwargs):
     def send_operation_impl(comm, operation_type, operation_data, dest_rank):
         async_operations = AsyncOperations.get_instance()
         h_list, _ = communication.isend_complex_operation(
-            comm,
-            operation_type,
-            operation_data,
-            dest_rank,
-            tag=1
+            comm, operation_type, operation_data, dest_rank, tag=1
         )
         async_operations.extend(h_list)
 
@@ -521,8 +512,8 @@ def submit(task, *args, num_returns=1, **kwargs):
 def _termination_handler():
     # global exit_flag, threads
     # exit_flag = True
-   
+
     # for thread in threads:
     #     thread.join()
-    
+
     shutdown()

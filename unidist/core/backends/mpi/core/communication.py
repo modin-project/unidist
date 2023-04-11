@@ -243,9 +243,9 @@ def mpi_recv_buffer(comm, source_rank, tag=2):
     object
         Array buffer or serialized object.
     """
-    buf_size = comm.recv(source=source_rank, tag = tag)
+    buf_size = comm.recv(source=source_rank, tag=tag)
     s_buffer = bytearray(buf_size)
-    comm.Recv([s_buffer, MPI.CHAR], source=source_rank, tag = tag)
+    comm.Recv([s_buffer, MPI.CHAR], source=source_rank, tag=tag)
     return s_buffer
 
 
@@ -488,7 +488,9 @@ def isend_complex_data(comm, data, dest_rank, tag):
 
     # Send message pack bytestring
     handlers.extend(
-        _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank, tag)
+        _isend_complex_data_impl(
+            comm, s_data, raw_buffers, buffer_count, dest_rank, tag
+        )
     )
 
     return handlers, s_data, raw_buffers, buffer_count
@@ -515,19 +517,14 @@ def recv_complex_data(comm, source_rank, tag=2):
     # Recv main message pack buffer.
     # First MPI call uses busy wait loop to remove possible contention
     # in a long running data receive operations.
-
     info = comm.recv(source=source_rank, tag=tag)
-    try:
-        msgpack_buffer = bytearray(info["s_data_len"])
-    except:
-        raise ValueError("{}  tag= {}".format(info,tag))
+    msgpack_buffer = bytearray(info["s_data_len"])
     buffer_count = info["buffer_count"]
     raw_buffers = list(map(bytearray, info["raw_buffers_len"]))
     with pkl5._bigmpi as bigmpi:
         comm.Recv(bigmpi(msgpack_buffer), source=source_rank, tag=tag)
         for rbuf in raw_buffers:
             comm.Recv(bigmpi(rbuf), source=source_rank, tag=tag)
-
     # Set the necessary metadata for unpacking
     deserializer = ComplexDataSerializer(raw_buffers, buffer_count)
 
@@ -540,7 +537,7 @@ def recv_complex_data(comm, source_rank, tag=2):
 # ---------- #
 
 
-def send_simple_operation(comm, operation_type, operation_data, dest_rank):
+def send_simple_operation(comm, operation_type, operation_data, dest_rank, tag=2):
     """
     Send an operation type and standard Python data types in a blocking way.
 
@@ -568,7 +565,7 @@ def send_simple_operation(comm, operation_type, operation_data, dest_rank):
     mpi_send_object(comm, operation_data, dest_rank)
 
 
-def isend_simple_operation(comm, operation_type, operation_data, dest_rank , tag=2):
+def isend_simple_operation(comm, operation_type, operation_data, dest_rank, tag=2):
     """
     Send an operation type and standard Python data types in a non-blocking way.
 
@@ -601,8 +598,11 @@ def isend_simple_operation(comm, operation_type, operation_data, dest_rank , tag
     handlers.append((h2, operation_data))
     return handlers
 
+
 def test():
     print("hi")
+
+
 def recv_simple_operation(comm, source_rank, tag=2):
     """
     Receive an object of a standard Python data type.
@@ -623,7 +623,7 @@ def recv_simple_operation(comm, source_rank, tag=2):
     -----
     De-serialization is a simple pickle.load in this case
     """
-    return comm.recv(source=source_rank, tag= tag)
+    return comm.recv(source=source_rank, tag=tag)
 
 
 def isend_complex_operation(
