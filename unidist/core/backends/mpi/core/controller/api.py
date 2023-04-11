@@ -55,16 +55,11 @@ topology = dict()
 is_mpi_initialized = False
 
 
-exitFlag = 0
+exit_flag = False
 
-BACKOFF = 0.001
+BACKOFF = 0.1
 
 
-def _getopt_backoff(options):
-    backoff = options.get("backoff")
-    if backoff is None:
-        backoff = BACKOFF
-    return float(backoff)
 
 
 class Backoff:
@@ -89,15 +84,14 @@ class myThread(threading.Thread):
         self.q = q
 
     def run(self):
-        print("Starting. " + self.name)
-        
+        print("Starting. " + self.name)        
         process_data(self.name, self.q)
         print("Exiting " + self.name)
 
 
 threadList = ["Thread-1"]
 queueLock = threading.Lock()
-workQueue = queue.Queue(0)
+work_queue = queue.Queue(0)
 threads = []
 comm = MPI.COMM_WORLD
 queue_process_time_unblocked = 0
@@ -106,45 +100,19 @@ queue_process_time_blocked = 0
 
 
 def process_data(threadName, q):
-    global workQueue
-    global queue_process_time_unblocked, sleep_time, queue_process_time_blocked
-   
- 
+    global exit_flag
     backoff = Backoff()
-
-    while not exitFlag:
-        # queueLock.acquire()
-
-        # print("queue size is {} , time ={}".format(workQueue.qsize(),datetime.fromtimestamp(time.time())))
-        if not workQueue.empty():
-            
+    while not exit_flag:
+        if not q.empty():
             start = time.time()
-
             future, data = q.get()
-            
-            
-            
             backoff.reset()
-            # queueLock.release()
             function, args = data
-            result = function(*args)
-            
-            
-            if future:
-                future.set_result(result)
-                end = time.time()
-                queue_process_time_blocked += start - end
-
-            else:
-                end = time.time()
-                queue_process_time_unblocked += start - end
-
+            function(*args)
         else:
-            start = time.time()
-            # queueLock.release()
             backoff.sleep()
-            end = time.time()
-            sleep_time += start - end
+        
+            
     print(
         "exited queue_process_time_unblocked={} queue_process_time_blocked={} sleep_time={}".format(
             queue_process_time_unblocked, queue_process_time_blocked, sleep_time
@@ -179,12 +147,6 @@ def init():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     parent_comm = MPI.Comm.Get_parent()
-    if rank == 0 and not threads and parent_comm == MPI.COMM_NULL:
-        for tName in threadList:
-            thread = myThread(1, tName, workQueue)
-            thread.deamon = True
-            thread.start()
-            threads.append(thread)
 
     # path to dynamically spawn MPI processes
     if rank == 0 and parent_comm == MPI.COMM_NULL:
@@ -234,6 +196,12 @@ def init():
     mpi_state = communication.MPIState.get_instance(
         comm, comm.Get_rank(), comm.Get_size()
     )
+    global threads
+    if rank == 0 and not threads and parent_comm == MPI.COMM_NULL:
+        for tName in threadList:
+            thread = myThread(1, tName, work_queue)
+            thread.start()
+            threads.append(thread)
 
     global topology
     if not topology:
@@ -287,14 +255,15 @@ def shutdown():
     -----
     Sends cancelation operation to all workers and monitor processes.
     """
-    global exitFlag
-    exitFlag = 1
+    
+    
     mpi_state = communication.MPIState.get_instance()
+    
     # Send shutdown commands to all ranks
     for rank_id in range(communication.MPIRank.MONITOR, mpi_state.world_size):
         # We use a blocking send here because we have to wait for
         # completion of the communication, which is necessary for the pipeline to continue.
-        communication.mpi_send_object(mpi_state.comm, common.Operation.CANCEL, rank_id)
+        communication.mpi_send_object(mpi_state.comm, common.Operation.CANCEL, rank_id, tag=3)
         logger.debug("Shutdown rank {}".format(rank_id))
     async_operations = AsyncOperations.get_instance()
     async_operations.finish()
@@ -339,7 +308,7 @@ def put(data):
     """
     # data_id = object_store.generate_data_id(garbage_collector)
 
-    global workQueue
+    global work_queue
 
     
     data_id = object_store.generate_data_id(garbage_collector)
@@ -367,7 +336,7 @@ def get(data_ids):
     """
 
     def get_impl(data_id):
-        global getRequests, workQueue
+        global getRequests, work_queue
         if object_store.contains(data_id):
             value = object_store.get(data_id)
         else:
@@ -484,7 +453,7 @@ def submit(task, *args, num_returns=1, **kwargs):
     """
     # Initiate reference count based cleanup
     # if all the tasks were completed
-    global workQueue
+    global work_queue
     garbage_collector.regular_cleanup()
     dest_rank = RoundRobin.get_instance().schedule_rank()
 
@@ -506,9 +475,9 @@ def submit(task, *args, num_returns=1, **kwargs):
     unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
     unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
     
-    queue_or_execute(comm, workQueue, push_data, [dest_rank, unwrapped_args, 1])
+    queue_or_execute(comm, work_queue, push_data, [dest_rank, unwrapped_args, 1])
 
-    queue_or_execute(comm, workQueue, push_data, [dest_rank, unwrapped_kwargs, 1])
+    queue_or_execute(comm, work_queue, push_data, [dest_rank, unwrapped_kwargs, 1])
 
     operation_type = common.Operation.EXECUTE
     operation_data = {
@@ -533,7 +502,7 @@ def submit(task, *args, num_returns=1, **kwargs):
 
     queue_or_execute(
         comm,
-        workQueue,
+        work_queue,
         send_operation_impl,
         [comm1, operation_type, operation_data, dest_rank],
     )
@@ -550,4 +519,10 @@ def submit(task, *args, num_returns=1, **kwargs):
 
 
 def _termination_handler():
+    # global exit_flag, threads
+    # exit_flag = True
+   
+    # for thread in threads:
+    #     thread.join()
+    
     shutdown()

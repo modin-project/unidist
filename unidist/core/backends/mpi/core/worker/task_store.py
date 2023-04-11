@@ -266,6 +266,7 @@ class TaskStore:
                     communication.MPIState.get_instance().comm,
                     common.Operation.TASK_DONE,
                     communication.MPIRank.MONITOR,
+                    tag=3
                 )
 
             async_task = asyncio.create_task(execute())
@@ -328,6 +329,7 @@ class TaskStore:
                 communication.MPIState.get_instance().comm,
                 common.Operation.TASK_DONE,
                 communication.MPIRank.MONITOR,
+                tag=3
             )
 
     def process_task_request(self, request):

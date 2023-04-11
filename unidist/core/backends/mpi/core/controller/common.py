@@ -277,7 +277,7 @@ def push_data(dest_rank, value, tag=2):
         else:
             raise ValueError("Unknown DataID! {}".format(value))
 
-def queue_or_execute(comm, workQueue, function, args, blocking=False):
+def queue_or_execute(comm, workQueue, function, args):
     """
     Put the reciveved function in background queue for rank 0,
     or execute the function as is for the workers
@@ -300,13 +300,8 @@ def queue_or_execute(comm, workQueue, function, args, blocking=False):
 
 
     """
-    if 0 == comm.Get_rank():
-        future = futures.Future()
-        if blocking:
-            workQueue.put([future, [function, args]])
-            return future.result()
-        else:
-            workQueue.put([None, [function, args]])
+    if communication.MPIRank.ROOT == comm.Get_rank():        
+        workQueue.put([None, [function, args]])
     else:
         result = function(*args)
         return result
