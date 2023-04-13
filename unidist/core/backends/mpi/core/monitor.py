@@ -78,14 +78,13 @@ def monitor_loop():
 
         elif operation_type == common.Operation.GET_TASK_COUNT:
             # We use a blocking send here because the receiver is waiting for the result.
+            info_tasks = {
+                "executed_task_counter": task_counter.task_counter,
+                "tasks_completed": task_counter.task_done_per_worker_unsend,
+            }
             communication.mpi_send_object(
                 mpi_state.comm,
-                task_counter.task_counter,
-                source_rank,
-            )
-            communication.mpi_send_object(
-                mpi_state.comm,
-                task_counter.task_done_per_worker_unsend,
+                info_tasks,
                 source_rank,
             )
             task_counter.task_done_per_worker_unsend = dict.fromkeys(

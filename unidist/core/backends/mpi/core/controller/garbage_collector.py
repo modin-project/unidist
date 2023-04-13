@@ -130,14 +130,13 @@ class GarbageCollector:
                         common.Operation.GET_TASK_COUNT,
                         communication.MPIRank.MONITOR,
                     )
-                    executed_task_counter = communication.recv_simple_operation(
+
+                    info_tasks = communication.recv_simple_operation(
                         mpi_state.comm,
                         communication.MPIRank.MONITOR,
                     )
-                    tasks_completed = communication.recv_simple_operation(
-                        mpi_state.comm,
-                        communication.MPIRank.MONITOR,
-                    )
+                    executed_task_counter = info_tasks["executed_task_counter"]
+                    tasks_completed = info_tasks["tasks_completed"]
                     Scheduler.get_instance().decrement_done_tasks(tasks_completed)
 
                     logger.debug(
