@@ -172,10 +172,10 @@ def init():
     mpi_state = communication.MPIState.get_instance(
         comm, comm.Get_rank(), comm.Get_size()
     )
-    if rank == 0 and not threads and parent_comm == MPI.COMM_NULL:
-        thread = Poller(1, "Thread_Poll_Tasks", comm)
-        thread.start()
-        threads.append(thread)
+    # if rank == 0 and not threads and parent_comm == MPI.COMM_NULL:
+    #     thread = Poller(1, "Thread_Poll_Tasks", comm)
+    #     thread.start()
+    #     threads.append(thread)
 
     global topology
     if not topology:

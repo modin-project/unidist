@@ -140,6 +140,12 @@ class Scheduler:
         """
         self.task_per_worker[rank] -= 1
 
+    def decrement_done_tasks(self, tasks_done):
+        self.task_per_worker = {
+            key: self.task_per_worker[key] - tasks_done.get(key, 0)
+            for key in self.task_per_worker
+        }
+
 
 def request_worker_data(data_id):
     """

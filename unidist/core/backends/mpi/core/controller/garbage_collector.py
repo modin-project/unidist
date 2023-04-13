@@ -11,7 +11,10 @@ import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.serialization import SimpleDataSerializer
 from unidist.core.backends.mpi.core.controller.object_store import object_store
-from unidist.core.backends.mpi.core.controller.common import initial_worker_number
+from unidist.core.backends.mpi.core.controller.common import (
+    initial_worker_number,
+    Scheduler,
+)
 
 
 logger = common.get_logger("utils", "utils.log")
@@ -131,6 +134,11 @@ class GarbageCollector:
                         mpi_state.comm,
                         communication.MPIRank.MONITOR,
                     )
+                    tasks_completed = communication.recv_simple_operation(
+                        mpi_state.comm,
+                        communication.MPIRank.MONITOR,
+                    )
+                    Scheduler.get_instance().decrement_done_tasks(tasks_completed)
 
                     logger.debug(
                         "Submitted task count {} vs executed task count {}".format(

@@ -19,12 +19,20 @@ from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 mpi4py.rc(recv_mprobe=False, initialize=False)
 from mpi4py import MPI  # noqa: E402
 
+initial_worker_number = 2
+
 
 class TaskCounter:
     __instance = None
 
     def __init__(self):
         self.task_counter = 0
+        self.task_done_per_worker_unsend = {
+            k: 0
+            for k in range(
+                initial_worker_number, communication.MPIState.get_instance().world_size
+            )
+        }
 
     @classmethod
     def get_instance(cls):
@@ -39,9 +47,10 @@ class TaskCounter:
             cls.__instance = TaskCounter()
         return cls.__instance
 
-    def increment(self):
+    def increment(self, rank):
         """Increment task counter by one."""
         self.task_counter += 1
+        self.task_done_per_worker_unsend[rank] += 1
 
 
 def monitor_loop():
@@ -65,16 +74,22 @@ def monitor_loop():
 
         # Proceed the request
         if operation_type == common.Operation.TASK_DONE:
-            task_counter.increment()
-            communication.mpi_isend_object(
-                mpi_state.comm, source_rank, communication.MPIRank.ROOT, 1
-            )
+            task_counter.increment(source_rank)
+
         elif operation_type == common.Operation.GET_TASK_COUNT:
             # We use a blocking send here because the receiver is waiting for the result.
             communication.mpi_send_object(
                 mpi_state.comm,
                 task_counter.task_counter,
                 source_rank,
+            )
+            communication.mpi_send_object(
+                mpi_state.comm,
+                task_counter.task_done_per_worker_unsend,
+                source_rank,
+            )
+            task_counter.task_done_per_worker_unsend = dict.fromkeys(
+                task_counter.task_done_per_worker_unsend, 0
             )
         elif operation_type == common.Operation.CANCEL:
             async_operations.finish()
