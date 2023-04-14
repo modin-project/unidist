@@ -50,6 +50,58 @@ topology = dict()
 # The global variable is responsible for if MPI backend has already been initialized
 is_mpi_initialized = False
 
+# This should be in line with https://docs.python.org/3/library/sys.html#sys.flags
+_PY_FLAGS_MAP = {
+    "debug": "d",
+    "inspect": "i",
+    "interactive": "i",
+    "isolated": "I",
+    "optimize": "O",
+    "dont_write_bytecode": "B",
+    "no_user_site": "s",
+    "no_site": "S",
+    "ignore_environment": "E",
+    "verbose": "v",
+    "bytes_warning": "b",
+    "quiet": "q",
+    "hash_randomization": "R",
+    "safe_path": "P",
+    # The flags below are handled separately using sys._xoptions.
+    # See more in https://docs.python.org/3/library/sys.html#sys._xoptions
+    # 'dev_mode': 'Xdev',
+    # 'utf8_mode': 'Xutf8',
+    # 'int_max_str_digits': 'Xint_max_str_digits',
+}
+
+
+def _get_py_flags():
+    """
+    Get a list of the flags passed in to python.
+
+    Returns
+    -------
+    list
+
+    Notes
+    -----
+    This function is used to get the python flags
+    in order to pass them to the workers initialization.
+    """
+    args = []
+    for flag, opt in _PY_FLAGS_MAP.items():
+        val = getattr(sys.flags, flag, 0)
+        # We do not want workers to get into interactive mode
+        # so the value should be 0
+        val = val if opt[0] != "i" else 0
+        if val > 0:
+            args.append("-" + opt * val)
+    for opt in sys.warnoptions:
+        args.append("-W" + opt)
+    sys_xoptions = getattr(sys, "_xoptions", {})
+    for opt, val in sys_xoptions.items():
+        args.append("-X" + opt if val is True else "-X" + opt + "=" + val)
+    return args
+
 
 def init():
     """
@@ -84,7 +136,8 @@ def init():
     if rank == 0 and parent_comm == MPI.COMM_NULL:
         if IsMpiSpawnWorkers.get():
             nprocs_to_spawn = CpuCount.get() + 1  # +1 for monitor process
-            args = ["-c"]
+            args = _get_py_flags()
+            args += ["-c"]
             py_str = [
                 "import unidist",
                 "import unidist.config as cfg",
