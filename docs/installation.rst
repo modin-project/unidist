@@ -38,6 +38,13 @@ If you don't have Dask_, MPI_ or Ray_ installed, you will need to install unidis
 unidist automatically detects which execution backends are installed and uses that for
 scheduling computation!
 
+.. note:: 
+    There are different MPI implementations, each of which can be used as a backend in unidist.
+    By default, mapping ``unidist[mpi]`` installs MPICH on Linux and MacOS and MSMPI on Windows. If you want to use
+    a specific version of MPI, you can install the core dependencies of unidist as ``pip install unidist`` and then
+    install the specific version of MPI using pip as shown in the installation_
+    section of mpi4py documentation.
+
 Release candidates
 """"""""""""""""""
 
@@ -93,6 +100,13 @@ or explicitly:
 .. code-block:: bash
 
   conda install unidist-dask unidist-mpi unidist-ray -c conda-forge
+
+.. note:: 
+    There are different MPI implementations, each of which can be used as a backend in unidist.
+    By default, mapping ``unidist-mpi`` installs MPICH on Linux and MacOS and MSMPI on Windows. If you want to use
+    a specific version of MPI, you can install the core dependencies of unidist as ``conda install unidist`` and then
+    install the specific version of MPI using conda as shown in the installation_
+    section of mpi4py documentation.
 
 Using intel channel
 """""""""""""""""""
@@ -162,3 +176,4 @@ Once cloned, ``cd`` into the ``unidist`` directory and use ``pip`` to install:
 .. _`Multiprocessing`: https://docs.python.org/3/library/multiprocessing.html
 .. _`MPI`: https://www.mpi-forum.org/
 .. _`Semantic Versioning`: https://semver.org
+.. _`installation`: https://mpi4py.readthedocs.io/en/latest/install.html

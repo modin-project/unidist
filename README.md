@@ -24,7 +24,7 @@ Also, the framework provides a Python Sequential backend (`pyseq`), that can be 
 
 ### Installation
 
-#### From PyPI
+#### Using pip
 
 unidist can be installed with `pip` on Linux, Windows and MacOS:
 
@@ -44,7 +44,13 @@ pip install unidist[ray] # Install unidist with dependencies for Ray backend
 
 unidist automatically detects which execution backends are installed and uses that for scheduling computation.
 
-#### From conda-forge
+**Note:** There are different MPI implementations, each of which can be used as a backend in unidist.
+By default, mapping `unidist[mpi]` installs MPICH on Linux and MacOS and MSMPI on Windows. If you want to use
+a specific version of MPI, you can install the core dependencies of unidist as `pip install unidist` and then
+install the specific version of MPI using pip as shown in the [installation](https://mpi4py.readthedocs.io/en/latest/install.html)
+section of mpi4py documentation.
+
+#### Using conda
 
 For installing unidist with dependencies for Dask and MPI execution backends into a conda environment
 the following command should be used:
@@ -64,6 +70,12 @@ or explicitly:
 ```bash
 conda install unidist-dask unidist-mpi unidist-ray -c conda-forge
 ```
+
+**Note:** There are different MPI implementations, each of which can be used as a backend in unidist.
+By default, mapping `unidist-mpi` installs MPICH on Linux and MacOS and MSMPI on Windows. If you want to use
+a specific version of MPI, you can install the core dependencies of unidist as `conda install unidist` and then
+install the specific version of MPI using conda as shown in the [installation](https://mpi4py.readthedocs.io/en/latest/install.html)
+section of mpi4py documentation.
 
 For more information refer to [Installation](https://unidist.readthedocs.io/en/latest/installation.html) section.
 

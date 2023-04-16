@@ -9,6 +9,8 @@ Unidist on MPI
 ''''''''''''''
 
 This section describes the use of unidist with the MPI execution backend.
+Since there are different MPI implementations, each of which can be used as a backend in unidist,
+refer to :doc:`Installation </installation>` page on how to install a specific MPI implementation.
 
 There are two ways to choose the execution backend to run on.
 First, by setting the ``UNIDIST_BACKEND`` environment variable:
