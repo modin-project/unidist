@@ -145,6 +145,7 @@ def request_worker_data(data_id):
         # without any delay
         "is_blocking_op": True,
     }
+
     # We use a blocking send here because we have to wait for
     # completion of the communication, which is necessary for the pipeline to continue.
     communication.send_simple_operation(
@@ -163,7 +164,7 @@ def request_worker_data(data_id):
     return data
 
 
-def _push_local_data(dest_rank, data_id):
+def _push_local_data(dest_rank, data_id, tag=2):
     """
     Send local data associated with passed ID to target rank.
 
@@ -182,6 +183,7 @@ def _push_local_data(dest_rank, data_id):
         async_operations = AsyncOperations.get_instance()
         # Push the local master data to the target worker directly
         operation_type = common.Operation.PUT_DATA
+
         if object_store.is_already_serialized(data_id):
             serialized_data = object_store.get_serialized_data(data_id)
             h_list, _ = communication.isend_complex_operation(
@@ -190,6 +192,7 @@ def _push_local_data(dest_rank, data_id):
                 serialized_data,
                 dest_rank,
                 is_serialized=True,
+                tag=tag,
             )
         else:
             operation_data = {
@@ -202,6 +205,7 @@ def _push_local_data(dest_rank, data_id):
                 operation_data,
                 dest_rank,
                 is_serialized=False,
+                tag=tag,
             )
             object_store.cache_serialized_data(data_id, serialized_data)
         async_operations.extend(h_list)
@@ -209,7 +213,7 @@ def _push_local_data(dest_rank, data_id):
         object_store.cache_send_info(data_id, dest_rank)
 
 
-def _push_data_owner(dest_rank, data_id):
+def _push_data_owner(dest_rank, data_id, tag=2):
     """
     Send data location associated with data ID to target rank.
 
@@ -226,16 +230,15 @@ def _push_data_owner(dest_rank, data_id):
         "owner": object_store.get_data_owner(data_id),
     }
     async_operations = AsyncOperations.get_instance()
+    x = communication.MPIState.get_instance().comm
+
     h_list = communication.isend_simple_operation(
-        communication.MPIState.get_instance().comm,
-        operation_type,
-        operation_data,
-        dest_rank,
+        x, operation_type, operation_data, dest_rank, tag=tag
     )
     async_operations.extend(h_list)
 
 
-def push_data(dest_rank, value):
+def push_data(dest_rank, value, tag=2):
     """
     Parse and send all values to destination rank.
 
@@ -249,16 +252,47 @@ def push_data(dest_rank, value):
     value : iterable or dict or object
         Arguments to be sent.
     """
+
     if isinstance(value, (list, tuple)):
         for v in value:
-            push_data(dest_rank, v)
+            push_data(dest_rank, v, tag=tag)
     elif isinstance(value, dict):
         for v in value.values():
-            push_data(dest_rank, v)
+            push_data(dest_rank, v, tag=tag)
     elif is_data_id(value):
         if object_store.contains(value):
-            _push_local_data(dest_rank, value)
+            _push_local_data(dest_rank, value, tag=tag)
         elif object_store.contains_data_owner(value):
-            _push_data_owner(dest_rank, value)
+            _push_data_owner(dest_rank, value, tag=tag)
         else:
-            raise ValueError("Unknown DataID!")
+            raise ValueError("Unknown DataID! {}".format(value))
+
+
+def queue_or_execute(comm, workQueue, function, args):
+    """
+    Put the reciveved function in background queue for rank 0,
+    or execute the function as is for the workers
+
+    Process all arguments recursivelly and send all ID associated data or it's location
+    to the target rank.
+
+    Parameters
+    ----------
+    comm : communicator
+        Communicator to determine the caller calls the function from mainthread or worker threads
+    workQueue : Queue
+        The queue shared between background and main thread.
+    function : function
+        Function to be executed.
+    args : list
+        Arguments to the function.
+    bolcking : boolean
+        If the function passed needs a value returned immediately.
+
+
+    """
+    if communication.MPIRank.ROOT == comm.Get_rank():
+        workQueue.put([None, [function, args]])
+    else:
+        result = function(*args)
+        return result

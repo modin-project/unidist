@@ -57,6 +57,7 @@ class ActorMethod:
             operation_type,
             operation_data,
             self._actor._owner_rank,
+            tag=2,
         )
         async_operations.extend(h_list)
         return output_id

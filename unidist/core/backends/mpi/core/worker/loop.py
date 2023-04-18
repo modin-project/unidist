@@ -94,7 +94,9 @@ async def worker_loop():
 
         # Proceed the request
         if operation_type == common.Operation.EXECUTE:
-            request = communication.recv_complex_data(mpi_state.comm, source_rank)
+            request = communication.recv_complex_data(
+                mpi_state.comm, source_rank, tag=1
+            )
 
             # Execute the task if possible
             pending_request = task_store.process_task_request(request)
@@ -112,7 +114,32 @@ async def worker_loop():
             )
 
         elif operation_type == common.Operation.PUT_DATA:
-            request = communication.recv_complex_data(mpi_state.comm, source_rank)
+            w_logger.debug("PUT (RECV)  id from {} rank".format(source_rank))
+            if source_rank == communication.MPIRank.ROOT:
+                if mpi_state.comm.iprobe(source_rank, tag=1):
+                    w_logger.debug("tag ={} rank".format(1))
+                    request = communication.recv_complex_data(
+                        mpi_state.comm,
+                        source_rank,
+                        tag=1,
+                    )
+                elif mpi_state.comm.iprobe(source_rank, tag=2):
+                    w_logger.debug("tag ={} rank".format(2))
+                    request = communication.recv_complex_data(
+                        mpi_state.comm,
+                        source_rank,
+                        tag=2,
+                    )
+                else:
+                    request = communication.recv_complex_data(
+                        mpi_state.comm,
+                        source_rank,
+                        tag=1,
+                    )
+
+            else:
+                request = communication.recv_complex_data(mpi_state.comm, source_rank)
+
             w_logger.debug(
                 "PUT (RECV) {} id from {} rank".format(request["id"]._id, source_rank)
             )
@@ -128,7 +155,9 @@ async def worker_loop():
             task_store.check_pending_actor_tasks()
 
         elif operation_type == common.Operation.PUT_OWNER:
-            request = communication.recv_simple_operation(mpi_state.comm, source_rank)
+            request = communication.recv_simple_operation(
+                mpi_state.comm, source_rank, tag=1
+            )
             request["id"] = object_store.get_unique_data_id(request["id"])
             object_store.put_data_owner(request["id"], request["owner"])
 
