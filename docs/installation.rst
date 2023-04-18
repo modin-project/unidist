@@ -106,7 +106,8 @@ or explicitly:
     By default, mapping ``unidist-mpi`` installs MPICH on Linux and MacOS and MSMPI on Windows. If you want to use
     a specific version of MPI, you can install the core dependencies of unidist as ``conda install unidist`` and then
     install the specific version of MPI using conda as shown in the installation_
-    section of mpi4py documentation.
+    section of mpi4py documentation. That said, it is highly encouraged to use your own MPI binaries as stated in the
+    `Using External MPI Libraries`_ section of the conda-forge documentation in order to get ultimate performance.
 
 Using intel channel
 """""""""""""""""""
@@ -177,3 +178,4 @@ Once cloned, ``cd`` into the ``unidist`` directory and use ``pip`` to install:
 .. _`MPI`: https://www.mpi-forum.org/
 .. _`Semantic Versioning`: https://semver.org
 .. _`installation`: https://mpi4py.readthedocs.io/en/latest/install.html
+.. _`Using External MPI Libraries`: https://conda-forge.org/docs/user/tipsandtricks.html#using-external-message-passing-interface-mpi-libraries

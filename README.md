@@ -75,7 +75,9 @@ conda install unidist-dask unidist-mpi unidist-ray -c conda-forge
 By default, mapping `unidist-mpi` installs MPICH on Linux and MacOS and MSMPI on Windows. If you want to use
 a specific version of MPI, you can install the core dependencies of unidist as `conda install unidist` and then
 install the specific version of MPI using conda as shown in the [installation](https://mpi4py.readthedocs.io/en/latest/install.html)
-section of mpi4py documentation.
+section of mpi4py documentation. That said, it is highly encouraged to use your own MPI binaries as stated in the
+[Using External MPI Libraries](https://conda-forge.org/docs/user/tipsandtricks.html#using-external-message-passing-interface-mpi-libraries)
+section of the conda-forge documentation in order to get ultimate performance.
 
 For more information refer to [Installation](https://unidist.readthedocs.io/en/latest/installation.html) section.
 
