@@ -190,6 +190,7 @@ def shutdown():
     async_operations.finish()
     if not MPI.Is_finalized():
         MPI.Finalize()
+    atexit.unregister(_termination_handler)
 
 
 def cluster_resources():
