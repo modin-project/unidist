@@ -25,10 +25,3 @@ class MpiPickleThreshold(EnvironmentVariable, type=int):
 
     default = 1024**2 // 4  # 0.25 MiB
     varname = "UNIDIST_MPI_PICKLE_THRESHOLD"
-
-
-class BackOff(EnvironmentVariable, type=int):
-    """Backoff value for sleeping background threads when thread idle"""
-
-    default = 0.001
-    varname = "BackOff"

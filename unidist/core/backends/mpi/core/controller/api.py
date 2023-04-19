@@ -8,9 +8,7 @@ import sys
 import atexit
 import signal
 import asyncio
-import time
 from collections import defaultdict
-import threading
 
 try:
     import mpi4py
@@ -37,7 +35,6 @@ from unidist.config import (
     MpiHosts,
     ValueSource,
     MpiPickleThreshold,
-    BackOff,
 )
 
 
@@ -52,49 +49,6 @@ logger = common.get_logger("api", "api.log")
 topology = dict()
 # The global variable is responsible for if MPI backend has already been initialized
 is_mpi_initialized = False
-# List is used to keep keep track of th threads started so they could be later joined
-threads = []
-BACKOFF = BackOff.get_value_source()
-# The global variable acts as a flag which when set true the function executing in background thread stops
-exit_flag = False
-
-
-class Backoff:
-    def __init__(self, seconds=BACKOFF):
-        self.tval = 0.0
-        self.tmax = max(float(seconds), 0.0)
-        self.tmin = self.tmax / (1 << 10)
-
-    def reset(self):
-        self.tval = 0.0
-
-    def sleep(self):
-        time.sleep(self.tval)
-        self.tval = min(self.tmax, max(self.tmin, self.tval * 2))
-
-
-class Poller(threading.Thread):
-    def __init__(self, thread_id, name, comm):
-        threading.Thread.__init__(self, daemon=True)
-        self.thread_id = thread_id
-        self.name = name
-        self.comm = comm
-
-    def run(self):
-        poll_tasks_completed(self.name, self.comm)
-
-
-def poll_tasks_completed(threadName, comm):
-    global exit_flag
-    scheduler = Scheduler.get_instance()
-    backoff = Backoff()
-    while not exit_flag:
-        if comm.iprobe(source=communication.MPIRank.MONITOR, tag=1):
-            task_completed_rank = comm.recv(source=communication.MPIRank.MONITOR, tag=1)
-            scheduler.decrement_tasks_on_worker(task_completed_rank)
-            backoff.reset()
-        else:
-            backoff.sleep()
 
 
 def init():
@@ -172,10 +126,6 @@ def init():
     mpi_state = communication.MPIState.get_instance(
         comm, comm.Get_rank(), comm.Get_size()
     )
-    # if rank == 0 and not threads and parent_comm == MPI.COMM_NULL:
-    #     thread = Poller(1, "Thread_Poll_Tasks", comm)
-    #     thread.start()
-    #     threads.append(thread)
 
     global topology
     if not topology:
@@ -229,11 +179,7 @@ def shutdown():
     -----
     Sends cancelation operation to all workers and monitor processes.
     """
-    global exit_flag, threads
-    exit_flag = True
     mpi_state = communication.MPIState.get_instance()
-    for thread in threads:
-        thread.join()
     # Send shutdown commands to all ranks
     for rank_id in range(communication.MPIRank.MONITOR, mpi_state.world_size):
         # We use a blocking send here because we have to wait for
