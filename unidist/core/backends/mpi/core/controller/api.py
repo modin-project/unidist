@@ -49,6 +49,7 @@ logger = common.get_logger("api", "api.log")
 topology = dict()
 # The global variable is responsible for if MPI backend has already been initialized
 is_mpi_initialized = False
+is_mpi_shutdown = False
 
 
 def init():
@@ -170,6 +171,19 @@ def is_initialized():
     return is_mpi_initialized
 
 
+def is_shutdown():
+    """
+    Check if MPI backend has already been initialized.
+
+    Returns
+    -------
+    bool
+        True or False.
+    """
+    global is_mpi_shutdown
+    return is_mpi_shutdown
+
+
 # TODO: cleanup before shutdown?
 def shutdown():
     """
@@ -179,18 +193,22 @@ def shutdown():
     -----
     Sends cancelation operation to all workers and monitor processes.
     """
-    mpi_state = communication.MPIState.get_instance()
-    # Send shutdown commands to all ranks
-    for rank_id in range(communication.MPIRank.MONITOR, mpi_state.world_size):
-        # We use a blocking send here because we have to wait for
-        # completion of the communication, which is necessary for the pipeline to continue.
-        communication.mpi_send_object(mpi_state.comm, common.Operation.CANCEL, rank_id)
-        logger.debug("Shutdown rank {}".format(rank_id))
-    async_operations = AsyncOperations.get_instance()
-    async_operations.finish()
-    if not MPI.Is_finalized():
-        MPI.Finalize()
-    atexit.unregister(_termination_handler)
+    if not is_shutdown():
+        global is_mpi_shutdown
+        mpi_state = communication.MPIState.get_instance()
+        # Send shutdown commands to all ranks
+        for rank_id in range(communication.MPIRank.MONITOR, mpi_state.world_size):
+            # We use a blocking send here because we have to wait for
+            # completion of the communication, which is necessary for the pipeline to continue.
+            communication.mpi_send_object(
+                mpi_state.comm, common.Operation.CANCEL, rank_id
+            )
+            logger.debug("Shutdown rank {}".format(rank_id))
+        async_operations = AsyncOperations.get_instance()
+        async_operations.finish()
+        if not MPI.Is_finalized():
+            MPI.Finalize()
+        is_mpi_shutdown = True
 
 
 def cluster_resources():
