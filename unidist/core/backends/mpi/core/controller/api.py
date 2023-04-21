@@ -49,6 +49,7 @@ logger = common.get_logger("api", "api.log")
 topology = dict()
 # The global variable is responsible for if MPI backend has already been initialized
 is_mpi_initialized = False
+# The global variable is responsible for if MPI backend has already been shutdown
 is_mpi_shutdown = False
 
 
@@ -171,19 +172,6 @@ def is_initialized():
     return is_mpi_initialized
 
 
-def is_shutdown():
-    """
-    Check if MPI backend has already been initialized.
-
-    Returns
-    -------
-    bool
-        True or False.
-    """
-    global is_mpi_shutdown
-    return is_mpi_shutdown
-
-
 # TODO: cleanup before shutdown?
 def shutdown():
     """
@@ -193,8 +181,8 @@ def shutdown():
     -----
     Sends cancelation operation to all workers and monitor processes.
     """
-    if not is_shutdown():
-        global is_mpi_shutdown
+    global is_mpi_shutdown
+    if not is_mpi_shutdown:
         mpi_state = communication.MPIState.get_instance()
         # Send shutdown commands to all ranks
         for rank_id in range(communication.MPIRank.MONITOR, mpi_state.world_size):
