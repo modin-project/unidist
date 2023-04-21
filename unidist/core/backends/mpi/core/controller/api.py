@@ -49,6 +49,8 @@ logger = common.get_logger("api", "api.log")
 topology = dict()
 # The global variable is responsible for if MPI backend has already been initialized
 is_mpi_initialized = False
+# The global variable is responsible for if MPI backend has already been shutdown
+is_mpi_shutdown = False
 
 # This should be in line with https://docs.python.org/3/library/sys.html#sys.flags
 _PY_FLAGS_MAP = {
@@ -232,17 +234,22 @@ def shutdown():
     -----
     Sends cancelation operation to all workers and monitor processes.
     """
-    mpi_state = communication.MPIState.get_instance()
-    # Send shutdown commands to all ranks
-    for rank_id in range(communication.MPIRank.MONITOR, mpi_state.world_size):
-        # We use a blocking send here because we have to wait for
-        # completion of the communication, which is necessary for the pipeline to continue.
-        communication.mpi_send_object(mpi_state.comm, common.Operation.CANCEL, rank_id)
-        logger.debug("Shutdown rank {}".format(rank_id))
-    async_operations = AsyncOperations.get_instance()
-    async_operations.finish()
-    if not MPI.Is_finalized():
-        MPI.Finalize()
+    global is_mpi_shutdown
+    if not is_mpi_shutdown:
+        mpi_state = communication.MPIState.get_instance()
+        # Send shutdown commands to all ranks
+        for rank_id in range(communication.MPIRank.MONITOR, mpi_state.world_size):
+            # We use a blocking send here because we have to wait for
+            # completion of the communication, which is necessary for the pipeline to continue.
+            communication.mpi_send_object(
+                mpi_state.comm, common.Operation.CANCEL, rank_id
+            )
+            logger.debug("Shutdown rank {}".format(rank_id))
+        async_operations = AsyncOperations.get_instance()
+        async_operations.finish()
+        if not MPI.Is_finalized():
+            MPI.Finalize()
+        is_mpi_shutdown = True
 
 
 def cluster_resources():
