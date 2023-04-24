@@ -200,7 +200,7 @@ def init():
         from unidist.core.backends.mpi.core.monitor import monitor_loop
 
         monitor_loop()
-        if IsMpiSpawnWorkers.get():
+        if not IsMpiSpawnWorkers.get():
             sys.exit()
         return
 
@@ -211,7 +211,7 @@ def init():
         from unidist.core.backends.mpi.core.worker.loop import worker_loop
 
         asyncio.run(worker_loop())
-        if IsMpiSpawnWorkers.get():
+        if not IsMpiSpawnWorkers.get():
             sys.exit()
         return
 
