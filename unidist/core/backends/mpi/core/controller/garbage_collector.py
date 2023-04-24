@@ -11,7 +11,10 @@ import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.serialization import SimpleDataSerializer
 from unidist.core.backends.mpi.core.controller.object_store import object_store
-from unidist.core.backends.mpi.core.controller.common import initial_worker_number
+from unidist.core.backends.mpi.core.controller.common import (
+    initial_worker_number,
+    Scheduler,
+)
 
 
 logger = common.get_logger("utils", "utils.log")
@@ -112,25 +115,28 @@ class GarbageCollector:
         async_operations = AsyncOperations.get_instance()
         # Check completion status of previous async MPI routines
         async_operations.check()
+        mpi_state = communication.MPIState.get_instance()
+        # Compare submitted and executed tasks
+        # We use a blocking send here because we have to wait for
+        # completion of the communication, which is necessary for the pipeline to continue.
+        communication.mpi_send_object(
+            mpi_state.comm,
+            common.Operation.GET_TASK_COUNT,
+            communication.MPIRank.MONITOR,
+        )
+        info_tasks = communication.recv_simple_operation(
+            mpi_state.comm,
+            communication.MPIRank.MONITOR,
+        )
+        executed_task_counter = info_tasks["executed_task_counter"]
+        tasks_completed = info_tasks["tasks_completed"]
+        Scheduler.get_instance().decrement_done_tasks(tasks_completed)
         if len(self._cleanup_list) > self._cleanup_list_threshold:
             if self._cleanup_counter % self._cleanup_threshold == 0:
                 timestamp_snapshot = time.perf_counter()
+
                 if (timestamp_snapshot - self._timestamp) > self._time_threshold:
                     logger.debug("Cleanup counter {}".format(self._cleanup_counter))
-
-                    mpi_state = communication.MPIState.get_instance()
-                    # Compare submitted and executed tasks
-                    # We use a blocking send here because we have to wait for
-                    # completion of the communication, which is necessary for the pipeline to continue.
-                    communication.mpi_send_object(
-                        mpi_state.comm,
-                        common.Operation.GET_TASK_COUNT,
-                        communication.MPIRank.MONITOR,
-                    )
-                    executed_task_counter = communication.recv_simple_operation(
-                        mpi_state.comm,
-                        communication.MPIRank.MONITOR,
-                    )
 
                     logger.debug(
                         "Submitted task count {} vs executed task count {}".format(
