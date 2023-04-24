@@ -200,6 +200,11 @@ def init():
         from unidist.core.backends.mpi.core.monitor import monitor_loop
 
         monitor_loop()
+        # If the user executes a program in SPMD mode,
+        # we do not want workers to continue the flow after `unidist.init()`
+        # so just killing them.
+        if not IsMpiSpawnWorkers.get():
+            sys.exit()
         return
 
     if mpi_state.rank not in (
@@ -209,6 +214,11 @@ def init():
         from unidist.core.backends.mpi.core.worker.loop import worker_loop
 
         asyncio.run(worker_loop())
+        # If the user executes a program in SPMD mode,
+        # we do not want workers to continue the flow after `unidist.init()`
+        # so just killing them.
+        if not IsMpiSpawnWorkers.get():
+            sys.exit()
         return
 
 
