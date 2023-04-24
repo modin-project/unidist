@@ -200,6 +200,8 @@ def init():
         from unidist.core.backends.mpi.core.monitor import monitor_loop
 
         monitor_loop()
+        if IsMpiSpawnWorkers.get():
+            sys.exit()
         return
 
     if mpi_state.rank not in (
@@ -209,6 +211,8 @@ def init():
         from unidist.core.backends.mpi.core.worker.loop import worker_loop
 
         asyncio.run(worker_loop())
+        if IsMpiSpawnWorkers.get():
+            sys.exit()
         return
 
 
