@@ -47,3 +47,10 @@ class MpiLog(EnvironmentVariable, type=bool):
 
     default = False
     varname = "UNIDIST_MPI_LOG"
+
+
+class MpiSharingThreshold(EnvironmentVariable, type=int):
+    """Minimum data size for sending with shared memory"""
+
+    default = 1024  # 1 MiB
+    varname = "UNIDIST_MPI_SHARING_THRESHOLD"

@@ -3,14 +3,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Common functionality related to `controller`."""
-
+import sys
 import itertools
 
 from unidist.core.backends.common.data_id import is_data_id
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
-from unidist.core.backends.mpi.core.controller.object_store import object_store
+from unidist.core.backends.mpi.core.object_store import ObjectStore
+from unidist.config import MpiSharingThreshold
 
 logger = common.get_logger("common", "common.log")
 
@@ -105,6 +106,22 @@ class RoundRobin:
         )
 
 
+def get_complex_data(comm, owner_rank):
+    info_package = communication.mpi_recv_object(comm, owner_rank)
+    if info_package["package_type"] == communication.DataInfoType.SHARED_DATA:
+        object_store = ObjectStore.get_instance()
+        info_package["id"] = object_store.get_unique_data_id(info_package["id"])
+        object_store.put_shared_info(info_package["id"], info_package)
+        return {
+            "id": info_package["id"],
+            "data": object_store.get_shared_data(info_package["id"]),
+        }
+    if info_package["package_type"] == communication.DataInfoType.LOCAL_DATA:
+        return communication.recv_complex_data(comm, owner_rank, info_package)
+    else:
+        raise ValueError("Unexpected package of data info!")
+
+
 def request_worker_data(data_id):
     """
     Get an object(s) associated with `data_id` from the object storage.
@@ -120,6 +137,7 @@ def request_worker_data(data_id):
         A Python object.
     """
     mpi_state = communication.MPIState.get_instance()
+    object_store = ObjectStore.get_instance()
 
     owner_rank = object_store.get_data_owner(data_id)
 
@@ -145,7 +163,10 @@ def request_worker_data(data_id):
     )
 
     # Blocking get
-    data = communication.recv_complex_data(mpi_state.comm, owner_rank)
+    complex_data = get_complex_data(mpi_state.comm, owner_rank)
+    if data_id.base_data_id() != complex_data["id"]:
+        raise ValueError("Unexpected data_id!")
+    data = complex_data["data"]
 
     # Caching the result, check the protocol correctness here
     object_store.put(data_id, data)
@@ -153,7 +174,7 @@ def request_worker_data(data_id):
     return data
 
 
-def _push_local_data(dest_rank, data_id):
+def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
     """
     Send local data associated with passed ID to target rank.
 
@@ -164,6 +185,8 @@ def _push_local_data(dest_rank, data_id):
     data_id : unidist.core.backends.mpi.core.common.MasterDataID
         An ID to data.
     """
+    object_store = ObjectStore.get_instance()
+
     # Check if data was already pushed
     if not object_store.is_already_sent(data_id, dest_rank):
         logger.debug("PUT LOCAL {} id to {} rank".format(data_id._id, dest_rank))
@@ -171,32 +194,65 @@ def _push_local_data(dest_rank, data_id):
         mpi_state = communication.MPIState.get_instance()
         async_operations = AsyncOperations.get_instance()
         # Push the local master data to the target worker directly
-        operation_type = common.Operation.PUT_DATA
-        if object_store.is_already_serialized(data_id):
-            serialized_data = object_store.get_serialized_data(data_id)
-            h_list, _ = communication.isend_complex_operation(
-                mpi_state.comm,
-                operation_type,
-                serialized_data,
-                dest_rank,
-                is_serialized=True,
-            )
+        if is_serialized:
+            operation_data = object_store.get_serialized_data(data_id)
         else:
             operation_data = {
                 "id": data_id,
                 "data": object_store.get(data_id),
             }
+
+        operation_type = common.Operation.PUT_DATA
+        if is_blocking_op:
+            serialized_data = communication.send_complex_data(
+                mpi_state.comm,
+                operation_data,
+                dest_rank,
+                is_serialized,
+            )
+        else:
             h_list, serialized_data = communication.isend_complex_operation(
                 mpi_state.comm,
                 operation_type,
                 operation_data,
                 dest_rank,
-                is_serialized=False,
+                is_serialized,
             )
+            async_operations.extend(h_list)
+
+        if not is_serialized:
             object_store.cache_serialized_data(data_id, serialized_data)
-        async_operations.extend(h_list)
+
         #  Remember pushed id
         object_store.cache_send_info(data_id, dest_rank)
+
+
+def _push_shared_data(dest_rank, data_id, is_blocking_op):
+    """
+    Send data location associated with data ID to target rank.
+
+    Parameters
+    ----------
+    dest_rank : int
+        Target rank.
+    value : unidist.core.backends.mpi.core.common.MasterDataID
+        An ID to data.
+    """
+    object_store = ObjectStore.get_instance()
+    mpi_state = communication.MPIState.get_instance()
+    operation_type = common.Operation.PUT_SHARED_DATA
+    info_package = object_store.get_data_shared_info(data_id)
+    async_operations = AsyncOperations.get_instance()
+    if is_blocking_op:
+        communication.mpi_send_object(mpi_state.comm, info_package, dest_rank)
+    else:
+        h_list = communication.isend_simple_operation(
+            mpi_state.comm,
+            operation_type,
+            info_package,
+            dest_rank,
+        )
+        async_operations.extend(h_list)
 
 
 def _push_data_owner(dest_rank, data_id):
@@ -210,6 +266,7 @@ def _push_data_owner(dest_rank, data_id):
     value : unidist.core.backends.mpi.core.common.MasterDataID
         An ID to data.
     """
+    object_store = ObjectStore.get_instance()
     operation_type = common.Operation.PUT_OWNER
     operation_data = {
         "id": data_id,
@@ -225,7 +282,7 @@ def _push_data_owner(dest_rank, data_id):
     async_operations.extend(h_list)
 
 
-def push_data(dest_rank, value):
+def push_data(dest_rank, value, is_blocking_op=False):
     """
     Parse and send all values to destination rank.
 
@@ -239,6 +296,8 @@ def push_data(dest_rank, value):
     value : iterable or dict or object
         Arguments to be sent.
     """
+    object_store = ObjectStore.get_instance()
+
     if isinstance(value, (list, tuple)):
         for v in value:
             push_data(dest_rank, v)
@@ -246,9 +305,45 @@ def push_data(dest_rank, value):
         for v in value.values():
             push_data(dest_rank, v)
     elif is_data_id(value):
-        if object_store.contains(value):
-            _push_local_data(dest_rank, value)
-        elif object_store.contains_data_owner(value):
-            _push_data_owner(dest_rank, value)
+        data_id = value
+        if object_store.contains_shared_memory(data_id):
+            _push_shared_data(dest_rank, data_id, is_blocking_op)
+        elif object_store.is_already_serialized(data_id):
+            _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized=True)
+        elif object_store.contains(data_id):
+            data = object_store.get(data_id)
+            if sys.getsizeof(data) > MpiSharingThreshold.get():
+                put_to_shared_memory(data_id)
+                _push_shared_data(dest_rank, data_id, is_blocking_op)
+            else:
+                _push_local_data(
+                    dest_rank, data_id, is_blocking_op, is_serialized=False
+                )
+        elif object_store.contains_data_owner(data_id):
+            _push_data_owner(dest_rank, data_id)
         else:
             raise ValueError("Unknown DataID!")
+
+
+def put_to_shared_memory(data_id):
+    object_store = ObjectStore.get_instance()
+
+    operation_data = object_store.get(data_id)
+    reservation_data, serialized_data = object_store.reserve_shared_memory(
+        operation_data
+    )
+    # mpi_state = communication.MPIState.get_instance()
+    # reservation_data, serialized_data = communication.reserve_shared_memory(
+    #     mpi_state.comm,
+    #     data_id,
+    #     operation_data,
+    #     is_serialized=False
+    # )
+
+    s_data_len, buffer_lens, buffer_count, first_index = object_store.put_shared_memory(
+        data_id, reservation_data, serialized_data
+    )
+    sharing_info = communication.get_shared_info(
+        data_id, s_data_len, buffer_lens, buffer_count, first_index
+    )
+    object_store.put_shared_info(data_id, sharing_info)

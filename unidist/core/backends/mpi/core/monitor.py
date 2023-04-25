@@ -164,6 +164,8 @@ def monitor_loop():
     mpi_state = communication.MPIState.get_instance()
     wait_handler = WaitHandler.get_instance()
     data_id_tracker = DataIDTracker.get_instance()
+
+    shared_index = 0
     workers_ready_to_shutdown = []
     shutdown_workers = False
     # Once all workers excluding ``Root`` and ``Monitor`` ranks are ready to shutdown,
@@ -192,6 +194,14 @@ def monitor_loop():
                 mpi_state.comm,
                 task_counter.task_counter,
                 source_rank,
+            )
+        elif operation_type == common.Operation.RESERVE_SHARING_MEMORY:
+            request = communication.mpi_recv_object(mpi_state.comm, source_rank)
+            first_index = shared_index
+            last_index = first_index + request["size"]
+            shared_index = last_index
+            communication.mpi_send_object(
+                mpi_state.comm, data=(first_index, last_index), dest_rank=source_rank
             )
         elif operation_type == common.Operation.READY_TO_SHUTDOWN:
             workers_ready_to_shutdown.append(source_rank)

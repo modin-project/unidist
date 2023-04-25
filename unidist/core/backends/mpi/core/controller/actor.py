@@ -7,7 +7,7 @@
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
-from unidist.core.backends.mpi.core.controller.object_store import object_store
+from unidist.core.backends.mpi.core.object_store import ObjectStore
 from unidist.core.backends.mpi.core.controller.garbage_collector import (
     garbage_collector,
 )
@@ -33,6 +33,7 @@ class ActorMethod:
         self._method_name = method_name
 
     def __call__(self, *args, num_returns=1, **kwargs):
+        object_store = ObjectStore.get_instance()
         output_id = object_store.generate_output_data_id(
             self._actor._owner_rank, garbage_collector, num_returns
         )
@@ -95,6 +96,7 @@ class Actor:
             if owner_rank is None
             else owner_rank
         )
+        object_store = ObjectStore.get_instance()
         self._handler_id = (
             object_store.generate_data_id(garbage_collector)
             if handler_id is None

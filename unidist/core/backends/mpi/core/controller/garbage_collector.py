@@ -10,7 +10,7 @@ import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.serialization import SimpleDataSerializer
-from unidist.core.backends.mpi.core.controller.object_store import object_store
+from unidist.core.backends.mpi.core.object_store import ObjectStore
 
 
 logger = common.get_logger("utils", "utils.log")
@@ -150,4 +150,4 @@ class GarbageCollector:
                 self._cleanup_counter += 1
 
 
-garbage_collector = GarbageCollector(object_store)
+garbage_collector = GarbageCollector(ObjectStore.get_instance())

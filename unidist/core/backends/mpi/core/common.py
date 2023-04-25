@@ -51,6 +51,7 @@ class Operation:
     GET = 2
     PUT_DATA = 3
     PUT_OWNER = 4
+    PUT_SHARED_DATA = 12
     WAIT = 5
     ACTOR_CREATE = 6
     ACTOR_EXECUTE = 7
@@ -58,6 +59,7 @@ class Operation:
     ### --- Monitor operations --- ###
     TASK_DONE = 9
     GET_TASK_COUNT = 10
+    RESERVE_SHARING_MEMORY = 13
     ### --- Common operations --- ###
     CANCEL = 11
     READY_TO_SHUTDOWN = 12
@@ -139,8 +141,13 @@ class MasterDataID(DataID):
         """Track object deletion by garbage collector."""
         # We check for existence of `_qc` attribute because
         # it might be deleted during serialization via `__getstate__`
-        if hasattr(self, "_gc") and self._gc is not None:
-            self._gc.collect(self.base_data_id())
+        if (
+            hasattr(self, "_gc")
+            and self._gc is not None
+            and self.base_data_id is not None
+        ):
+            base_id = self.base_data_id()
+            self._gc.collect(base_id)
 
     def __getstate__(self):
         """Remove a reference to garbage collector for correct `pickle` serialization."""
@@ -157,7 +164,9 @@ class MasterDataID(DataID):
         unidist.core.backends.common.data_id.DataID
             Base ``DataID`` class object without garbage collector reference.
         """
-        return DataID(self._id)
+        if DataID is not None:
+            return DataID(self._id)
+        return None
 
 
 def get_logger(logger_name, file_name, activate=None):
