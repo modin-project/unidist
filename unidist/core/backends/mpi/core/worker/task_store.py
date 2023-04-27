@@ -86,11 +86,12 @@ class TaskStore:
         w_logger.debug("Check pending tasks")
 
         if self._pending_tasks_list:
-            self._pending_tasks_list = [
-                pending_request
-                for request in self._pending_tasks_list
-                if (pending_request := self.process_task_request(request))
-            ]
+            updated_list = []
+            for request in self._pending_tasks_list:
+                pending_request = self.process_task_request(request)
+                if pending_request:
+                    updated_list.append(pending_request)
+            self._pending_tasks_list = updated_list
 
     def check_pending_actor_tasks(self):
         """
@@ -101,11 +102,12 @@ class TaskStore:
         w_logger.debug("Check pending actor tasks")
 
         if self._pending_actor_tasks_list:
-            self._pending_actor_tasks_list = [
-                pending_request
-                for request in self._pending_actor_tasks_list
-                if (pending_request := self.process_task_request(request))
-            ]
+            updated_list = []
+            for request in self._pending_actor_tasks_list:
+                pending_request = self.process_task_request(request)
+                if pending_request:
+                    updated_list.append(pending_request)
+            self._pending_actor_tasks_list = updated_list
 
     def request_worker_data(self, dest_rank, data_id):
         """
