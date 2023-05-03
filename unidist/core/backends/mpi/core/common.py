@@ -54,6 +54,7 @@ class Operation:
     GET_TASK_COUNT = 10
     ### --- Common operations --- ###
     CANCEL = 11
+    CANCEL_WAIT = 12
 
 
 default_class_properties = dir(type("dummy", (object,), {}))
@@ -133,7 +134,7 @@ class MasterDataID(DataID):
         return DataID(self._id)
 
 
-def get_logger(logger_name, file_name, activate=False):
+def get_logger(logger_name, file_name, activate=True):
     """
     Configure logger and get it's instance.
 
