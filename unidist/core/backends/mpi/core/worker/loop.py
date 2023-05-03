@@ -141,20 +141,23 @@ async def worker_loop():
         elif operation_type == common.Operation.WAIT:
             request = communication.recv_simple_operation(mpi_state.comm, source_rank)
             w_logger.debug("WAIT for {} id".format(request["ids"]))
-            request["ids"] = [object_store.get_unique_data_id(id) for id in request["ids"]]
+            request["ids"] = [
+                object_store.get_unique_data_id(id) for id in request["ids"]
+            ]
             for id in request["ids"]:
                 request_store.process_wait_request(id)
-        
+
         elif operation_type == common.Operation.CANCEL_WAIT:
             request = communication.recv_simple_operation(mpi_state.comm, source_rank)
             w_logger.debug("CANCEL WAIT for {} id".format(request["ids"]))
-            request["ids"] = [object_store.get_unique_data_id(id) for id in request["ids"]]
+            request["ids"] = [
+                object_store.get_unique_data_id(id) for id in request["ids"]
+            ]
             for id in request["ids"]:
                 if id in request_store._wait_request:
                     del request_store._wait_request[id]
-            
-            communication.mpi_send_object(mpi_state.comm ,"cancel", source_rank)
-                
+
+            communication.mpi_send_object(mpi_state.comm, "cancel", source_rank)
 
         elif operation_type == common.Operation.ACTOR_CREATE:
             request = communication.recv_complex_data(mpi_state.comm, source_rank)

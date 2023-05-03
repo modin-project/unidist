@@ -403,10 +403,10 @@ def wait(data_ids, num_returns=1):
             not_ready.remove(data_id)
         elif object_store.contains_data_owner(data_id):
             dest_rank = object_store.get_data_owner(data_id)
-            data_ownership[dest_rank].append(data_id.base_data_id())            
+            data_ownership[dest_rank].append(data_id.base_data_id())
         else:
             raise ValueError("Data owner not known")
-    
+
     for owner_rank in data_ownership.keys():
         operation_type = common.Operation.WAIT
         operation_data = {"ids": data_ownership[owner_rank]}
@@ -419,17 +419,15 @@ def wait(data_ids, num_returns=1):
             owner_rank,
         )
     comm = mpi_state.comm
-    wait_pending = True
-    while wait_pending:
+    while len(ready) < num_returns:
         for owner_rank in data_ownership.keys():
-            if(comm.iprobe(source=owner_rank)):
-                data_id=comm.recv(source=owner_rank)
-                data_index = not_ready.index(data_id)                
+            if comm.iprobe(source=owner_rank):
+                data_id = comm.recv(source=owner_rank)
+                data_index = not_ready.index(data_id)
                 ready.append(not_ready[data_index])
                 data_ownership[owner_rank].remove(data_id)
                 not_ready.remove(data_id)
                 if len(ready) == num_returns:
-                    wait_pending = False
                     break
     for owner_rank in data_ownership.keys():
         operation_type = common.Operation.CANCEL_WAIT
@@ -442,26 +440,12 @@ def wait(data_ids, num_returns=1):
             operation_data,
             owner_rank,
         )
-    i = 0
-    owners = data_ownership.keys()
     for owner_rank in data_ownership.keys():
         while True:
             data = comm.recv(source=owner_rank)
             if data == "cancel":
                 break
-                
-        
-        
-        
-                    
-                
-                
-            
 
-
-
-        
-        
     # while len(ready) != num_returns:
     #     first = not_ready.pop(0)
     #     wait_impl(first)
