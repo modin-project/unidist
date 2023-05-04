@@ -318,10 +318,11 @@ def recv_operation_type(comm):
     status = MPI.Status()
     req_handle = comm.irecv(source=MPI.ANY_SOURCE)
     while True:
-        is_ready, op_type = req_handle.test(status=status)
+        is_ready, data = req_handle.test(status=status)
+        op_type = data["operation_type"] if isinstance(data, dict) else data
         if is_ready:
             log_operation(op_type, status)
-            return op_type, status.Get_source()
+            return data, status.Get_source()
         else:
             time.sleep(sleep_time)
 

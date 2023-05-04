@@ -58,14 +58,55 @@ def monitor_loop():
     task_counter = TaskCounter.get_instance()
     mpi_state = communication.MPIState.get_instance()
     async_operations = AsyncOperations.get_instance()
+    completed_data_ids = set()
+    waited_data_ids = []
+    ready = []
+    num_returns = 0
 
     while True:
         # Listen receive operation from any source
-        operation_type, source_rank = communication.recv_operation_type(mpi_state.comm)
-
+        data, source_rank = communication.recv_operation_type(mpi_state.comm)
+        operation_type = data["operation_type"] if isinstance(data, dict) else data
         # Proceed the request
         if operation_type == common.Operation.TASK_DONE:
             task_counter.increment()
+            output_data_ids = data["output_data_ids"]
+            # raise ValueError("==== = {} not ready =".format(type(output_data_ids[0])))
+            completed_data_ids.update(output_data_ids)
+
+            if waited_data_ids:
+                for data_id in waited_data_ids:
+                    data = {"ready": ready, "not_ready": waited_data_ids}
+
+                    if data_id in completed_data_ids:
+                        waited_data_ids.remove(data_id)
+                        ready.append(data_id)
+                    if num_returns == len(ready):
+                        communication.mpi_send_object(
+                            mpi_state.comm,
+                            data,
+                            communication.MPIRank.ROOT,
+                        )
+                        ready = []
+                        waited_data_ids = []
+
+        elif operation_type == common.Operation.WAIT:
+            waited_data_ids = data["data_ids"]
+            num_returns = data["num_returns"]
+            if waited_data_ids:
+                for data_id in waited_data_ids:
+                    if data_id in completed_data_ids:
+                        waited_data_ids.remove(data_id)
+                        ready.append(data_id)
+                    if num_returns == len(ready):
+                        data = {"ready": ready, "not_ready": waited_data_ids}
+                        communication.mpi_send_object(
+                            mpi_state.comm,
+                            data,
+                            source_rank,
+                        )
+                        ready = []
+                        waited_data_ids = []
         elif operation_type == common.Operation.GET_TASK_COUNT:
             # We use a blocking send here because the receiver is waiting for the result.
             communication.mpi_send_object(

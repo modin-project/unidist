@@ -393,19 +393,29 @@ def wait(data_ids, num_returns=1):
 
     if not isinstance(data_ids, list):
         data_ids = [data_ids]
+    operation_type = common.Operation.WAIT
+    data_ids = [common.unwrap_data_ids(arg) for arg in data_ids]
+    data = {
+        "operation_type": operation_type,
+        "data_ids": data_ids,
+        "num_returns": num_returns,
+    }
+    # Monitor the task execution
+    # We use a blocking send here because we have to wait for
+    # completion of the communication, which is necessary for the pipeline to continue.
 
-    ready_count = 0
-    ready = [None] * num_returns
-    not_ready = data_ids
+    communication.mpi_send_object(
+        communication.MPIState.get_instance().comm,
+        data,
+        communication.MPIRank.MONITOR,
+    )
 
-    while ready_count < num_returns:
-        first = not_ready.pop(0)
-        wait_impl(first)
-        ready[ready_count] = first
-        ready_count += 1
-
-    # Initiate reference count based cleaup
-    # if all the tasks were completed
+    data = communication.recv_simple_operation(
+        mpi_state.comm,
+        communication.MPIRank.MONITOR,
+    )
+    ready = data["ready"]
+    not_ready = data["not_ready"]
     garbage_collector.regular_cleanup()
 
     return ready, not_ready

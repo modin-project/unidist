@@ -134,12 +134,16 @@ def request_worker_data(data_id):
     owner_rank = object_store.get_data_owner(data_id)
 
     logger.debug("GET {} id from {} rank".format(data_id._id, owner_rank))
-
+    try:
+        data_id = data_id.base_data_id()
+    # If data_id does not have attribute base_data_id() it is already of type data_id
+    except AttributeError:
+        data_id = data_id
     # Worker request
     operation_type = common.Operation.GET
     operation_data = {
         "source": mpi_state.rank,
-        "id": data_id.base_data_id(),
+        "id": data_id,
         # set `is_blocking_op` to `True` to tell a worker
         # to send the data directly to the requester
         # without any delay
