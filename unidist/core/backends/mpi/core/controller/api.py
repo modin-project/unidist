@@ -389,7 +389,17 @@ def wait(data_ids, num_returns=1):
 
         communication.mpi_busy_wait_recv(mpi_state.comm, owner_rank)
 
+    not_ready = data_ids
+    pending_returns = num_returns
+    ready = []
     logger.debug("WAIT {} ids".format(common.unwrapped_data_ids_list(data_ids)))
+    for data_id in not_ready:
+        if object_store.contains(data_id):
+            ready.append(data_id)
+            not_ready.remove(data_id)
+            pending_returns -= 1
+    if num_returns == len(ready):
+        return ready, not_ready
 
     if not isinstance(data_ids, list):
         data_ids = [data_ids]
@@ -398,7 +408,7 @@ def wait(data_ids, num_returns=1):
     data = {
         "operation_type": operation_type,
         "data_ids": data_ids,
-        "num_returns": num_returns,
+        "num_returns": pending_returns,
     }
     # Monitor the task execution
     # We use a blocking send here because we have to wait for
@@ -414,7 +424,7 @@ def wait(data_ids, num_returns=1):
         mpi_state.comm,
         communication.MPIRank.MONITOR,
     )
-    ready = data["ready"]
+    ready.extend(data["ready"])
     not_ready = data["not_ready"]
     garbage_collector.regular_cleanup()
 
