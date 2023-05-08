@@ -368,27 +368,6 @@ def wait(data_ids, num_returns=1):
     """
     mpi_state = communication.MPIState.get_instance()
 
-    def wait_impl(data_id):
-        if object_store.contains(data_id):
-            return
-
-        owner_rank = object_store.get_data_owner(data_id)
-
-        operation_type = common.Operation.WAIT
-        operation_data = {"id": data_id.base_data_id()}
-        # We use a blocking send here because we have to wait for
-        # completion of the communication, which is necessary for the pipeline to continue.
-        communication.send_simple_operation(
-            mpi_state.comm,
-            operation_type,
-            operation_data,
-            owner_rank,
-        )
-
-        logger.debug("WAIT {} id from {} rank".format(data_id._id, owner_rank))
-
-        communication.mpi_busy_wait_recv(mpi_state.comm, owner_rank)
-
     logger.debug("WAIT {} ids".format(common.unwrapped_data_ids_list(data_ids)))
 
     if not isinstance(data_ids, list):
@@ -429,6 +408,9 @@ def wait(data_ids, num_returns=1):
                 not_ready.remove(data_id)
                 if len(ready) == num_returns:
                     break
+
+    # We have count of data_id as many as num_returns. so we need to send cancel waits
+    # and make sure all the cancels have been complete.
     for owner_rank in data_ownership.keys():
         operation_type = common.Operation.CANCEL_WAIT
         operation_data = {"ids": data_ownership[owner_rank]}
@@ -440,16 +422,12 @@ def wait(data_ids, num_returns=1):
             operation_data,
             owner_rank,
         )
+    # We need to recieve and ignore any data that was send from workers before cancel_wait.
     for owner_rank in data_ownership.keys():
         while True:
             data = comm.recv(source=owner_rank)
             if data == "cancel":
                 break
-
-    # while len(ready) != num_returns:
-    #     first = not_ready.pop(0)
-    #     wait_impl(first)
-    #     ready.append(first)
 
     # Initiate reference count based cleaup
     # if all the tasks were completed
