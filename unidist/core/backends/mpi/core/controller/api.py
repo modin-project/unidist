@@ -368,27 +368,6 @@ def wait(data_ids, num_returns=1):
     """
     mpi_state = communication.MPIState.get_instance()
 
-    def wait_impl(data_id):
-        if object_store.contains(data_id):
-            return
-
-        owner_rank = object_store.get_data_owner(data_id)
-
-        operation_type = common.Operation.WAIT
-        operation_data = {"id": data_id.base_data_id()}
-        # We use a blocking send here because we have to wait for
-        # completion of the communication, which is necessary for the pipeline to continue.
-        communication.send_simple_operation(
-            mpi_state.comm,
-            operation_type,
-            operation_data,
-            owner_rank,
-        )
-
-        logger.debug("WAIT {} id from {} rank".format(data_id._id, owner_rank))
-
-        communication.mpi_busy_wait_recv(mpi_state.comm, owner_rank)
-
     not_ready = data_ids
     pending_returns = num_returns
     ready = []
@@ -411,7 +390,7 @@ def wait(data_ids, num_returns=1):
         "num_returns": pending_returns,
     }
     # Monitor the task execution
-    # We use a blocking send here because we have to wait for
+    # We use a blocking send and recv here because we have to wait for
     # completion of the communication, which is necessary for the pipeline to continue.
 
     communication.mpi_send_object(
@@ -426,6 +405,9 @@ def wait(data_ids, num_returns=1):
     )
     ready.extend(data["ready"])
     not_ready = data["not_ready"]
+
+    # Initiate reference count based cleaup
+    # if all the tasks were completed
     garbage_collector.regular_cleanup()
 
     return ready, not_ready

@@ -44,6 +44,100 @@ class TaskCounter:
         self.task_counter += 1
 
 
+class DataTracker:
+    """
+    Class that keeps track of all completed data_ids.
+
+    """
+
+    __instance = None
+
+    def __init__(self):
+        self.completed_data_ids = set()
+
+    @classmethod
+    def get_instance(cls):
+        """
+        Get instance of ``WaitHandler``.
+
+        Returns
+        -------
+        WaitHandler
+        """
+        if cls.__instance is None:
+            cls.__instance = DataTracker()
+        return cls.__instance
+
+    def add_to_completed(self, data_ids):
+        self.completed_data_ids.update(data_ids)
+
+
+class WaitHandler:
+    """
+    Class that handles wait requests.
+
+    """
+
+    __instance = None
+
+    def __init__(self):
+        self.completed_data_ids = set()
+        self.waited_data_ids = []
+        self.ready = []
+        self.num_returns = 0
+
+    @classmethod
+    def get_instance(cls):
+        """
+        Get instance of ``WaitHandler``.
+
+        Returns
+        -------
+        WaitHandler
+        """
+        if cls.__instance is None:
+            cls.__instance = WaitHandler()
+        return cls.__instance
+
+    def add_wait_request(self, waited_data_ids, num_returns):
+        """
+        Add a wait request for a list of data_ids and number of data_ids to be awaited.
+
+        Parameters
+        ----------
+        waited_data_ids : List[unidist.core.backends.common.data_id.DataID]
+            List of data_ids to be awaited
+        num_returns : int,
+            The number of ``DataID``-s that should be returned as ready.
+        """
+
+        self.waited_data_ids = waited_data_ids
+        self.num_returns = num_returns
+
+    def process_wait_requests(self):
+        """
+        Check if wait requests are pending to be processed.
+
+        Process pending wait requests and send the data_ids if number of data_ids that are
+        ready are equal to the num_returns.
+
+        """
+        if self.waited_data_ids:
+            for data_id in self.waited_data_ids:
+                data = {"ready": self.ready, "not_ready": self.waited_data_ids}
+                if data_id in DataTracker.get_instance().completed_data_ids:
+                    self.waited_data_ids.remove(data_id)
+                    self.ready.append(data_id)
+                if self.num_returns == len(self.ready):
+                    communication.mpi_send_object(
+                        communication.MPIState.get_instance().comm,
+                        data,
+                        communication.MPIRank.ROOT,
+                    )
+                    self.ready = []
+                    self.waited_data_ids = []
+
+
 def monitor_loop():
     """
     Infinite monitor operations processing loop.
@@ -58,10 +152,8 @@ def monitor_loop():
     task_counter = TaskCounter.get_instance()
     mpi_state = communication.MPIState.get_instance()
     async_operations = AsyncOperations.get_instance()
-    completed_data_ids = set()
-    waited_data_ids = []
-    ready = []
-    num_returns = 0
+    wait_handler = WaitHandler.get_instance()
+    data_tracker = DataTracker.get_instance()
 
     while True:
         # Listen receive operation from any source
@@ -71,42 +163,13 @@ def monitor_loop():
         if operation_type == common.Operation.TASK_DONE:
             task_counter.increment()
             output_data_ids = data["output_data_ids"]
-            # raise ValueError("==== = {} not ready =".format(type(output_data_ids[0])))
-            completed_data_ids.update(output_data_ids)
-
-            if waited_data_ids:
-                for data_id in waited_data_ids:
-                    data = {"ready": ready, "not_ready": waited_data_ids}
-
-                    if data_id in completed_data_ids:
-                        waited_data_ids.remove(data_id)
-                        ready.append(data_id)
-                    if num_returns == len(ready):
-                        communication.mpi_send_object(
-                            mpi_state.comm,
-                            data,
-                            communication.MPIRank.ROOT,
-                        )
-                        ready = []
-                        waited_data_ids = []
-
+            data_tracker.add_to_completed(output_data_ids)
+            wait_handler.process_wait_requests()
         elif operation_type == common.Operation.WAIT:
             waited_data_ids = data["data_ids"]
             num_returns = data["num_returns"]
-            if waited_data_ids:
-                for data_id in waited_data_ids:
-                    if data_id in completed_data_ids:
-                        waited_data_ids.remove(data_id)
-                        ready.append(data_id)
-                    if num_returns == len(ready):
-                        data = {"ready": ready, "not_ready": waited_data_ids}
-                        communication.mpi_send_object(
-                            mpi_state.comm,
-                            data,
-                            source_rank,
-                        )
-                        ready = []
-                        waited_data_ids = []
+            wait_handler.add_wait_request(waited_data_ids, num_returns)
+            wait_handler.process_wait_requests()
         elif operation_type == common.Operation.GET_TASK_COUNT:
             # We use a blocking send here because the receiver is waiting for the result.
             communication.mpi_send_object(
