@@ -32,6 +32,16 @@ class Backend(EnvironmentVariable, type=str):
         str
         """
         try:
+            import mpi4py
+        except ImportError:
+            pass
+        else:
+            if version.parse(mpi4py.__version__) < version.parse("3.0.3"):
+                raise ImportError(
+                    "Please `pip install unidist[mpi]` to install compatible MPI version."
+                )
+            return BackendName.MPI
+        try:
             import ray
 
         except ImportError:
@@ -56,16 +66,7 @@ class Backend(EnvironmentVariable, type=str):
                     "Please `pip install unidist[dask]` to install compatible Dask version."
                 )
             return BackendName.DASK
-        try:
-            import mpi4py
-        except ImportError:
-            pass
-        else:
-            if version.parse(mpi4py.__version__) < version.parse("3.0.3"):
-                raise ImportError(
-                    "Please `pip install unidist[mpi]` to install compatible MPI version."
-                )
-            return BackendName.MPI
+        
         return BackendName.PYMP
 
 

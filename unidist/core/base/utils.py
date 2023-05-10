@@ -17,11 +17,17 @@ def init_backend():
     -----
     The concrete execution backend can be set via
     `UNIDIST_BACKEND` environment variable or ``Backend`` config value.
-    Ray backend is used by default.
+    MPI backend is used by default.
     """
     backend_name = Backend.get()
 
-    if backend_name == BackendName.RAY:
+    if backend_name == BackendName.MPI:
+        from unidist.core.backends.mpi.backend import MPIBackend
+        from unidist.core.backends.mpi.utils import initialize_mpi
+
+        initialize_mpi()
+        backend_cls = MPIBackend()
+    elif backend_name == BackendName.RAY:
         from unidist.core.backends.ray.backend import RayBackend
         from unidist.core.backends.ray.utils import initialize_ray
 
@@ -36,12 +42,6 @@ def init_backend():
 
             initialize_dask()
             backend_cls = DaskBackend()
-    elif backend_name == BackendName.MPI:
-        from unidist.core.backends.mpi.backend import MPIBackend
-        from unidist.core.backends.mpi.utils import initialize_mpi
-
-        initialize_mpi()
-        backend_cls = MPIBackend()
     elif backend_name == BackendName.PYMP:
         from unidist.core.backends.pymp.backend import PyMpBackend
         from unidist.core.backends.pymp.utils import (
@@ -75,7 +75,10 @@ def get_backend_proxy():
 
     if backend is None:
         backend_name = Backend.get()
-        if backend_name == BackendName.RAY:
+        if backend_name == BackendName.MPI:
+            from unidist.core.backends.mpi.backend import MPIBackend
+
+        elif backend_name == BackendName.RAY:
             from unidist.core.backends.ray.backend import RayBackend
 
             backend_cls = RayBackend()
@@ -83,9 +86,7 @@ def get_backend_proxy():
             from unidist.core.backends.dask.backend import DaskBackend
 
             backend_cls = DaskBackend()
-        elif backend_name == BackendName.MPI:
-            from unidist.core.backends.mpi.backend import MPIBackend
-
+        
             backend_cls = MPIBackend()
         elif backend_name == BackendName.PYMP:
             from unidist.core.backends.pymp.backend import (
