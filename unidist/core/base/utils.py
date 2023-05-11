@@ -78,6 +78,7 @@ def get_backend_proxy():
         if backend_name == BackendName.MPI:
             from unidist.core.backends.mpi.backend import MPIBackend
 
+            backend_cls = MPIBackend()
         elif backend_name == BackendName.RAY:
             from unidist.core.backends.ray.backend import RayBackend
 
@@ -86,8 +87,7 @@ def get_backend_proxy():
             from unidist.core.backends.dask.backend import DaskBackend
 
             backend_cls = DaskBackend()
-        
-            backend_cls = MPIBackend()
+
         elif backend_name == BackendName.PYMP:
             from unidist.core.backends.pymp.backend import (
                 PyMpBackend,

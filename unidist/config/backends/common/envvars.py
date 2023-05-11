@@ -66,7 +66,7 @@ class Backend(EnvironmentVariable, type=str):
                     "Please `pip install unidist[dask]` to install compatible Dask version."
                 )
             return BackendName.DASK
-        
+
         return BackendName.PYMP
 
 

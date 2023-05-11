@@ -102,7 +102,7 @@ Backend.put("mpi")  # unidist will use MPI
 Backend.put("dask")  # unidist will use Dask
 ```
 
-If you have installed all the execution backends and haven't specified any of the execution backends, Ray is used by default.
+If you have installed all the execution backends and haven't specified any of the execution backends, MPI is used by default.
 
 Since some of the execution backends, particularly, MPI, have some specifics regarding running python programs, please
 refer to [Using Unidist](https://unidist.readthedocs.io/en/latest/using_unidist/index.html) section to get more information on
@@ -114,7 +114,7 @@ setting the execution backend to run on.
 # script.py
 
 import unidist
-unidist.init() # Ray backend is used by default
+unidist.init() # MPI backend is used by default
 
 @unidist.remote
 def foo(x):
