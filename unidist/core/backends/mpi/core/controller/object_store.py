@@ -196,10 +196,10 @@ class ObjectStore:
         elif num_returns == 0:
             output_ids = None
         else:
-            output_ids = []
-            for _ in range(num_returns):
+            output_ids = [None] * num_returns
+            for i in range(num_returns):
                 output_id = self.generate_data_id(gc)
-                output_ids.append(output_id)
+                output_ids[i] = output_id
                 self.put_data_owner(output_id, dest_rank)
         return output_ids
 
