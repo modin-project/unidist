@@ -24,7 +24,7 @@ functions (tasks) and classes (actors).
       import unidist.config as cfg
       import unidist
 
-      # Initialize unidist's backend. The Ray backend is used by default.
+      # Initialize unidist's backend. The MPI backend is used by default.
       unidist.init()
 
       # Apply decorator to make `square` a remote function.
@@ -64,16 +64,15 @@ The examples below use the ``UNIDIST_BACKEND`` environment variable to set the e
 
 .. code-block:: bash
 
-    # Running the script with unidist on Ray backend
-    $ export UNIDIST_BACKEND=ray
-    $ python script.py
     # Running the script with unidist on MPI backend
     $ export UNIDIST_BACKEND=mpi
     $ mpiexec -n 1 python script.py
     # Running the script with unidist on Dask backend
     $ export UNIDIST_BACKEND=dask
     $ python script.py
+    # Running the script with unidist on Ray backend
+    $ export UNIDIST_BACKEND=ray
+    $ python script.py
 
-Since some of the execution backends, particularly, MPI, have some specifics regarding running python programs,
-please refer to  :doc:`Using Unidist </using_unidist/index>` section to get more information on
-setting the execution backend to run on.
+You probably noticed one specific thing when using the MPI backend to run the script, namely, the use of ``mpiexec`` command.
+Currently, almost all MPI implementations require ``mpiexec`` command to be used when running an MPI program.

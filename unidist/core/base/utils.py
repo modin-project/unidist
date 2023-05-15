@@ -27,12 +27,6 @@ def init_backend():
 
         initialize_mpi()
         backend_cls = MPIBackend()
-    elif backend_name == BackendName.RAY:
-        from unidist.core.backends.ray.backend import RayBackend
-        from unidist.core.backends.ray.utils import initialize_ray
-
-        initialize_ray()
-        backend_cls = RayBackend()
     elif backend_name == BackendName.DASK:
         import threading
 
@@ -42,6 +36,12 @@ def init_backend():
 
             initialize_dask()
             backend_cls = DaskBackend()
+    elif backend_name == BackendName.RAY:
+        from unidist.core.backends.ray.backend import RayBackend
+        from unidist.core.backends.ray.utils import initialize_ray
+
+        initialize_ray()
+        backend_cls = RayBackend()
     elif backend_name == BackendName.PYMP:
         from unidist.core.backends.pymp.backend import PyMpBackend
         from unidist.core.backends.pymp.utils import (
@@ -79,15 +79,14 @@ def get_backend_proxy():
             from unidist.core.backends.mpi.backend import MPIBackend
 
             backend_cls = MPIBackend()
-        elif backend_name == BackendName.RAY:
-            from unidist.core.backends.ray.backend import RayBackend
-
-            backend_cls = RayBackend()
         elif backend_name == BackendName.DASK:
             from unidist.core.backends.dask.backend import DaskBackend
 
             backend_cls = DaskBackend()
+        elif backend_name == BackendName.RAY:
+            from unidist.core.backends.ray.backend import RayBackend
 
+            backend_cls = RayBackend()
         elif backend_name == BackendName.PYMP:
             from unidist.core.backends.pymp.backend import (
                 PyMpBackend,
