@@ -122,12 +122,17 @@ class WaitHandler:
         ready are equal to the num_returns.
 
         """
+        i = 0
         if self.waited_data_ids:
-            for data_id in self.waited_data_ids:
+            while i < len(self.waited_data_ids):
+                data_id = self.waited_data_ids[i]
                 data = {"ready": self.ready, "not_ready": self.waited_data_ids}
+
                 if data_id in DataTracker.get_instance().completed_data_ids:
                     self.waited_data_ids.remove(data_id)
                     self.ready.append(data_id)
+                else:
+                    i = i + 1
                 if self.num_returns == len(self.ready):
                     communication.mpi_send_object(
                         communication.MPIState.get_instance().comm,
