@@ -13,9 +13,9 @@ What is unidist?
 unidist (`Unified Distributed Execution`) is a framework that is intended to provide the unified API for distributed
 execution by supporting various performant execution backends. At the moment the following backends are supported under the hood:
 
-* `Ray`_
 * `MPI`_
 * `Dask Distributed`_
+* `Ray`_
 * `Python Multiprocessing`_
 
 Also, the framework provides a Python Sequential backend (:doc:`pyseq <flow/unidist/core/backends/pyseq/backend>`),
@@ -50,7 +50,7 @@ The example below describes squaring the numbers from a list using unidist:
    if __name__ == "__main__":
       import unidist
 
-      unidist.init() # Initialize unidist's backend.
+      unidist.init() # Initialize unidist's backend. MPI is used by default.
 
       @unidist.remote # Apply a decorator to make `foo` a remote function.
       def foo(x):
@@ -67,7 +67,8 @@ Run the `script.py` with:
 
 .. code-block:: bash
 
-    $ python script.py
+    $ mpiexec -n 1 python script.py  # for MPI backend
+    # python script.py  # for any other supported backend
 
 .. toctree::
    :hidden:

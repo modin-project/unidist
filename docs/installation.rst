@@ -25,14 +25,14 @@ To install the most recent stable release run the following:
 
   pip install unidist # Install unidist with dependencies for Python Multiprocessing and Python Sequential backends
 
-unidist can also be used with Dask, MPI or Ray execution backend.
-If you don't have Dask_, MPI_ or Ray_ installed, you will need to install unidist with one of the targets:
+unidist can also be used with MPI, Dask or Ray execution backend.
+If you don't have MPI_, Dask_ or Ray_ installed, you will need to install unidist with one of the targets:
 
 .. code-block:: bash
 
   pip install unidist[all] # Install unidist with dependencies for all the backends
-  pip install unidist[dask] # Install unidist with dependencies for Dask backend
   pip install unidist[mpi] # Install unidist with dependencies for MPI backend
+  pip install unidist[dask] # Install unidist with dependencies for Dask backend
   pip install unidist[ray] # Install unidist with dependencies for Ray backend
 
 unidist automatically detects which execution backends are installed and uses that for
@@ -68,26 +68,26 @@ Using conda-forge channel
 unidist releases can be installed using ``conda`` from the conda-forge channel. Starting from the first 0.1.0 release
 it is possible to install unidist with chosen execution backend(s) alongside. Current options are:
 
-+---------------------------------+-----------------------------------------------------+-----------------------------+
-| **Package name in conda-forge** | **Backend(s)**                                      | **Supported OSs**           |
-+---------------------------------+-----------------------------------------------------+-----------------------------+
-| unidist                         | `Multiprocessing`_, Python                          | Linux, Windows, MacOS       |
-+---------------------------------+-----------------------------------------------------+-----------------------------+
-| unidist-all                     | `Dask`_, `MPI`_, `Ray`_, `Multiprocessing`_, Python | Linux, Windows              |
-+---------------------------------+-----------------------------------------------------+-----------------------------+
-| unidist-dask                    | `Dask`_                                             | Linux, Windows, MacOS       |
-+---------------------------------+-----------------------------------------------------+-----------------------------+
-| unidist-mpi                     | `MPI`_                                              | Linux, Windows, MacOS       |
-+---------------------------------+-----------------------------------------------------+-----------------------------+
-| unidist-ray                     | `Ray`_                                              | Linux, Windows              |
-+---------------------------------+-----------------------------------------------------+-----------------------------+
++---------------------------------+-----------------------------------------------------------------------+-----------------------------+
+| **Package name in conda-forge** | **Backend(s)**                                                        | **Supported OSs**           |
++---------------------------------+-----------------------------------------------------------------------+-----------------------------+
+| unidist                         | `Python Multiprocessing`_, Python Sequential                          | Linux, Windows, MacOS       |
++---------------------------------+-----------------------------------------------------------------------+-----------------------------+
+| unidist-all                     | `MPI`_, `Dask`_, `Ray`_, `Python Multiprocessing`_, Python Sequential | Linux, Windows              |
++---------------------------------+-----------------------------------------------------------------------+-----------------------------+
+| unidist-mpi                     | `MPI`_                                                                | Linux, Windows, MacOS       |
++---------------------------------+-----------------------------------------------------------------------+-----------------------------+
+| unidist-dask                    | `Dask`_                                                               | Linux, Windows, MacOS       |
++---------------------------------+-----------------------------------------------------------------------+-----------------------------+
+| unidist-ray                     | `Ray`_                                                                | Linux, Windows              |
++---------------------------------+-----------------------------------------------------------------------+-----------------------------+
 
-For installing unidist with dependencies for Dask and MPI execution backends into a conda environment
+For installing unidist with dependencies for MPI and Dask execution backends into a conda environment
 the following command should be used:
 
 .. code-block:: bash
 
-  conda install unidist-dask unidist-mpi -c conda-forge
+  conda install unidist-mpi unidist-dask -c conda-forge
 
 All set of backends could be available in a conda environment by specifying:
 
@@ -99,7 +99,7 @@ or explicitly:
 
 .. code-block:: bash
 
-  conda install unidist-dask unidist-mpi unidist-ray -c conda-forge
+  conda install unidist-mpi unidist-dask unidist-ray -c conda-forge
 
 .. note:: 
     There are different MPI implementations, each of which can be used as a backend in unidist.
@@ -113,7 +113,7 @@ Using intel channel
 """""""""""""""""""
 
 Conda ``intel`` channel contains a performant `MPI implementaion <https://anaconda.org/intel/mpi4py>`_,
-which can be used in the unidist MPI backend instead of the MPI implementation from ``conda-forge`` channel.
+which can be used in the unidist MPI backend instead of an MPI implementation from ``conda-forge`` channel.
 To install Intel MPI you should use the following:
 
 .. code-block:: bash
@@ -133,8 +133,8 @@ also use ``pip``.
   pip install git+https://github.com/modin-project/unidist
   # Install unidist with dependencies for all the backends
   pip install git+https://github.com/modin-project/unidist#egg=unidist[all]
-  # Install unidist with dependencies for Ray backend
-  pip install git+https://github.com/modin-project/unidist#egg=unidist[ray]
+  # Install unidist with dependencies for MPI backend
+  pip install git+https://github.com/modin-project/unidist#egg=unidist[mpi]
 
 This will install directly from the repo without you having to manually clone it! Please be aware
 that these changes have not made it into a release and may not be completely stable.
@@ -167,14 +167,14 @@ Once cloned, ``cd`` into the ``unidist`` directory and use ``pip`` to install:
   pip install -e .
   # Install unidist with dependencies for all the backends
   pip install -e .[all]
-  # Install unidist with dependencies for Ray backend
-  pip install -e .[ray]
+  # Install unidist with dependencies for MPI backend
+  pip install -e .[mpi]
 
 .. _`GitHub repo`: https://github.com/modin-project/unidist/tree/master
 .. _`issue`: https://github.com/modin-project/unidist/issues
 .. _`Ray`: https://docs.ray.io/en/master/index.html
 .. _`Dask`: https://distributed.dask.org/en/latest/
-.. _`Multiprocessing`: https://docs.python.org/3/library/multiprocessing.html
+.. _`Python Multiprocessing`: https://docs.python.org/3/library/multiprocessing.html
 .. _`MPI`: https://www.mpi-forum.org/
 .. _`Semantic Versioning`: https://semver.org
 .. _`installation`: https://mpi4py.readthedocs.io/en/latest/install.html

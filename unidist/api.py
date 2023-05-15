@@ -87,7 +87,7 @@ def init():
     -----
     The concrete execution backend can be set via
     `UNIDIST_BACKEND` environment variable or ``Backend`` config value.
-    Ray backend is used by default.
+    MPI backend is used by default.
     """
     init_backend()
 

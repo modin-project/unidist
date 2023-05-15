@@ -13,9 +13,9 @@
 
 unidist is a framework that is intended to provide the unified API for distributed execution by supporting various performant execution backends. At the moment the following backends are supported under the hood:
 
-* [Ray](https://docs.ray.io/en/master/index.html)
 * [MPI](https://www.mpi-forum.org/)
 * [Dask Distributed](https://distributed.dask.org/en/latest/)
+* [Ray](https://docs.ray.io/en/master/index.html)
 * [Python Multiprocessing](https://docs.python.org/3/library/multiprocessing.html)
 
 unidist is designed to work in a [task-based parallel](https://en.wikipedia.org/wiki/Task_parallelism) model.
@@ -32,13 +32,13 @@ unidist can be installed with `pip` on Linux, Windows and MacOS:
 pip install unidist # Install unidist with dependencies for Python Multiprocessing and Python Sequential backends
 ```
 
-unidist can also be used with Dask, MPI or Ray execution backend.
-If you don't have Dask, MPI or Ray installed, you will need to install unidist with one of the targets:
+unidist can also be used with MPI, Dask or Ray execution backend.
+If you don't have MPI, Dask or Ray installed, you will need to install unidist with one of the targets:
 
 ```bash
 pip install unidist[all] # Install unidist with dependencies for all the backends
-pip install unidist[dask] # Install unidist with dependencies for Dask backend
 pip install unidist[mpi] # Install unidist with dependencies for MPI backend
+pip install unidist[dask] # Install unidist with dependencies for Dask backend
 pip install unidist[ray] # Install unidist with dependencies for Ray backend
 ```
 
@@ -52,11 +52,11 @@ section of mpi4py documentation.
 
 #### Using conda
 
-For installing unidist with dependencies for Dask and MPI execution backends into a conda environment
+For installing unidist with dependencies for MPI and Dask execution backends into a conda environment
 the following command should be used:
 
 ```bash
-conda install unidist-dask unidist-mpi -c conda-forge
+conda install unidist-mpi unidist-dask -c conda-forge
 ```
 
 All set of backends could be available in a conda environment by specifying:
@@ -68,7 +68,7 @@ conda install unidist-all -c conda-forge
 or explicitly:
 
 ```bash
-conda install unidist-dask unidist-mpi unidist-ray -c conda-forge
+conda install unidist-mpi unidist-dask unidist-ray -c conda-forge
 ```
 
 **Note:** There are different MPI implementations, each of which can be used as a backend in unidist.
@@ -87,9 +87,9 @@ If you want to choose a specific execution backend to run on,
 you can set the environment variable `UNIDIST_BACKEND` and unidist will do computation with that backend:
 
 ```bash
-export UNIDIST_BACKEND=ray  # unidist will use Ray
 export UNIDIST_BACKEND=mpi  # unidist will use MPI
 export UNIDIST_BACKEND=dask  # unidist will use Dask
+export UNIDIST_BACKEND=ray  # unidist will use Ray
 ```
 
 This can also be done within a notebook/interpreter before you initialize unidist:
@@ -97,16 +97,14 @@ This can also be done within a notebook/interpreter before you initialize unidis
 ```python
 from unidist.config import Backend
 
-Backend.put("ray")  # unidist will use Ray
 Backend.put("mpi")  # unidist will use MPI
 Backend.put("dask")  # unidist will use Dask
+Backend.put("ray")  # unidist will use Ray
 ```
 
-If you have installed all the execution backends and haven't specified any of the execution backends, Ray is used by default.
-
-Since some of the execution backends, particularly, MPI, have some specifics regarding running python programs, please
-refer to [Using Unidist](https://unidist.readthedocs.io/en/latest/using_unidist/index.html) section to get more information on
-setting the execution backend to run on.
+If you have installed all the execution backends and haven't specified any of the execution backends, MPI is used by default.
+Currently, almost all MPI implementations require ``mpiexec`` command to be used when running an MPI program.
+If you use a backend other than MPI, you run a program as a regular python script (see below).
 
 #### Usage
 
@@ -114,7 +112,7 @@ setting the execution backend to run on.
 # script.py
 
 import unidist
-unidist.init() # Ray backend is used by default
+unidist.init() # MPI backend is used by default
 
 @unidist.remote
 def foo(x):
@@ -130,8 +128,9 @@ print(unidist.get(refs))
 Run the `script.py` with:
 
 ```bash
-$ python script.py
-[0, 1, 4, 9, 16] # output
+$ mpiexec -n 1 python script.py  # for MPI backend
+# $ python script.py  # for any other supported backend
+[0, 1, 4, 9, 16]  # output
 ```
 
 For more examples refer to [Getting Started](https://unidist.readthedocs.io/en/latest/getting_started.html) section

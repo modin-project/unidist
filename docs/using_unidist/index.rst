@@ -8,9 +8,9 @@ Using Unidist
 
 This page contains information on how to choose a concrete execution backend and run unidist with it.
 
-- :doc:`Unidist on Ray <unidist_on_ray>`
 - :doc:`Unidist on MPI <unidist_on_mpi>`
 - :doc:`Unidist on Dask <unidist_on_dask>`
+- :doc:`Unidist on Ray <unidist_on_ray>`
 - :doc:`Unidist on PyMp <unidist_on_pymp>`
 - :doc:`Unidist on PySeq <unidist_on_pyseq>`
 
