@@ -394,7 +394,6 @@ def wait(data_ids, num_returns=1):
     if not isinstance(data_ids, list):
         data_ids = [data_ids]
 
-    # Counts the items ready
     ready_count = 0
     ready = [None] * num_returns
     not_ready = data_ids
@@ -403,7 +402,7 @@ def wait(data_ids, num_returns=1):
         first = not_ready.pop(0)
         wait_impl(first)
         ready[ready_count] = first
-        ready_count = ready_count + 1
+        ready_count += 1
 
     # Initiate reference count based cleaup
     # if all the tasks were completed
