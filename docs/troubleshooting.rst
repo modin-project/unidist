@@ -16,10 +16,10 @@ Frequently encountered issues
 This is a list of the most frequently encountered issues when using Unidist. Some of these 
 are working as intended, while others are known bugs that are being actively worked on.
 
-Error when using Open MPI while running on a cluster: ``bash: line 1: orted: command not found``
-------------------------------------------------------------------------------------------------
+Error when using Open MPI while running in a cluster: ``bash: line 1: orted: command not found``
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Sometimes, when you run a program with Open MPI on a cluster, you may see the following error:
+Sometimes, when you run a program with Open MPI in a cluster, you may see the following error:
 
 .. code-block:: bash
 
@@ -48,10 +48,9 @@ Sometimes, when you run a program with Open MPI on a cluster, you may see the fo
     and network routing requirements).
   --------------------------------------------------------------------------
 
-Solution
-^^^^^^^^
+**Solution**
 
-Just add the ``--prefix`` parameter to the ``mpiexec`` command with the path to the installed 
+You should add the ``--prefix`` parameter to the ``mpiexec`` command with the path to the installed 
 Open MPI library. If you are using a conda environment, then the required path will be: 
 ``$CONDA_PATH/envs/<ENV_NAME>``.
 
