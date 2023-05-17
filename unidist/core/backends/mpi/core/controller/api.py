@@ -160,7 +160,22 @@ def init():
             hosts = MpiHosts.get()
             info = MPI.Info.Create()
             if hosts:
-                info.Set("hosts", hosts)
+                if "Open MPI" in MPI.Get_library_version():
+                    host_list = str(hosts).split(",")
+                    workers_per_host = [
+                        int(nprocs_to_spawn / len(host_list))
+                        + (1 if i < nprocs_to_spawn % len(host_list) else 0)
+                        for i in range(len(host_list))
+                    ]
+                    hosts = ",".join(
+                        [
+                            f"{host}:{workers_per_host[i]}"
+                            for i, host in enumerate(host_list)
+                        ]
+                    )
+                    info.Set("add-host", hosts)
+                else:
+                    info.Set("hosts", hosts)
 
             intercomm = MPI.COMM_SELF.Spawn(
                 sys.executable,
