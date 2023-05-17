@@ -78,6 +78,7 @@ Run the `script.py` with:
    using_unidist/index
    developer/architecture
    developer/contributing
+   troubleshooting
 
 To get started with unidist refer to the :doc:`getting started <getting_started>` page.
 
