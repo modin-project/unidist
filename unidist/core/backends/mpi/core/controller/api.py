@@ -371,31 +371,30 @@ def wait(data_ids, num_returns=1):
     not_ready = data_ids
     pending_returns = num_returns
     ready = []
+
     logger.debug("WAIT {} ids".format(common.unwrapped_data_ids_list(data_ids)))
+    if not isinstance(data_ids, list):
+        data_ids = [data_ids]
     for data_id in not_ready:
         if object_store.contains(data_id):
             ready.append(data_id)
             not_ready.remove(data_id)
             pending_returns -= 1
-    if num_returns == len(ready):
-        return ready, not_ready
+        if num_returns == len(ready):
+            return ready, not_ready
 
-    if not isinstance(data_ids, list):
-        data_ids = [data_ids]
     operation_type = common.Operation.WAIT
     data_ids = [common.unwrap_data_ids(arg) for arg in data_ids]
-    data = {
-        "operation_type": operation_type,
+    operation_data = {
         "data_ids": data_ids,
         "num_returns": pending_returns,
     }
-    # Monitor the task execution
     # We use a blocking send and recv here because we have to wait for
     # completion of the communication, which is necessary for the pipeline to continue.
-
-    communication.mpi_send_object(
+    communication.send_simple_operation(
         communication.MPIState.get_instance().comm,
-        data,
+        operation_type,
+        operation_data,
         communication.MPIRank.MONITOR,
     )
 

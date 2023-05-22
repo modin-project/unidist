@@ -250,10 +250,13 @@ class TaskStore:
                             isinstance(output_data_ids, (list, tuple))
                             and len(output_data_ids) > 1
                         ):
-                            completed_data_ids = output_data_ids
-                            for output_id, value in zip(output_data_ids, output_values):
+                            completed_data_ids = [None] * len(output_data_ids)
+                            for index, (output_id, value) in enumerate(
+                                zip(output_data_ids, output_values)
+                            ):
                                 data_id = object_store.get_unique_data_id(output_id)
                                 object_store.put(data_id, value)
+                                completed_data_ids[index] = data_id
                         else:
                             data_id = object_store.get_unique_data_id(output_data_ids)
                             object_store.put(data_id, output_values)
@@ -263,18 +266,14 @@ class TaskStore:
                             output_data_ids
                         )
 
-                # completed_data_ids = [common.unwrap_data_ids(arg) for arg in completed_data_ids]
-                data = {
-                    "operation_type": common.Operation.TASK_DONE,
-                    "output_data_ids": completed_data_ids,
-                }
                 # Monitor the task execution
                 # We use a blocking send here because we have to wait for
                 # completion of the communication, which is necessary for the pipeline to continue.
 
-                communication.mpi_send_object(
+                communication.send_simple_operation(
                     communication.MPIState.get_instance().comm,
-                    data,
+                    common.Operation.TASK_DONE,
+                    completed_data_ids,
                     communication.MPIRank.MONITOR,
                 )
 
@@ -325,26 +324,25 @@ class TaskStore:
                         isinstance(output_data_ids, (list, tuple))
                         and len(output_data_ids) > 1
                     ):
-                        completed_data_ids = output_data_ids
-                        for output_id, value in zip(output_data_ids, output_values):
+                        completed_data_ids = [None] * len(output_data_ids)
+                        for index, (output_id, value) in enumerate(
+                            zip(output_data_ids, output_values)
+                        ):
                             data_id = object_store.get_unique_data_id(output_id)
                             object_store.put(data_id, value)
+                            completed_data_ids[index] = data_id
                     else:
                         data_id = object_store.get_unique_data_id(output_data_ids)
                         object_store.put(data_id, output_values)
                         completed_data_ids = [data_id]
 
-            # completed_data_ids = [common.unwrap_data_ids(arg) for arg in completed_data_ids]
-            data = {
-                "operation_type": common.Operation.TASK_DONE,
-                "output_data_ids": completed_data_ids,
-            }
             # Monitor the task execution.
             # We use a blocking send here because we have to wait for
             # completion of the communication, which is necessary for the pipeline to continue.
-            communication.mpi_send_object(
+            communication.send_simple_operation(
                 communication.MPIState.get_instance().comm,
-                data,
+                common.Operation.TASK_DONE,
+                completed_data_ids,
                 communication.MPIRank.MONITOR,
             )
 
