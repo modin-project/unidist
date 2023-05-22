@@ -251,12 +251,12 @@ class TaskStore:
                             and len(output_data_ids) > 1
                         ):
                             completed_data_ids = [None] * len(output_data_ids)
-                            for index, (output_id, value) in enumerate(
+                            for idx, (output_id, value) in enumerate(
                                 zip(output_data_ids, output_values)
                             ):
                                 data_id = object_store.get_unique_data_id(output_id)
                                 object_store.put(data_id, value)
-                                completed_data_ids[index] = data_id
+                                completed_data_ids[idx] = data_id
                         else:
                             data_id = object_store.get_unique_data_id(output_data_ids)
                             object_store.put(data_id, output_values)
@@ -265,11 +265,9 @@ class TaskStore:
                         RequestStore.get_instance().check_pending_get_requests(
                             output_data_ids
                         )
-
                 # Monitor the task execution
                 # We use a blocking send here because we have to wait for
                 # completion of the communication, which is necessary for the pipeline to continue.
-
                 communication.send_simple_operation(
                     communication.MPIState.get_instance().comm,
                     common.Operation.TASK_DONE,
@@ -325,17 +323,16 @@ class TaskStore:
                         and len(output_data_ids) > 1
                     ):
                         completed_data_ids = [None] * len(output_data_ids)
-                        for index, (output_id, value) in enumerate(
+                        for idx, (output_id, value) in enumerate(
                             zip(output_data_ids, output_values)
                         ):
                             data_id = object_store.get_unique_data_id(output_id)
                             object_store.put(data_id, value)
-                            completed_data_ids[index] = data_id
+                            completed_data_ids[idx] = data_id
                     else:
                         data_id = object_store.get_unique_data_id(output_data_ids)
                         object_store.put(data_id, output_values)
                         completed_data_ids = [data_id]
-
             # Monitor the task execution.
             # We use a blocking send here because we have to wait for
             # completion of the communication, which is necessary for the pipeline to continue.

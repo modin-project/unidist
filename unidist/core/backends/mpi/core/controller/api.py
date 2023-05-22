@@ -366,44 +366,50 @@ def wait(data_ids, num_returns=1):
     tuple
         List of data IDs that are ready and list of the remaining data IDs.
     """
-    mpi_state = communication.MPIState.get_instance()
-
+    if not isinstance(data_ids, list):
+        data_ids = [data_ids]
+    # Since the controller should operate MasterDataID(s),
+    # we use this map to retrieve and return them
+    # instead of DataID(s) received from workers.
+    data_id_map = dict(zip(data_ids, data_ids))
     not_ready = data_ids
     pending_returns = num_returns
     ready = []
 
     logger.debug("WAIT {} ids".format(common.unwrapped_data_ids_list(data_ids)))
-    if not isinstance(data_ids, list):
-        data_ids = [data_ids]
     for data_id in not_ready:
         if object_store.contains(data_id):
             ready.append(data_id)
             not_ready.remove(data_id)
             pending_returns -= 1
-        if num_returns == len(ready):
-            return ready, not_ready
+            if len(ready) == num_returns:
+                return ready, not_ready
 
     operation_type = common.Operation.WAIT
-    data_ids = [common.unwrap_data_ids(arg) for arg in data_ids]
+    not_ready = [common.unwrap_data_ids(arg) for arg in not_ready]
     operation_data = {
-        "data_ids": data_ids,
+        "data_ids": not_ready,
         "num_returns": pending_returns,
     }
+    mpi_state = communication.MPIState.get_instance()
     # We use a blocking send and recv here because we have to wait for
     # completion of the communication, which is necessary for the pipeline to continue.
     communication.send_simple_operation(
-        communication.MPIState.get_instance().comm,
+        mpi_state.comm,
         operation_type,
         operation_data,
         communication.MPIRank.MONITOR,
     )
-
     data = communication.recv_simple_operation(
         mpi_state.comm,
         communication.MPIRank.MONITOR,
     )
     ready.extend(data["ready"])
     not_ready = data["not_ready"]
+    # We have to retrieve and return MasterDataID(s)
+    # in order for the controller to operate them in further operations.
+    ready = [data_id_map[data_id] for data_id in ready]
+    not_ready = [data_id_map[data_id] for data_id in not_ready]
 
     # Initiate reference count based cleaup
     # if all the tasks were completed
