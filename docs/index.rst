@@ -76,6 +76,7 @@ Run the `script.py` with:
    installation
    getting_started
    using_unidist/index
+   optimization_notes/index
    developer/architecture
    developer/contributing
    troubleshooting
