@@ -67,6 +67,7 @@ To use the installed Open MPI you will have to first adapt your ``PATH`` environ
 Then, you can install ``unidist`` and the required dependencies for the MPI backend.
 
 .. code-block:: bash
+
   pip install mpi4py
   pip install msgpack
   pip install unidist
@@ -138,6 +139,7 @@ To use the installed MPICH you will have to first adapt your ``PATH`` environmen
 Then, you can install ``unidist`` and the required dependencies for the MPI backend.
 
 .. code-block:: bash
+
   pip install mpi4py
   pip install msgpack
   pip install unidist
@@ -194,6 +196,7 @@ During installation process you can choose a directory in which the toolkit shou
 5. Install ``unidist`` and the required dependencies for the MPI backend
 
 .. code-block:: bash
+
   pip install mpi4py
   pip install msgpack
   pip install unidist
