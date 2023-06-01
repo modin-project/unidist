@@ -56,14 +56,9 @@ This will install Open MPI in ``local/openmpi`` directory. You can speed up
 the compilation by replacing the ``make all`` command with ``make -j4 all``
 (this will compile using 4 cores).
 
-6. Remove the temporary directories (optional):
+6. Install ``unidist`` and the required dependencies for the MPI backend
 
-.. code-block:: bash
-
-  rm path/to/local/openmpi-4.1.5.tar.bz2
-  rm -rf path/to/local/openmpi-4.1.5
-
-To use the installed Open MPI you will have to adapt your ``PATH`` and ``MPICC`` environment variables.
+To use the installed Open MPI you will have to first adapt your ``PATH`` environment variable.
 
 .. code-block:: bash
 
@@ -77,6 +72,13 @@ Then, you can install ``unidist`` and the required dependencies for the MPI back
   pip install unidist
 
 Now you can use unidist on MPI backend using Open MPI implementaion.
+
+7. Remove the temporary directories (optional):
+
+.. code-block:: bash
+
+  rm path/to/local/openmpi-4.1.5.tar.bz2
+  rm -rf path/to/local/openmpi-4.1.5
 
 MPICH
 -----
@@ -125,14 +127,9 @@ This will install Open MPI in ``local/mpich`` directory. You can speed up
 the compilation by replacing the ``make all`` command with ``make -j4 all``
 (this will compile using 4 cores).
 
-6. Remove the temporary directories (optional):
+6. Install ``unidist`` and the required dependencies for the MPI backend
 
-.. code-block:: bash
-
-  rm path/to/local/mpich-4.1.1.tar.gz
-  rm -rf path/to/local/mpich-4.1.1
-
-To use the installed MPICH you will have to adapt your ``PATH`` and ``MPICC`` environment variables.
+To use the installed MPICH you will have to first adapt your ``PATH`` environment variable.
 
 .. code-block:: bash
 
@@ -146,6 +143,13 @@ Then, you can install ``unidist`` and the required dependencies for the MPI back
   pip install unidist
 
 Now you can use unidist on MPI backend using MPICH implementaion.
+
+7. Remove the temporary directories (optional):
+
+.. code-block:: bash
+
+  rm path/to/local/mpich-4.1.1.tar.gz
+  rm -rf path/to/local/mpich-4.1.1
 
 Intel MPI
 ---------
@@ -178,23 +182,16 @@ Note that we use the specific version of the toolkit as an example. You can inst
   sh ./l_HPCKit_p_2023.1.0.46346_offline.sh
 
 During installation process you can choose a directory in which the toolkit should be installed
-(e.g., ``local/path/to/toolkit``).
+(e.g., ``path/to/local/<toolkit>``).
 
 4. Source the ``setvars.sh`` (global to the toolkit) or the ``vars.sh`` (local to the Intel MPI)
 
 .. code-block:: bash
 
-  # source local/path/to/toolkit/oneapi/setvars.sh
-  source local/path/to/toolkit/oneapi/mpi/latest/env/vars.sh
+  # source path/to/local/<toolkit>/oneapi/setvars.sh
+  source path/to/local/<toolkit>/oneapi/mpi/latest/env/vars.sh
 
-5. Remove the installer (optional):
-
-.. code-block:: bash
-
-  rm l_HPCKit_p_2023.1.0.46346_offline.sh
-
-
-6. Install ``unidist`` and the required dependencies for the MPI backend.
+5. Install ``unidist`` and the required dependencies for the MPI backend
 
 .. code-block:: bash
   pip install mpi4py
@@ -202,5 +199,11 @@ During installation process you can choose a directory in which the toolkit shou
   pip install unidist
 
 Now you can use unidist on MPI backend using Intel MPI implementaion.
+
+6. Remove the installer (optional):
+
+.. code-block:: bash
+
+  rm l_HPCKit_p_2023.1.0.46346_offline.sh
 
 .. _`Intel oneAPI HPC Toolkit`: https://www.intel.com/content/www/us/en/developer/tools/oneapi/hpc-toolkit-download.html
