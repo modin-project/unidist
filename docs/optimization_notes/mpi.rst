@@ -24,23 +24,25 @@ The following instructions will help you install Open MPI from source to use it 
   mkdir local
   cd local
 
-2. Download openmpi-<x.y.z>.tar.bz2 from http://www.open-mpi.org, e.g., using ``curl`` command
+2. Download ``openmpi-4.1.5.tar.bz2`` from http://www.open-mpi.org, e.g., using ``curl`` command
 
 .. code-block:: bash
 
-  curl -O https://download.open-mpi.org/release/open-mpi/v<x.y>/openmpi-<x.y.z>.tar.bz2
+  curl -O https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.5.tar.bz2
+
+Note that we use the specific version of Open MPI as an example. You can install any version you want.
 
 3. Extract the package using
 
 .. code-block:: bash
 
-  tar -jxf openmpi-<x.y.z>.tar.bz2
+  tar -jxf openmpi-4.1.5.tar.bz2
 
 4. Go into the source directory
 
 .. code-block:: bash
 
-  cd openmpi-<x.y.z>
+  cd openmpi-4.1.5
 
 5. Configure, compile and install by executing the following commands
 
@@ -58,8 +60,8 @@ the compilation by replacing the ``make all`` command with ``make -j4 all``
 
 .. code-block:: bash
 
-  rm path/to/local/openmpi-<x.y.z>.tar.bz2
-  rm -rf path/to/local/openmpi-<x.y.z>
+  rm path/to/local/openmpi-4.1.5.tar.bz2
+  rm -rf path/to/local/openmpi-4.1.5
 
 To use the installed Open MPI you will have to adapt your ``PATH`` and ``MPICC`` environment variables.
 
@@ -91,23 +93,25 @@ The following instructions will help you install MPICH from source to use it as 
   mkdir local
   cd local
 
-2. Download mpich-<x.y.z>.tar.gz from https://www.mpich.org, e.g., using ``curl`` command
+2. Download ``mpich-4.1.1.tar.gz`` from https://www.mpich.org, e.g., using ``curl`` command
 
 .. code-block:: bash
 
-  curl -O https://www.mpich.org/static/downloads/<x.y.z>/mpich-<x.y.z>.tar.gz
+  curl -O https://www.mpich.org/static/downloads/4.1.1/mpich-4.1.1.tar.gz
+
+Note that we use the specific version of MPICH as an example. You can install any version you want.
 
 3. Extract the package using
 
 .. code-block:: bash
 
-  tar -xzvf mpich-<x.y.z>.tar.gz
+  tar -xzvf mpich-4.1.1.tar.gz
 
 4. Go into the source directory
 
 .. code-block:: bash
 
-  cd mpich-<x.y.z>
+  cd mpich-4.1.1
 
 5. Configure, compile and install by executing the following commands
 
@@ -125,8 +129,8 @@ the compilation by replacing the ``make all`` command with ``make -j4 all``
 
 .. code-block:: bash
 
-  rm path/to/local/mpich-<x.y.z>.tar.gz
-  rm -rf path/to/local/mpich-<x.y.z>
+  rm path/to/local/mpich-4.1.1.tar.gz
+  rm -rf path/to/local/mpich-4.1.1
 
 To use the installed MPICH you will have to adapt your ``PATH`` and ``MPICC`` environment variables.
 

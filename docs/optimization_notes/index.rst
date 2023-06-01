@@ -11,8 +11,5 @@ This page contains optimization notes for every backend that can be applied to i
 - :doc:`MPI <mpi>`
 - :doc:`Dask <dask>`
 - :doc:`Ray <ray>`
-- :doc:`PyMp pymp>`
+- :doc:`PyMp <pymp>`
 - :doc:`PySeq <pyseq>`
-
-.. _`Modin`: https://github.com/modin-project/modin
-.. _`Using pandas on Unidist`: https://modin.readthedocs.io/en/latest/development/using_pandas_on_unidist.html
