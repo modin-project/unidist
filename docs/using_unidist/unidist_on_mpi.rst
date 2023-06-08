@@ -67,7 +67,7 @@ without using ``mpiexec`` command so you can run unidist on Intel MPI just with:
 
 Refer to ``Using intel channel`` section of :doc:`Installation </installation>` page on how to install Intel MPI implementation to use it with unidist.
 
-SMPD model
+SPMD model
 ----------
 
 First of all, to run unidist on MPI in a single node using `SPMD model <https://en.wikipedia.org/wiki/Single_program,_multiple_data>`_,
