@@ -15,6 +15,7 @@ except ImportError:
         "Missing dependency 'mpi4py'. Use pip or conda to install it."
     ) from None
 
+from unidist.config import MpiBackoff
 from unidist.core.backends.mpi.core.serialization import (
     ComplexDataSerializer,
     SimpleDataSerializer,
@@ -25,10 +26,6 @@ import unidist.core.backends.mpi.core.common as common
 mpi4py.rc(recv_mprobe=False, initialize=False)
 from mpi4py import MPI  # noqa: E402
 from mpi4py.util import pkl5  # noqa: E402
-
-
-# Sleep time setting inside the busy wait loop
-sleep_time = 0.0001
 
 
 # Logger configuration
@@ -288,13 +285,14 @@ def mpi_busy_wait_recv(comm, source_rank):
     source_rank : int
         Source MPI process to receive data.
     """
+    backoff = MpiBackoff.get()
     req_handle = comm.irecv(source=source_rank)
     while True:
         status, data = req_handle.test()
         if status:
             return data
         else:
-            time.sleep(sleep_time)
+            time.sleep(backoff)
 
 
 def recv_operation_type(comm):
@@ -315,6 +313,7 @@ def recv_operation_type(comm):
     int
         Source rank.
     """
+    backoff = MpiBackoff.get()
     status = MPI.Status()
     req_handle = comm.irecv(source=MPI.ANY_SOURCE)
     while True:
@@ -323,7 +322,7 @@ def recv_operation_type(comm):
             log_operation(op_type, status)
             return op_type, status.Get_source()
         else:
-            time.sleep(sleep_time)
+            time.sleep(backoff)
 
 
 # --------------------------------- #
