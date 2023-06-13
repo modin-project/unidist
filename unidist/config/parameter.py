@@ -66,6 +66,13 @@ _TYPE_PARAMS = {
         or (isinstance(value, str) and value.strip().isdigit()),
         help="an integer value",
     ),
+    float: TypeDescriptor(
+        decode=lambda value: float(value.strip()),
+        normalize=float,
+        verify=lambda value: isinstance(value, float)
+        or (isinstance(value, str) and value.strip().replace(".", "").isdigit()),
+        help="a float value",
+    ),
 }
 
 # Special marker to distinguish unset value from ``None`` value

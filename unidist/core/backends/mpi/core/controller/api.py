@@ -35,6 +35,7 @@ from unidist.config import (
     MpiHosts,
     ValueSource,
     MpiPickleThreshold,
+    MpiBackoff,
 )
 
 
@@ -153,6 +154,8 @@ def init():
                 py_str += [f"cfg.CpuCount.put({CpuCount.get()})"]
             if MpiPickleThreshold.get_value_source() != ValueSource.DEFAULT:
                 py_str += [f"cfg.MpiPickleThreshold.put({MpiPickleThreshold.get()})"]
+            if MpiBackoff.get_value_source() != ValueSource.DEFAULT:
+                py_str += [f"cfg.MpiBackoff.put({MpiBackoff.get()})"]
             py_str += ["unidist.init()"]
             py_str = "; ".join(py_str)
             args += [py_str]

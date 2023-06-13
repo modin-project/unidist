@@ -25,35 +25,37 @@ the config API implementation.
 Unidist Configuration Settings List
 '''''''''''''''''''''''''''''''''''
 
-+-----------------------+-----------------------------------+------------------------------------------------------------------------+
-| **Config Name**       | **Env. Variable Name**            | **Description**                                                        |
-+-----------------------+-----------------------------------+------------------------------------------------------------------------+
-| Backend               | UNIDIST_BACKEND                   | Distribution backend to run queries by                                 |
-+-----------------------+-----------------------------------+------------------------------------------------------------------------+
-| CpuCount              | UNIDIST_CPUS                      | How many CPU cores to use during initialization of the unidist backend |
-+-----------------------+-----------------------------------+------------------------------------------------------------------------+
-| RayGpuCount           | UNIDIST_RAY_GPUS                  | How many GPU devices to use during initialization of the Ray backend   |
-+-----------------------+-----------------------------------+------------------------------------------------------------------------+
-| IsRayCluster          | UNIDIST_RAY_CLUSTER               | Whether Ray is running on pre-initialized Ray cluster                  |
-+-----------------------+-----------------------------------+------------------------------------------------------------------------+
-| RayRedisAddress       | UNIDIST_RAY_REDIS_ADDRESS         | Redis address to connect to when running in Ray cluster                |
-+-----------------------+-----------------------------------+------------------------------------------------------------------------+
-| RayRedisPassword      | UNIDIST_RAY_REDIS_PASSWORD        | What password to use for connecting to Redis                           |
-+-----------------------+-----------------------------------+------------------------------------------------------------------------+
-| RayObjectStoreMemory  | UNIDIST_RAY_OBJECT_STORE_MEMORY   | How many bytes of memory to start the Ray object store with            |
-+-----------------------+-----------------------------------+------------------------------------------------------------------------+
-| DaskMemoryLimit       | UNIDIST_DASK_MEMORY_LIMIT         | How many bytes of memory that Dask worker should use                   |
-+-----------------------+-----------------------------------+------------------------------------------------------------------------+
-| IsDaskCluster         | UNIDIST_DASK_CLUSTER              | Whether Dask is running on pre-initialized Dask cluster                |
-+-----------------------+-----------------------------------+------------------------------------------------------------------------+
-| DaskSchedulerAddress  | UNIDIST_DASK_SCHEDULER_ADDRESS    | Dask Scheduler address to connect to when running in Dask cluster      |
-+-----------------------+-----------------------------------+------------------------------------------------------------------------+
-| IsMpiSpawnWorkers     | UNIDIST_IS_MPI_SPAWN_WORKERS      | Whether to enable MPI spawn or not                                     |
-+-----------------------+-----------------------------------+------------------------------------------------------------------------+
-| MpiHosts              | UNIDIST_MPI_HOSTS                 | MPI hosts to run unidist on                                            |
-+-----------------------+-----------------------------------+------------------------------------------------------------------------+
-| MpiPickleThreshold    | UNIDIST_MPI_PICKLE_THRESHOLD      | Minimum buffer size for serialization with pickle 5 protocol           |
-+-----------------------+-----------------------------------+------------------------------------------------------------------------+
++-----------------------+-----------------------------------+--------------------------------------------------------------------------+
+| **Config Name**       | **Env. Variable Name**            | **Description**                                                          |
++-----------------------+-----------------------------------+--------------------------------------------------------------------------+
+| Backend               | UNIDIST_BACKEND                   | Distribution backend to run queries by                                   |
++-----------------------+-----------------------------------+--------------------------------------------------------------------------+
+| CpuCount              | UNIDIST_CPUS                      | How many CPU cores to use during initialization of the unidist backend   |
++-----------------------+-----------------------------------+--------------------------------------------------------------------------+
+| RayGpuCount           | UNIDIST_RAY_GPUS                  | How many GPU devices to use during initialization of the Ray backend     |
++-----------------------+-----------------------------------+--------------------------------------------------------------------------+
+| IsRayCluster          | UNIDIST_RAY_CLUSTER               | Whether Ray is running on pre-initialized Ray cluster                    |
++-----------------------+-----------------------------------+--------------------------------------------------------------------------+
+| RayRedisAddress       | UNIDIST_RAY_REDIS_ADDRESS         | Redis address to connect to when running in Ray cluster                  |
++-----------------------+-----------------------------------+--------------------------------------------------------------------------+
+| RayRedisPassword      | UNIDIST_RAY_REDIS_PASSWORD        | What password to use for connecting to Redis                             |
++-----------------------+-----------------------------------+--------------------------------------------------------------------------+
+| RayObjectStoreMemory  | UNIDIST_RAY_OBJECT_STORE_MEMORY   | How many bytes of memory to start the Ray object store with              |
++-----------------------+-----------------------------------+--------------------------------------------------------------------------+
+| DaskMemoryLimit       | UNIDIST_DASK_MEMORY_LIMIT         | How many bytes of memory that Dask worker should use                     |
++-----------------------+-----------------------------------+--------------------------------------------------------------------------+
+| IsDaskCluster         | UNIDIST_DASK_CLUSTER              | Whether Dask is running on pre-initialized Dask cluster                  |
++-----------------------+-----------------------------------+--------------------------------------------------------------------------+
+| DaskSchedulerAddress  | UNIDIST_DASK_SCHEDULER_ADDRESS    | Dask Scheduler address to connect to when running in Dask cluster        |
++-----------------------+-----------------------------------+--------------------------------------------------------------------------+
+| IsMpiSpawnWorkers     | UNIDIST_IS_MPI_SPAWN_WORKERS      | Whether to enable MPI spawn or not                                       |
++-----------------------+-----------------------------------+--------------------------------------------------------------------------+
+| MpiHosts              | UNIDIST_MPI_HOSTS                 | MPI hosts to run unidist on                                              |
++-----------------------+-----------------------------------+--------------------------------------------------------------------------+
+| MpiPickleThreshold    | UNIDIST_MPI_PICKLE_THRESHOLD      | Minimum buffer size for serialization with pickle 5 protocol             |
++-----------------------+-----------------------------------+--------------------------------------------------------------------------+
+| MpiBackoff            | UNIDIST_MPI_BACKOFF               | Backoff time for preventing the "busy wait" in loops exchanging messages |
++-----------------------+-----------------------------------+--------------------------------------------------------------------------+
 
 Usage Guide
 '''''''''''
