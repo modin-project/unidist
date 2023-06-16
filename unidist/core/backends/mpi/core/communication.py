@@ -91,11 +91,24 @@ class MPIState:
 
     __instance = None
 
-    def __init__(self, comm, rank, world_sise):
+    def __init__(self, comm, host_comm):
         # attributes get actual values when MPI is initialized in `init` function
         self.comm = comm
-        self.rank = rank
-        self.world_size = world_sise
+        self.host_comm = host_comm
+        self.rank = comm.Get_rank()
+        self.host_rank = host_comm.Get_rank()
+        self.host = socket.gethostbyname(socket.gethostname())
+        self.world_size = comm.Get_size()
+        self.topology = self.__get_topology()
+        self.workers = []
+        for hosted_ranks in self.topology.values():
+            self.workers.extend(
+                [
+                    r
+                    for i, r in enumerate(hosted_ranks)
+                    if r != MPIRank.ROOT and i != MPIRank.MONITOR
+                ]
+            )
 
     @classmethod
     def get_instance(cls, *args):
@@ -116,6 +129,33 @@ class MPIState:
             cls.__instance = MPIState(*args)
         return cls.__instance
 
+    def __get_topology(self):
+        """
+        Get topology of MPI cluster.
+
+        Returns
+        -------
+        dict
+            Dictionary, containing workers ranks assignments by IP-addresses in
+            the form: `{"node_ip0": [rank_2, rank_3, ...], "node_ip1": [rank_i, ...], ...}`.
+        """
+        cluster_info = self.comm.allgather((self.host, self.rank, self.host_rank))
+        topology = defaultdict(lambda: [""] * len(cluster_info))
+
+        for host, rank, host_rank in cluster_info:
+            topology[host][host_rank] = rank
+
+        for host in topology:
+            topology[host] = [r for r in topology[host] if r != ""]
+
+        return dict(topology)
+
+    def get_monitor_by_worker_rank(self, rank):
+        for hosted_ranks in self.topology.values():
+            if rank in hosted_ranks:
+                return hosted_ranks[MPIRank.MONITOR]
+        raise ValueError("Unknown rank of workers")
+
 
 class MPIRank:
     """Class that describes ranks assignment."""
@@ -123,32 +163,6 @@ class MPIRank:
     ROOT = 0
     MONITOR = 1
     FIRST_WORKER = 2
-
-
-def get_topology():
-    """
-    Get topology of MPI cluster.
-
-    Returns
-    -------
-    dict
-        Dictionary, containing workers ranks assignments by IP-addresses in
-        the form: `{"node_ip0": [rank_2, rank_3, ...], "node_ip1": [rank_i, ...], ...}`.
-    """
-    mpi_state = MPIState.get_instance()
-    comm = mpi_state.comm
-    rank = mpi_state.rank
-
-    hostname = socket.gethostname()
-    host = socket.gethostbyname(hostname)
-    cluster_info = comm.allgather((host, rank))
-    topology = defaultdict(list)
-
-    for host, rank in cluster_info:
-        if rank not in [MPIRank.ROOT, MPIRank.MONITOR]:
-            topology[host].append(rank)
-
-    return dict(topology)
 
 
 # ---------------------------- #

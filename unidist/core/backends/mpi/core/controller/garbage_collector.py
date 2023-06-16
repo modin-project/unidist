@@ -11,7 +11,6 @@ import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.serialization import SimpleDataSerializer
 from unidist.core.backends.mpi.core.controller.object_store import object_store
-from unidist.core.backends.mpi.core.controller.common import initial_worker_number
 
 
 logger = common.get_logger("utils", "utils.log")
@@ -63,7 +62,7 @@ class GarbageCollector:
         # Cache serialized list of data IDs
         s_cleanup_list = SimpleDataSerializer().serialize_pickle(cleanup_list)
         async_operations = AsyncOperations.get_instance()
-        for rank_id in range(initial_worker_number, mpi_state.world_size):
+        for rank_id in mpi_state.workers:
             if rank_id != mpi_state.rank:
                 h_list = communication.isend_serialized_operation(
                     mpi_state.comm,
@@ -119,17 +118,20 @@ class GarbageCollector:
                     logger.debug("Cleanup counter {}".format(self._cleanup_counter))
 
                     mpi_state = communication.MPIState.get_instance()
+                    root_monitor = mpi_state.get_monitor_by_worker_rank(
+                        communication.MPIRank.ROOT
+                    )
                     # Compare submitted and executed tasks
                     # We use a blocking send here because we have to wait for
                     # completion of the communication, which is necessary for the pipeline to continue.
                     communication.mpi_send_operation(
                         mpi_state.comm,
                         common.Operation.GET_TASK_COUNT,
-                        communication.MPIRank.MONITOR,
+                        root_monitor,
                     )
                     executed_task_counter = communication.mpi_recv_object(
                         mpi_state.comm,
-                        communication.MPIRank.MONITOR,
+                        root_monitor,
                     )
 
                     logger.debug(
