@@ -14,32 +14,23 @@ from unidist.core.backends.mpi.core.controller.object_store import object_store
 
 logger = common.get_logger("common", "common.log")
 
-# initial worker number is equal to rank 2 because
-# rank 0 is for controller process
-# rank 1 is for monitor process
-initial_worker_number = 2
-
 
 class RoundRobin:
     __instance = None
 
     def __init__(self):
         self.reserved_ranks = []
+        mpi_state = communication.MPIState.get_instance()
         self.rank_to_schedule = itertools.cycle(
             (
                 rank
-                for rank in range(
-                    initial_worker_number,
-                    communication.MPIState.get_instance().world_size,
-                )
+                for rank in mpi_state.workers
                 # check if a rank to schedule is not equal to the rank
                 # of the current process to not get into recursive scheduling
-                if rank != communication.MPIState.get_instance().rank
+                if rank != mpi_state.rank
             )
         )
-        logger.debug(
-            f"RoundRobin init for {communication.MPIState.get_instance().rank} rank"
-        )
+        logger.debug(f"RoundRobin init for {mpi_state.rank} rank")
 
     @classmethod
     def get_instance(cls):
@@ -64,11 +55,10 @@ class RoundRobin:
             A rank number.
         """
         next_rank = None
+        mpi_state = communication.MPIState.get_instance()
 
         # Go rank by rank to find the first one non-reserved
-        for _ in range(
-            initial_worker_number, communication.MPIState.get_instance().world_size
-        ):
+        for _ in mpi_state.workers:
             rank = next(self.rank_to_schedule)
             if rank not in self.reserved_ranks:
                 next_rank = rank

@@ -282,11 +282,14 @@ class TaskStore:
                 # Monitor the task execution
                 # We use a blocking send here because we have to wait for
                 # completion of the communication, which is necessary for the pipeline to continue.
+                root_monitor = mpi_state.get_monitor_by_worker_rank(
+                    communication.MPIRank.ROOT
+                )
                 communication.send_simple_operation(
                     communication.MPIState.get_instance().comm,
                     common.Operation.TASK_DONE,
                     completed_data_ids,
-                    communication.MPIRank.MONITOR,
+                    root_monitor,
                 )
 
             async_task = asyncio.create_task(execute())
@@ -351,11 +354,14 @@ class TaskStore:
             # Monitor the task execution.
             # We use a blocking send here because we have to wait for
             # completion of the communication, which is necessary for the pipeline to continue.
+            root_monitor = mpi_state.get_monitor_by_worker_rank(
+                communication.MPIRank.ROOT
+            )
             communication.send_simple_operation(
                 communication.MPIState.get_instance().comm,
                 common.Operation.TASK_DONE,
                 completed_data_ids,
-                communication.MPIRank.MONITOR,
+                root_monitor,
             )
 
     def process_task_request(self, request):
