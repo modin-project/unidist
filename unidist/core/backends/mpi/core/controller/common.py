@@ -12,6 +12,7 @@ import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.object_store import ObjectStore
 from unidist.config import MpiSharingThreshold
+from unidist.core.backends.mpi.core.shared_store import SharedStore
 
 logger = common.get_logger("common", "common.log")
 
@@ -110,11 +111,47 @@ def get_complex_data(comm, owner_rank):
     info_package = communication.mpi_recv_object(comm, owner_rank)
     if info_package["package_type"] == communication.DataInfoType.SHARED_DATA:
         object_store = ObjectStore.get_instance()
+        shared_store = SharedStore.get_instance()
         info_package["id"] = object_store.get_unique_data_id(info_package["id"])
-        object_store.put_shared_info(info_package["id"], info_package)
+        shared_store.put_shared_info(info_package["id"], info_package)
+
+        # check data in shared memory
+        is_contained_in_shared_memory = SharedStore.get_instance().contains(
+            info_package["id"]
+        )
+        mpi_state = communication.MPIState.get_instance()
+        log_name = f'shared_store{mpi_state.rank}'
+        sh_logger = common.get_logger(log_name, f'log_name.log')
+        
+        if not is_contained_in_shared_memory:
+            sh_buf = shared_store.get_shared_buffer(info_package["id"])
+            # recv serialized data to shared memory
+            owner_monitor = communication.MPIState.get_instance().get_monitor_by_worker_rank(owner_rank)
+            communication.send_simple_operation(
+                comm,
+                operation_type=common.Operation.REQUEST_SHARED_DATA,
+                operation_data=info_package,
+                dest_rank=owner_monitor,
+            )
+            communication.mpi_recv_shared_buffer(
+                comm,
+                sh_buf,
+                owner_monitor
+            )
+            sh_logger.debug('\n\nGET SHARED BUFFER')
+            sh_logger.debug(sh_buf[:100].tobytes())
+            shared_store.put_service_info(info_package["id"])
+        try:
+            data = shared_store.get(info_package["id"])
+        except Exception as ex:
+            sh_logger.debug(info_package["id"])
+            sh_logger.debug(info_package)
+            sh_logger.debug(is_contained_in_shared_memory)
+            sh_logger.exception(ex)
+            raise
         return {
             "id": info_package["id"],
-            "data": object_store.get_shared_data(info_package["id"]),
+            "data": data,
         }
     if info_package["package_type"] == communication.DataInfoType.LOCAL_DATA:
         return communication.recv_complex_data(comm, owner_rank, info_package)
@@ -238,11 +275,13 @@ def _push_shared_data(dest_rank, data_id, is_blocking_op):
     value : unidist.core.backends.mpi.core.common.MasterDataID
         An ID to data.
     """
-    object_store = ObjectStore.get_instance()
+    mpi_state = communication.MPIState.get_instance()
+    shared_store = SharedStore.get_instance()
     mpi_state = communication.MPIState.get_instance()
     operation_type = common.Operation.PUT_SHARED_DATA
-    info_package = object_store.get_data_shared_info(data_id)
     async_operations = AsyncOperations.get_instance()
+    info_package = shared_store.get_data_shared_info(data_id)
+    logger.debug(info_package)
     if is_blocking_op:
         communication.mpi_send_object(mpi_state.comm, info_package, dest_rank)
     else:
@@ -297,6 +336,7 @@ def push_data(dest_rank, value, is_blocking_op=False):
         Arguments to be sent.
     """
     object_store = ObjectStore.get_instance()
+    shared_store = SharedStore.get_instance()
 
     if isinstance(value, (list, tuple)):
         for v in value:
@@ -306,7 +346,7 @@ def push_data(dest_rank, value, is_blocking_op=False):
             push_data(dest_rank, v)
     elif is_data_id(value):
         data_id = value
-        if object_store.contains_shared_memory(data_id):
+        if shared_store.contains_shared_info(data_id):
             _push_shared_data(dest_rank, data_id, is_blocking_op)
         elif object_store.is_already_serialized(data_id):
             _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized=True)
@@ -327,23 +367,18 @@ def push_data(dest_rank, value, is_blocking_op=False):
 
 def put_to_shared_memory(data_id):
     object_store = ObjectStore.get_instance()
+    shared_store = SharedStore.get_instance()
 
     operation_data = object_store.get(data_id)
-    reservation_data, serialized_data = object_store.reserve_shared_memory(
-        operation_data
-    )
-    # mpi_state = communication.MPIState.get_instance()
-    # reservation_data, serialized_data = communication.reserve_shared_memory(
-    #     mpi_state.comm,
-    #     data_id,
-    #     operation_data,
-    #     is_serialized=False
+    # reservation_data, serialized_data = shared_store.reserve_shared_memory(
+    #     operation_data
     # )
+    mpi_state = communication.MPIState.get_instance()
+    reservation_data, serialized_data = communication.reserve_shared_memory(
+        mpi_state.comm,
+        data_id,
+        operation_data,
+        is_serialized=False
+    )
 
-    s_data_len, buffer_lens, buffer_count, first_index = object_store.put_shared_memory(
-        data_id, reservation_data, serialized_data
-    )
-    sharing_info = communication.get_shared_info(
-        data_id, s_data_len, buffer_lens, buffer_count, first_index
-    )
-    object_store.put_shared_info(data_id, sharing_info)
+    shared_store.put(data_id, reservation_data, serialized_data)

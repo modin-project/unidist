@@ -272,6 +272,7 @@ def reserve_shared_memory(comm, data_id, data, is_serialized=False):
 
 def _send_reserve_operation_impl(comm, data_id, s_data, raw_buffers):
     operation_type = common.Operation.RESERVE_SHARING_MEMORY
+    mpi_state = MPIState.get_instance()
 
     operation_data = {
         "id": data_id,
@@ -283,7 +284,7 @@ def _send_reserve_operation_impl(comm, data_id, s_data, raw_buffers):
         comm,
         operation_type,
         operation_data,
-        MPIRank.MONITOR,
+        mpi_state.get_monitor_by_worker_rank(MPIRank.ROOT),
     )
     firstIndex, lastIndex = mpi_busy_wait_recv(comm, MPIRank.MONITOR)
     return {"firstIndex": firstIndex, "lastIndex": lastIndex}
@@ -532,6 +533,14 @@ def mpi_send_buffer(comm, buffer_size, buffer, dest_rank):
     """
     comm.send(buffer_size, dest=dest_rank, tag=common.MPITag.OBJECT)
     comm.Send([buffer, MPI.CHAR], dest=dest_rank, tag=common.MPITag.BUFFER)
+
+
+def mpi_send_shared_buffer(comm, shared_buffer, dest_rank):
+    return comm.Send([shared_buffer, MPI.CHAR], dest=dest_rank)
+
+
+def mpi_recv_shared_buffer(comm, shared_buffer, source_rank):
+    comm.Recv([shared_buffer, MPI.CHAR], source=source_rank)
 
 
 def mpi_isend_buffer(comm, buffer_size, buffer, dest_rank):

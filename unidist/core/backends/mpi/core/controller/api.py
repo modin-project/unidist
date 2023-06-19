@@ -3,13 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """High-level API of MPI backend."""
-import os
-import psutil
 import sys
 import atexit
 import signal
 import asyncio
 from collections import defaultdict
+
+from unidist.core.backends.mpi.core.shared_store import SharedStore
 
 try:
     import mpi4py
@@ -226,31 +226,8 @@ def init():
     if not is_mpi_initialized:
         is_mpi_initialized = True
 
-    virtual_memory = psutil.virtual_memory().total
-    if mpi_state.rank == communication.MPIRank.MONITOR:
-        if sys.platform.startswith("linux"):
-            shm_fd = os.open("/dev/shm", os.O_RDONLY)
-            try:
-                shm_stats = os.fstatvfs(shm_fd)
-                system_memory = shm_stats.f_bsize * shm_stats.f_bavail
-                if system_memory / (virtual_memory / 2) < 0.99:
-                    print(
-                        f"The size of /dev/shm is too small ({system_memory} bytes). The required size "
-                        + f"at least half of RAM ({virtual_memory // 2} bytes). Please, delete files in /dev/shm or "
-                        + "increase size of /dev/shm with --shm-size in Docker."
-                    )
-            finally:
-                os.close(shm_fd)
-        else:
-            system_memory = virtual_memory
-
-        # use only 95% because other memory need for local worker storages
-        shared_memory = int(system_memory * 0.95)
-    else:
-        shared_memory = 0
-    # experimentary for 07 server
-    # 4800374938 - 73728 * mpi_state.world_size
-    ObjectStore.get_instance().init_shared_memory(comm, shared_memory)
+    # Initalize shared memory
+    SharedStore.get_instance()
 
     if mpi_state.is_root_process():
         atexit.register(_termination_handler)

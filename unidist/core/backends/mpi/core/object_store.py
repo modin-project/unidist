@@ -4,13 +4,11 @@
 
 """`ObjectStore` functionality."""
 
-from array import array
 import weakref
 from collections import defaultdict
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
-from unidist.core.backends.mpi.core.serialization import ComplexDataSerializer
 
 
 class ObjectStore:
@@ -25,13 +23,8 @@ class ObjectStore:
     __instance = None
 
     def __init__(self):
-        self._shared_buffer = None
-        self._helper_win = None
-
         # Add local data {DataId : Data}
         self._data_map = weakref.WeakKeyDictionary()
-        # Shared memory range {DataID: (firstIndex, lastIndex)}
-        self._shared_info = weakref.WeakKeyDictionary()
         # "strong" references to data IDs {DataId : DataId}
         # we are using dict here to improve performance when getting an element from it,
         # whereas other containers would require O(n) complexity
@@ -58,36 +51,6 @@ class ObjectStore:
             cls.__instance = ObjectStore()
         return cls.__instance
 
-    def init_shared_memory(self, comm, size):
-        (
-            self._shared_buffer,
-            itemsize,
-            self._helper_win,
-        ) = communication.init_shared_memory(comm, size)
-        self._helper_buffer = array("L", [0])
-
-    def reserve_shared_memory(self, data):
-        serializer = ComplexDataSerializer()
-        # Main job
-        s_data = serializer.serialize(data)
-        # Retrive the metadata
-        raw_buffers = serializer.buffers
-        buffer_count = serializer.buffer_count
-        size = len(s_data) + sum([len(buf) for buf in raw_buffers])
-
-        self._helper_win.Lock(communication.MPIRank.MONITOR)
-        self._helper_win.Get(self._helper_buffer, communication.MPIRank.MONITOR)
-        firstIndex = self._helper_buffer[0]
-        lastIndex = firstIndex + size
-        self._helper_buffer[0] = lastIndex
-        self._helper_win.Put(array("L", [lastIndex]), communication.MPIRank.MONITOR)
-        self._helper_win.Unlock(communication.MPIRank.MONITOR)
-        return {"firstIndex": firstIndex, "lastIndex": lastIndex}, {
-            "s_data": s_data,
-            "raw_buffers": raw_buffers,
-            "buffer_count": buffer_count,
-        }
-
     def put(self, data_id, data):
         """
         Put `data` to internal dictionary.
@@ -101,47 +64,6 @@ class ObjectStore:
             Data to be put.
         """
         self._data_map[data_id] = data
-
-    def put_shared_memory(self, data_id, reservation_data, serialized_data):
-        if self._shared_buffer is None:
-            raise RuntimeError("Shared memory was not initialized")
-
-        first_index = reservation_data["firstIndex"]
-        last_index = reservation_data["lastIndex"]
-
-        s_data = serialized_data["s_data"]
-        raw_buffers = serialized_data["raw_buffers"]
-        buffer_count = serialized_data["buffer_count"]
-        s_data_len = len(s_data)
-
-        s_data_first_index = first_index
-        s_data_last_index = s_data_first_index + s_data_len
-
-        if s_data_last_index > last_index:
-            raise ValueError("Not enough shared space for data")
-        self._shared_buffer[s_data_first_index:s_data_last_index] = s_data
-
-        buffer_lens = []
-        last_prev_index = s_data_last_index
-        for i, raw_buffer in enumerate(raw_buffers):
-            raw_buffer_first_index = last_prev_index
-            raw_buffer_len = len(raw_buffer)
-            raw_buffer_last_index = raw_buffer_first_index + len(raw_buffer)
-            if s_data_last_index > last_index:
-                raise ValueError(f"Not enough shared space for {i} raw_buffer")
-
-            self._shared_buffer[
-                raw_buffer_first_index:raw_buffer_last_index
-            ] = raw_buffer
-
-            buffer_lens.append(raw_buffer_len)
-            last_prev_index = raw_buffer_last_index
-
-        # save shared memory range for data_id
-        return s_data_len, buffer_lens, buffer_count, first_index
-
-    def put_shared_info(self, data_id, shared_info):
-        self._shared_info[data_id] = shared_info
 
     def put_data_owner(self, data_id, rank):
         """
@@ -173,36 +95,6 @@ class ObjectStore:
             Return local data associated with `data_id`.
         """
         return self._data_map[data_id]
-
-    def get_data_shared_info(self, data_id):
-        return self._shared_info[data_id]
-
-    def get_shared_data(self, data_id):
-        if self._shared_buffer is None:
-            raise RuntimeError("Shared memory was not initialized")
-
-        info_package = self._shared_info[data_id]
-        first_index = info_package["first_shared_index"]
-        buffer_lens = info_package["raw_buffers_lens"]
-        buffer_count = info_package["buffer_count"]
-        s_data_len = info_package["s_data_len"]
-
-        s_data_last_index = first_index + s_data_len
-        s_data = self._shared_buffer[first_index:s_data_last_index].toreadonly()
-        prev_last_index = s_data_last_index
-        raw_buffers = []
-        for raw_buffer_len in buffer_lens:
-            raw_last_index = prev_last_index + raw_buffer_len
-            raw_buffers.append(
-                self._shared_buffer[prev_last_index:raw_last_index].toreadonly()
-            )
-            prev_last_index = raw_last_index
-
-        # Set the necessary metadata for unpacking
-        deserializer = ComplexDataSerializer(raw_buffers, buffer_count)
-
-        # Start unpacking
-        return deserializer.deserialize(s_data)
 
     def get_data_owner(self, data_id):
         """
@@ -237,9 +129,6 @@ class ObjectStore:
             Return the status if an object exist in local dictionary.
         """
         return data_id in self._data_map
-
-    def contains_shared_memory(self, data_id):
-        return data_id in self._shared_info
 
     def contains_data_owner(self, data_id):
         """

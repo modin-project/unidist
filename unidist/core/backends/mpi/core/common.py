@@ -52,6 +52,7 @@ class Operation:
     PUT_DATA = 3
     PUT_OWNER = 4
     PUT_SHARED_DATA = 12
+    REQUEST_SHARED_DATA = 14
     WAIT = 5
     ACTOR_CREATE = 6
     ACTOR_EXECUTE = 7

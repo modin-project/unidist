@@ -13,10 +13,16 @@ except ImportError:
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
+from unidist.core.backends.mpi.core.async_operations import AsyncOperations
+from unidist.core.backends.mpi.core.shared_store import SharedStore
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
 from mpi4py import MPI  # noqa: E402
+
+mpi_state = communication.MPIState.get_instance()
+log_name = f'monitor_{mpi_state.rank}'
+logger = common.get_logger(log_name, f'{log_name}.log')
 
 
 class TaskCounter:
@@ -164,6 +170,8 @@ def monitor_loop():
     mpi_state = communication.MPIState.get_instance()
     wait_handler = WaitHandler.get_instance()
     data_id_tracker = DataIDTracker.get_instance()
+    shared_store = shared_store = SharedStore.get_instance()
+
 
     shared_index = 0
     workers_ready_to_shutdown = []
@@ -202,6 +210,17 @@ def monitor_loop():
             shared_index = last_index
             communication.mpi_send_object(
                 mpi_state.comm, data=(first_index, last_index), dest_rank=source_rank
+            )
+        elif operation_type == common.Operation.REQUEST_SHARED_DATA:
+            info_package = communication.recv_simple_data(mpi_state.comm, source_rank)
+            if not shared_store.contains_shared_info(info_package["id"]):
+                shared_store.put_shared_info(info_package["id"], info_package)
+            sh_buf = shared_store.get_shared_buffer(info_package["id"])
+            logger.debug(sh_buf[:100].tobytes())
+            communication.mpi_send_shared_buffer(
+                mpi_state.comm,
+                sh_buf,
+                dest_rank=source_rank,
             )
         elif operation_type == common.Operation.READY_TO_SHUTDOWN:
             workers_ready_to_shutdown.append(source_rank)

@@ -7,6 +7,7 @@ import asyncio
 from functools import wraps, partial
 
 from unidist.core.backends.mpi.core.controller.common import get_complex_data
+from unidist.core.backends.mpi.core.shared_store import SharedStore
 
 try:
     import mpi4py
@@ -85,6 +86,7 @@ async def worker_loop():
     """
     task_store = TaskStore.get_instance()
     object_store = ObjectStore.get_instance()
+    shared_store = SharedStore.get_instance()
     request_store = RequestStore.get_instance()
     async_operations = AsyncOperations.get_instance()
     ready_to_shutdown_posted = False
@@ -98,7 +100,9 @@ async def worker_loop():
         operation_type, source_rank = await async_wrap(
             communication.mpi_recv_operation
         )(mpi_state.comm)
-        w_logger.debug("common.Operation processing - {}".format(operation_type))
+        w_logger.debug(
+            f"common.Operation processing - {operation_type} from {source_rank} rank"
+        )
 
         # Proceed the request
         if operation_type == common.Operation.EXECUTE:
@@ -152,12 +156,12 @@ async def worker_loop():
                 )
 
         elif operation_type == common.Operation.PUT_SHARED_DATA:
-            request = get_complex_data(mpi_state.comm, source_rank)
-            request["id"] = object_store.get_unique_data_id(request["id"])
-            object_store.put_shared_info(request["id"], request)
+            result = get_complex_data(mpi_state.comm, source_rank)
+            result["id"] = object_store.get_unique_data_id(result["id"])
+            object_store.put(result["id"], result["data"])
 
             # Clear cached request to another worker, if data_id became available
-            request_store.clear_cache(request["id"])
+            request_store.clear_cache(result["id"])
 
             # Check pending requests. Maybe some data became available.
             task_store.check_pending_tasks()

@@ -12,6 +12,7 @@ import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.object_store import ObjectStore
+from unidist.core.backends.mpi.core.shared_store import SharedStore
 from unidist.core.backends.mpi.core.worker.request_store import RequestStore
 
 mpi_state = communication.MPIState.get_instance()
@@ -185,15 +186,18 @@ class TaskStore:
         """
         if is_data_id(arg):
             object_store = ObjectStore.get_instance()
+            shared_store = SharedStore.get_instance()
             arg = object_store.get_unique_data_id(arg)
             if object_store.contains(arg):
                 value = ObjectStore.get_instance().get(arg)
                 # Data is already local or was pushed from master
                 return value, False
-            elif object_store.contains_shared_memory(arg):
-                value = object_store.get_shared_data(arg)
-                object_store.put(arg, value)
-                return value, False
+            # elif shared_store.contains(arg):
+            #     value = shared_store.get(arg)
+            #     object_store.put(arg, value)
+            #     return value, False
+            elif shared_store.contains_shared_info(arg):
+                return arg, True
             elif object_store.contains_data_owner(arg):
                 if not RequestStore.get_instance().is_data_already_requested(arg):
                     # Request the data from an owner worker
