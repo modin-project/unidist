@@ -91,12 +91,18 @@ class MPIState:
 
     __instance = None
 
-    def __init__(self, comm, host_comm):
+    def __init__(self, comm):
         # attributes get actual values when MPI is initialized in `init` function
         self.comm = comm
-        self.host_comm = host_comm
         self.rank = comm.Get_rank()
-        self.host_rank = host_comm.Get_rank()
+
+        if MPI.VERSION >= 3:
+            self.host_comm = comm.Split_type(MPI.COMM_TYPE_SHARED)
+            self.host_rank = self.host_comm.Get_rank()
+        else:
+            self.host_comm = None
+            self.host_rank = self.rank
+
         self.host = socket.gethostbyname(socket.gethostname())
         self.world_size = comm.Get_size()
         self.topology = self.__get_topology()
