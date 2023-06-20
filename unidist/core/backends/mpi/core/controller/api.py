@@ -200,9 +200,7 @@ def init():
     if parent_comm != MPI.COMM_NULL:
         comm = parent_comm.Merge(high=True)
 
-    host_comm = comm.Split_type(MPI.COMM_TYPE_SHARED)
-
-    mpi_state = communication.MPIState.get_instance(comm, host_comm)
+    mpi_state = communication.MPIState.get_instance(comm)
 
     global is_mpi_initialized
     if not is_mpi_initialized:
