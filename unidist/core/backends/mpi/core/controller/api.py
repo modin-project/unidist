@@ -166,9 +166,8 @@ def init():
             hosts_count = len(host_list)
             # +1 for monitor process on each host
             nprocs_to_spawn = cpu_count + len(host_list)
-            if hosts:
+            if hosts_count > 1:
                 if "Open MPI" in MPI.Get_library_version():
-                    host_list = str(hosts).split(",")
                     workers_per_host = [
                         int(nprocs_to_spawn / hosts_count)
                         + (1 if i < nprocs_to_spawn % hosts_count else 0)
@@ -176,8 +175,8 @@ def init():
                     ]
                     hosts = ",".join(
                         [
-                            f"{host}:{workers_per_host[i]}"
-                            for i, host in enumerate(host_list)
+                            f"{host_list[i]}:{workers_per_host[i]}"
+                            for i in range(hosts_count)
                         ]
                     )
                     info.Set("add-host", hosts)
@@ -206,12 +205,12 @@ def init():
     if not is_mpi_initialized:
         is_mpi_initialized = True
 
-    if mpi_state.rank == communication.MPIRank.ROOT:
+    if mpi_state.is_root_process():
         atexit.register(_termination_handler)
         signal.signal(signal.SIGTERM, _termination_handler)
         signal.signal(signal.SIGINT, _termination_handler)
         return
-    elif mpi_state.host_rank == communication.MPIRank.MONITOR:
+    elif mpi_state.is_monitor_process():
         from unidist.core.backends.mpi.core.monitor import monitor_loop
 
         monitor_loop()
@@ -298,12 +297,13 @@ def cluster_resources():
         raise RuntimeError("'unidist.init()' has not been called yet")
 
     cluster_resources = defaultdict(dict)
-    for host, ranks_list in mpi_state.topology.items():
+    for host in mpi_state.topology:
         cluster_resources[host]["CPU"] = len(
             [
                 r
-                for r in ranks_list
-                if r not in (communication.MPIRank.ROOT, communication.MPIRank.MONITOR)
+                for r in mpi_state.topology[host]
+                if not mpi_state.is_root_process(r)
+                and not mpi_state.is_monitor_process(r)
             ]
         )
 

@@ -83,10 +83,22 @@ class MPIState:
     ----------
     comm : mpi4py.MPI.Comm
         MPI communicator.
+
+    Attributes
+    ----------
+    comm : mpi4py.MPI.Comm
+        MPI communicator.
+    host_comm : mpi4py.MPI.Comm
+        Splited MPI communicator for current host
     rank : int
         Rank of a process.
     world_sise : int
         Number of processes.
+    host : str
+        IP-address of current host
+    topology : dict
+        Dictionary, containing workers ranks assignments by IP-addresses in
+        the form: `{"node_ip0": [rank_2, rank_3, ...], "node_ip1": [rank_i, ...], ...}`.
     """
 
     __instance = None
@@ -96,23 +108,37 @@ class MPIState:
         self.comm = comm
         self.rank = comm.Get_rank()
 
-        if MPI.VERSION >= 3:
-            self.host_comm = comm.Split_type(MPI.COMM_TYPE_SHARED)
-            self.host_rank = self.host_comm.Get_rank()
-        else:
+        if MPI.VERSION < 3:
+            # MPI prior to the 3.0 standard does not support splitting the communicator into host and shared memory.
             self.host_comm = None
-            self.host_rank = self.rank
+        else:
+            self.host_comm = comm.Split_type(MPI.COMM_TYPE_SHARED)
 
         self.host = socket.gethostbyname(socket.gethostname())
         self.world_size = comm.Get_size()
-        self.topology = self.__get_topology()
+
+        # Get topology of MPI cluster.
+        host_rank = (
+            self.host_comm.Get_rank() if self.host_comm is not None else self.rank
+        )
+        cluster_info = self.comm.allgather((self.host, self.rank, host_rank))
+
+        self.topology = defaultdict(dict)
+        self.__host_rank_by_rank = defaultdict(None)
+        self.__host_by_rank = defaultdict(None)
+        for host, rank, host_rank in cluster_info:
+            self.topology[host][host_rank] = rank
+            self.__host_rank_by_rank[rank] = host_rank
+            self.__host_by_rank[rank] = host
+
         self.workers = []
-        for hosted_ranks in self.topology.values():
+        for host in self.topology:
             self.workers.extend(
                 [
-                    r
-                    for i, r in enumerate(hosted_ranks)
-                    if r != MPIRank.ROOT and i != MPIRank.MONITOR
+                    rank
+                    for rank in self.topology[host].values()
+                    if not self.is_root_process(rank)
+                    and not self.is_monitor_process(rank)
                 ]
             )
 
@@ -135,32 +161,64 @@ class MPIState:
             cls.__instance = MPIState(*args)
         return cls.__instance
 
-    def __get_topology(self):
+    def is_root_process(self, rank=None):
         """
-        Get topology of MPI cluster.
+        Check if the rank is root process
+
+        Parameters
+        ----------
+        rank : int, default: the current rank
+            The rank to be checked
 
         Returns
         -------
-        dict
-            Dictionary, containing workers ranks assignments by IP-addresses in
-            the form: `{"node_ip0": [rank_2, rank_3, ...], "node_ip1": [rank_i, ...], ...}`.
+        bool
+            True or False.
         """
-        cluster_info = self.comm.allgather((self.host, self.rank, self.host_rank))
-        topology = defaultdict(lambda: [""] * len(cluster_info))
+        if rank is None:
+            rank = self.rank
+        return rank == MPIRank.ROOT
 
-        for host, rank, host_rank in cluster_info:
-            topology[host][host_rank] = rank
+    def is_monitor_process(self, rank=None):
+        """
+        Check if the rank is monitor process
 
-        for host in topology:
-            topology[host] = [r for r in topology[host] if r != ""]
+        Parameters
+        ----------
+        rank : int, default: the current rank
+            The rank to be checked
 
-        return dict(topology)
+        Returns
+        -------
+        bool
+            True or False.
+        """
+        if rank is None:
+            rank = self.rank
+        return self.__host_rank_by_rank[rank] == MPIRank.MONITOR
 
     def get_monitor_by_worker_rank(self, rank):
-        for hosted_ranks in self.topology.values():
-            if rank in hosted_ranks:
-                return hosted_ranks[MPIRank.MONITOR]
-        raise ValueError("Unknown rank of workers")
+        """
+        Get the monitor process rank for the host that includes this rank
+
+        Parameters
+        ----------
+        rank : int
+            The rank to search monitor process
+
+        Returns
+        -------
+        int
+            Rank of monitor process
+        """
+        if self.host_comm is None:
+            return MPIRank.MONITOR
+
+        host = self.__host_by_rank[rank]
+        if host is None:
+            raise ValueError("Unknown rank of workers")
+
+        return self.topology[host][MPIRank.MONITOR]
 
 
 class MPIRank:
