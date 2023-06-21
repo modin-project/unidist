@@ -75,6 +75,22 @@ def log_operation(op_type, status):
     )
 
 
+def is_internal_host_communication_supported():
+    """
+    Check if the Unidist on MPI support internal host communication
+
+    Returns
+    -------
+    bool
+        True or False.
+
+    Notes
+    -----
+    MPI prior to the 3.0 standard does not support shared memory and splitting the communicator into the host.
+    """
+    return MPI.VERSION >= 3
+
+
 class MPIState:
     """
     The class holding MPI information.
@@ -108,11 +124,10 @@ class MPIState:
         self.comm = comm
         self.rank = comm.Get_rank()
 
-        if MPI.VERSION < 3:
-            # MPI prior to the 3.0 standard does not support splitting the communicator into host and shared memory.
-            self.host_comm = None
-        else:
+        if is_internal_host_communication_supported():
             self.host_comm = comm.Split_type(MPI.COMM_TYPE_SHARED)
+        else:
+            self.host_comm = None
 
         self.host = socket.gethostbyname(socket.gethostname())
         self.world_size = comm.Get_size()

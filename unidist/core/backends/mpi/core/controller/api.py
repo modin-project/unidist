@@ -176,8 +176,13 @@ def init():
 
             host_list = hosts.split(",") if hosts is not None else ["localhost"]
             hosts_count = len(host_list)
-            # +1 for monitor process on each host
-            nprocs_to_spawn = cpu_count + len(host_list)
+
+            if communication.is_internal_host_communication_supported():
+                # +1 for monitor process on each host
+                nprocs_to_spawn = cpu_count + len(host_list)
+            else:
+                # +1 for just a single process monitor
+                nprocs_to_spawn = cpu_count + 1
             if hosts_count > 1:
                 if "Open MPI" in lib_version:
                     workers_per_host = [
