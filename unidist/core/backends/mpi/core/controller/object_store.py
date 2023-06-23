@@ -6,6 +6,7 @@
 
 import weakref
 from collections import defaultdict
+import sys
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
@@ -33,6 +34,8 @@ class ObjectStore:
         self._data_id_counter = 0
         # Data serialized cache
         self._serialization_cache = {}
+        # Data sizes
+        self._data_sizes = defaultdict(int)
 
     @classmethod
     def get_instance(cls):
@@ -49,7 +52,7 @@ class ObjectStore:
 
     def put(self, data_id, data):
         """
-        Put data to internal dictionary.
+        Put data and sizeof data to internal dictionary.
 
         Parameters
         ----------
@@ -59,6 +62,28 @@ class ObjectStore:
             Data to be put.
         """
         self._data_map[data_id] = data
+        self._data_sizes[data_id] = sys.getsizeof(data)
+
+    def put_data_size(self, data_id, data):
+        """
+        Put data and sizeof data to internal dictionary.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.mpi.core.common.MasterDataID
+            An ID to data.
+        data : object
+            Data to be put.
+        """
+        # if conditions are a temprary fix as pandas sizeof has an issue
+        # https://github.com/pandas-dev/pandas/issues/51858
+        if "DataFrame" in str(type(data)):
+            size = data.memory_usage().sum()
+        elif "Series" in str(type(data)):
+            size = data.memory_usage()
+        else:
+            size = sys.getsizeof(data)
+        self._data_sizes[data_id] = size
 
     def put_data_owner(self, data_id, rank):
         """
@@ -104,6 +129,22 @@ class ObjectStore:
             Rank number where the data resides.
         """
         return self._data_owner_map[data_id]
+
+    def get_data_size(self, data_id):
+        """
+        Get the data size.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.mpi.core.common.MasterDataID
+            An ID to data.
+
+        Returns
+        -------
+        int
+            Rank number where the data resides.
+        """
+        return self._data_sizes[data_id]
 
     def contains(self, data_id):
         """

@@ -127,6 +127,8 @@ async def worker_loop():
             # Check pending actor requests also.
             task_store.check_pending_actor_tasks()
 
+            RequestStore.get_instance().check_pending_get_requests(request["id"])
+
         elif operation_type == common.Operation.PUT_OWNER:
             request = communication.recv_simple_operation(mpi_state.comm, source_rank)
             request["id"] = object_store.get_unique_data_id(request["id"])

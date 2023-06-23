@@ -23,8 +23,11 @@ from unidist.core.backends.mpi.core.controller.garbage_collector import (
 )
 from unidist.core.backends.mpi.core.controller.common import (
     request_worker_data,
-    push_data,
+    push_data_owners,
     RoundRobin,
+    choose_destination_rank,
+    collect_all_data_id_from_args,
+    push_data_directly_to_worker,
 )
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
@@ -37,6 +40,7 @@ from unidist.config import (
     MpiPickleThreshold,
     MpiBackoff,
 )
+from unidist.core.backends.common.data_id import is_data_id
 
 
 # TODO: Find a way to move this after all imports
@@ -315,8 +319,15 @@ def put(data):
     unidist.core.backends.mpi.core.common.MasterDataID
         An ID of an object in object storage.
     """
-    data_id = object_store.generate_data_id(garbage_collector)
-    object_store.put(data_id, data)
+    if is_data_id(data):
+        return data
+    else:
+        data_id = object_store.generate_data_id(garbage_collector)
+        dest_rank = RoundRobin.get_instance().schedule_rank()
+        object_store.put_data_owner(data_id, dest_rank)
+        object_store.put_data_size(data_id, data)
+        base_data_id = data_id.base_data_id()
+        push_data_directly_to_worker(dest_rank, base_data_id, data)
 
     logger.debug("PUT {} id".format(data_id._id))
 
@@ -463,9 +474,17 @@ def submit(task, *args, num_returns=1, **kwargs):
     # Initiate reference count based cleanup
     # if all the tasks were completed
     garbage_collector.regular_cleanup()
+    unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
+    unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
 
-    dest_rank = RoundRobin.get_instance().schedule_rank()
+    collected_data_ids = []
+    collect_all_data_id_from_args(unwrapped_args, collected_data_ids)
+    collect_all_data_id_from_args(unwrapped_kwargs, collected_data_ids)
 
+    # dest_rank = RoundRobin.get_instance().schedule_rank()
+    dest_rank = choose_destination_rank(collected_data_ids)
+    print(dest_rank, collected_data_ids)
+    push_data_owners(dest_rank, collected_data_ids)
     output_ids = object_store.generate_output_data_id(
         dest_rank, garbage_collector, num_returns
     )
@@ -481,13 +500,6 @@ def submit(task, *args, num_returns=1, **kwargs):
             dest_rank, common.unwrapped_data_ids_list(output_ids)
         )
     )
-
-    unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
-    unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
-
-    push_data(dest_rank, unwrapped_args)
-    push_data(dest_rank, unwrapped_kwargs)
-
     operation_type = common.Operation.EXECUTE
     operation_data = {
         "task": task,

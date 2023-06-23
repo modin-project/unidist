@@ -11,6 +11,7 @@ import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.controller.object_store import object_store
+from collections import defaultdict
 
 logger = common.get_logger("common", "common.log")
 
@@ -166,7 +167,6 @@ def request_worker_data(data_id):
 def _push_local_data(dest_rank, data_id):
     """
     Send local data associated with passed ID to target rank.
-
     Parameters
     ----------
     dest_rank : int
@@ -207,6 +207,36 @@ def _push_local_data(dest_rank, data_id):
         async_operations.extend(h_list)
         #  Remember pushed id
         object_store.cache_send_info(data_id, dest_rank)
+
+
+def push_data_directly_to_worker(dest_rank, data_id, value):
+    """
+    Send local data_id and associated value to target rank.
+
+    Parameters
+    ----------
+    dest_rank : int
+        Target rank.
+    data_id : unidist.core.backends.mpi.core.common.MasterDataID
+        An ID to data.
+    value : value of the provided data_id
+
+    """
+    async_operations = AsyncOperations.get_instance()
+    mpi_state = communication.MPIState.get_instance()
+    operation_type = common.Operation.PUT_DATA
+    operation_data = {
+        "id": data_id,
+        "data": value,
+    }
+    h_list, _ = communication.isend_complex_operation(
+        mpi_state.comm,
+        operation_type,
+        operation_data,
+        dest_rank,
+        is_serialized=False,
+    )
+    async_operations.extend(h_list)
 
 
 def _push_data_owner(dest_rank, data_id):
@@ -260,5 +290,82 @@ def push_data(dest_rank, value):
             _push_local_data(dest_rank, value)
         elif object_store.contains_data_owner(value):
             _push_data_owner(dest_rank, value)
+        else:
+            raise ValueError("Unknown DataID!")
+
+
+def push_data_owners(dest_rank, data_ids):
+    """
+    Parse and send data owners for all values to destination rank.
+
+    Send  ID associated location to the target rank for all ranks that are not data owners.
+
+    Parameters
+    ----------
+    dest_rank : int
+        Rank where task data is needed.
+    data_ids : list
+        List of all data_ids required by the worker
+    """
+    for data_id in data_ids:
+        if object_store.contains_data_owner(data_id):
+            if object_store.get_data_owner(data_id) != dest_rank:
+                _push_data_owner(dest_rank, data_id)
+        else:
+            raise ValueError("Data owner not known")
+
+
+def choose_destination_rank(data_ids):
+    """
+    Choose destination rank considering which worker has the maximum share of data.
+
+    Get the data shares in each worker process and choose rank with the most data share.
+    If data_ids are empty choses the rank using the round robin approach.
+
+    Parameters
+    ----------
+    data_ids : list
+        List of all data_ids required by the worker
+
+    Returns
+    -------
+    int
+        A rank number.
+    """
+    # If none of the workers have any data the next rank is chosen by following a round robin.
+    if not data_ids:
+        chosen_rank = RoundRobin.get_instance().schedule_rank()
+        return chosen_rank
+    data_share = defaultdict(lambda: 0)
+    for data_id in data_ids:
+        data_share[object_store.get_data_owner(data_id)] += object_store.get_data_size(
+            data_id
+        )
+    chosen_rank = max(data_share, key=data_share.get)
+    return chosen_rank
+
+
+def collect_all_data_id_from_args(value, collected_data_ids=[]):
+    """
+    Collect all data ids
+
+    Collect all data ids from the given value and save them to  collected_data_ids list.
+
+    Parameters
+    ----------
+    value : iterable or dict or object
+        Arguments to be sent.
+    collected_data_ids : list to store all collected data_ids
+
+    """
+    if isinstance(value, (list, tuple)):
+        for v in value:
+            collect_all_data_id_from_args(v, collected_data_ids)
+    elif isinstance(value, dict):
+        for v in value.values():
+            collect_all_data_id_from_args(v, collected_data_ids)
+    elif is_data_id(value):
+        if object_store.contains_data_owner(value):
+            collected_data_ids.append(value)
         else:
             raise ValueError("Unknown DataID!")

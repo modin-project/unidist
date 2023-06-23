@@ -118,7 +118,8 @@ class MasterDataID(DataID):
     def __getstate__(self):
         """Remove a reference to garbage collector for correct `pickle` serialization."""
         attributes = self.__dict__.copy()
-        del attributes["_gc"]
+        if hasattr(self, "_gc"):
+            del attributes["_gc"]
         return attributes
 
     def base_data_id(self):
@@ -133,7 +134,7 @@ class MasterDataID(DataID):
         return DataID(self._id)
 
 
-def get_logger(logger_name, file_name, activate=False):
+def get_logger(logger_name, file_name, activate=True):
     """
     Configure logger and get it's instance.
 
