@@ -7,7 +7,6 @@ import asyncio
 from functools import wraps, partial
 
 from unidist.core.backends.mpi.core.controller.common import get_complex_data
-from unidist.core.backends.mpi.core.shared_store import SharedStore
 
 try:
     import mpi4py
@@ -86,7 +85,6 @@ async def worker_loop():
     """
     task_store = TaskStore.get_instance()
     object_store = ObjectStore.get_instance()
-    shared_store = SharedStore.get_instance()
     request_store = RequestStore.get_instance()
     async_operations = AsyncOperations.get_instance()
     ready_to_shutdown_posted = False

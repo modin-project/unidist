@@ -243,18 +243,6 @@ class MPIRank:
     FIRST_WORKER = 2
 
 
-def init_shared_memory(comm, size):
-    info = MPI.Info.Create()
-    # info.Set("alloc_shared_noncontig", "true")
-    win = MPI.Win.Allocate_shared(size, MPI.BYTE.size, comm=comm, info=info)
-    win_helper = MPI.Win.Allocate_shared(
-        1 if size > 0 else 0, MPI.INT.size, comm=comm, info=info
-    )
-
-    shared_buffer, itemsize = win.Shared_query(MPIRank.MONITOR)
-    return shared_buffer, itemsize, win_helper
-
-
 def reserve_shared_memory(comm, data_id, data, is_serialized=False):
     if is_serialized:
         s_data = data["s_data"]
@@ -271,7 +259,7 @@ def reserve_shared_memory(comm, data_id, data, is_serialized=False):
 
 
 def _send_reserve_operation_impl(comm, data_id, s_data, raw_buffers):
-    operation_type = common.Operation.RESERVE_SHARING_MEMORY
+    operation_type = common.Operation.RESERVE_SHARED_MEMORY
     mpi_state = MPIState.get_instance()
 
     operation_data = {

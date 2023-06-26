@@ -5,11 +5,11 @@
 
 :orphan:
 
-Async Operations Storage
-===============
+Async Operations
+""""""""""""""""
 
-:py:class:`~unidist.core.backends.mpi.core.async_operations.AsyncOperations` stores ``MPI_Isend`` asynchronous handlers and holds
-a reference to the sending data to prolong lifetime until the operation completed.
+API
+===
 
 .. autoclass:: unidist.core.backends.mpi.core.async_operations.AsyncOperations
   :members:

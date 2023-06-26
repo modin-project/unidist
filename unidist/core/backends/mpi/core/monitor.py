@@ -20,10 +20,6 @@ from unidist.core.backends.mpi.core.shared_store import SharedStore
 mpi4py.rc(recv_mprobe=False, initialize=False)
 from mpi4py import MPI  # noqa: E402
 
-mpi_state = communication.MPIState.get_instance()
-log_name = f'monitor_{mpi_state.rank}'
-logger = common.get_logger(log_name, f'{log_name}.log')
-
 
 class TaskCounter:
     __instance = None
@@ -172,7 +168,6 @@ def monitor_loop():
     data_id_tracker = DataIDTracker.get_instance()
     shared_store = shared_store = SharedStore.get_instance()
 
-
     shared_index = 0
     workers_ready_to_shutdown = []
     shutdown_workers = False
@@ -216,7 +211,6 @@ def monitor_loop():
             if not shared_store.contains_shared_info(info_package["id"]):
                 shared_store.put_shared_info(info_package["id"], info_package)
             sh_buf = shared_store.get_shared_buffer(info_package["id"])
-            logger.debug(sh_buf[:100].tobytes())
             communication.mpi_send_shared_buffer(
                 mpi_state.comm,
                 sh_buf,

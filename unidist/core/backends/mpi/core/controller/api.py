@@ -40,6 +40,7 @@ from unidist.config import (
     MpiBackoff,
     MpiLog,
     MpiSharingThreshold,
+    MpiSharedMemoryThreshold,
 )
 
 
@@ -163,6 +164,10 @@ def init():
                 py_str += [f"cfg.MpiLog.put({MpiLog.get()})"]
             if MpiSharingThreshold.get_value_source() != ValueSource.DEFAULT:
                 py_str += [f"cfg.MpiSharingThreshold.put({MpiSharingThreshold.get()})"]
+            if MpiSharedMemoryThreshold.get_value_source() != ValueSource.DEFAULT:
+                py_str += [
+                    f"cfg.MpiSharingThreshold.put({MpiSharedMemoryThreshold.get()})"
+                ]
             py_str += ["unidist.init()"]
             py_str = "; ".join(py_str)
             args += [py_str]
@@ -351,7 +356,7 @@ def put(data):
     object_store = ObjectStore.get_instance()
     data_id = object_store.generate_data_id(garbage_collector)
     object_store.put(data_id, data)
-    if sys.getsizeof(data) > MpiSharingThreshold.get():
+    if sys.getsizeof(data) > MpiSharedMemoryThreshold.get():
         put_to_shared_memory(data_id.base_data_id())
 
     logger.debug("PUT {} id".format(data_id._id))

@@ -1,3 +1,9 @@
+# Copyright (C) 2021-2023 Modin authors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+"""`SharedStore` functionality."""
+
 import os
 import sys
 import psutil
@@ -5,10 +11,11 @@ import weakref
 import numpy as np
 from array import array
 from mpi4py import MPI
+from unidist.config.backends.mpi.envvars import MpiSharedMemoryThreshold
 
-from unidist.core.backends.mpi.core import common, communication
-from unidist.core.backends.mpi.core.communication import MPIState
+from unidist.core.backends.mpi.core import communication
 from unidist.core.backends.mpi.core.serialization import ComplexDataSerializer
+
 
 class SharedStore:
     # [byte]            shared buffer with serialized data
@@ -40,15 +47,12 @@ class SharedStore:
         # Shared memory range {DataID: (firstIndex, lastIndex)}
         self._shared_info = weakref.WeakKeyDictionary()
         self._helper_buffer = array("L", [0])
-        mpi_state = communication.MPIState.get_instance()
-        log_name = f'shared_store{mpi_state.rank}'
-        self.logger = common.get_logger(log_name, f'{log_name}.log')
 
     def __init_shared_memory(self):
         mpi_state = communication.MPIState.get_instance()
 
         virtual_memory = psutil.virtual_memory().total
-        if mpi_state.host_rank == communication.MPIRank.MONITOR:
+        if mpi_state.is_monitor_process():
             if sys.platform.startswith("linux"):
                 shm_fd = os.open("/dev/shm", os.O_RDONLY)
                 try:
@@ -65,12 +69,10 @@ class SharedStore:
             else:
                 system_memory = virtual_memory
 
-            # use only 95% because other memory need for local worker storages
+            # use only 95% of available memory because the rest is needed for local storages of workers
             shared_memory_size = int(system_memory * 0.95)
         else:
             shared_memory_size = 0
-        # experimentary for 07 server
-        # 4800374938 - 73728 * mpi_state.world_size
 
         info = MPI.Info.Create()
         info.Set("alloc_shared_noncontig", "true")
@@ -83,14 +85,19 @@ class SharedStore:
             comm=mpi_state.host_comm,
             info=info,
         )
-        rank = MPIState.get_instance().rank
         shared_buffer, _ = win.Shared_query(communication.MPIRank.MONITOR)
 
-        service_size = self.SERVICE_COUNT if mpi_state.host_rank == communication.MPIRank.MONITOR else 0
+        service_size = (
+            self.SERVICE_COUNT
+            if mpi_state.is_monitor_process()
+            else 0
+        )
         win_service = MPI.Win.Allocate_shared(
             service_size, MPI.INT.size, comm=mpi_state.host_comm, info=info
         )
-        service_buffer, itemsize = win_service.Shared_query(communication.MPIRank.MONITOR)
+        service_buffer, itemsize = win_service.Shared_query(
+            communication.MPIRank.MONITOR
+        )
         ary = np.ndarray(
             buffer=service_buffer,
             dtype="i",
@@ -113,6 +120,16 @@ class SharedStore:
         if cls.__instance is None:
             cls.__instance = SharedStore()
         return cls.__instance
+
+    def is_should_be_shared(self, data):
+        # The original data size of numpy.ndarray is greater than the deserialized one using the pickle protocol 5
+        # https://discuss.python.org/t/pickle-original-data-size-is-greater-than-deserialized-one-using-pickle-5-protocol/23327
+        if str(type(data)) == "<class 'numpy.ndarray'>":
+            size = data.size * data.dtype.itemsize
+        else:
+            size = sys.getsizeof(data)
+
+        return size > MpiSharedMemoryThreshold.get()
 
     def service_iterator(self):
         current = 0
@@ -188,7 +205,6 @@ class SharedStore:
         s_data_len = info_package["s_data_len"]
 
         s_data_last_index = first_index + s_data_len
-        self.logger.debug(self.shared_buffer[first_index:first_index+100].tobytes())
         s_data = self.shared_buffer[first_index:s_data_last_index].toreadonly()
         prev_last_index = s_data_last_index
         raw_buffers = []
@@ -203,14 +219,7 @@ class SharedStore:
         deserializer = ComplexDataSerializer(raw_buffers, buffer_count)
 
         # Start unpacking
-        try:
-            return deserializer.deserialize(s_data)
-        except Exception as ex:
-            self.logger.debug(data_id)
-            self.logger.exception(ex)
-            raise
-
-        
+        return deserializer.deserialize(s_data)
 
     def get_shared_buffer(self, data_id):
         info_package = self.get_data_shared_info(data_id)
@@ -225,10 +234,6 @@ class SharedStore:
         return self.shared_buffer[first_index:last_index]
 
     def put_service_info(self, data_id):
-        mpi_state = MPIState.get_instance()
-        rank = mpi_state.rank
-        logger_name = f"shm_{mpi_state.host}"
-        logger = common.get_logger(logger_name, f"{logger_name}.log")
         info_package = self.get_data_shared_info(data_id)
         first_index = info_package["first_shared_index"]
         worker_id, data_number = self.parse_data_id(data_id)
@@ -239,15 +244,10 @@ class SharedStore:
             else:
                 index_to_write += self.INFO_COUNT
         if index_to_write >= self.SERVICE_COUNT:
-            logger.debug(f"Service buffer overflow on {rank} rank")
             raise BufferError("Service buffer overflow")
         self.service_buffer[index_to_write + self.WORKER_ID_INDEX] = worker_id
         self.service_buffer[index_to_write + self.DATA_NUMBER_INDEX] = data_number
         self.service_buffer[index_to_write + self.FIRST_DATA_INDEX] = first_index
-        logger.debug(f"Write service from {rank} rank:")
-        logger.debug(f"{index_to_write + self.WORKER_ID_INDEX}: {worker_id}")
-        logger.debug(f"{index_to_write + self.DATA_NUMBER_INDEX}: {data_number}")
-        logger.debug(f"{index_to_write + self.FIRST_DATA_INDEX}: {first_index}")
 
     def put(self, data_id, reservation_data, serialized_data):
         first_index = reservation_data["firstIndex"]

@@ -5,10 +5,10 @@
 
 :orphan:
 
-Local Object Storage
-====================
+Object Store
+============
 
-MPI :py:class:`~unidist.core.backends.mpi.core.object_store.ObjectStore` stores the data for master process in a local dict.
+MPI :py:class:`~unidist.core.backends.mpi.core.object_store.ObjectStore` stores the data either in the shared memory or in each single process in a local dict in depend on data size.
 
 API
 ===
