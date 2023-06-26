@@ -30,19 +30,19 @@ class RequestStore:
 
     __instance = None
 
-    REQ_DATA = 0
-    REQ_WAIT = 1
-    REQ_DATA_CACHE = 2
+    GET = 0
+    WAIT = 1
+    DATA = 2
 
     def __init__(self):
-        # Data requests {DataId : [ Set of Ranks ]}
-        self._data_request = defaultdict(set)
-        # Blocking data requests {DataId : [ Set of Ranks ]}
-        self._blocking_data_request = defaultdict(set)
-        # Wait requests {DataId : Rank}
-        self._wait_request = {}
-        # Cache for already requested ids
-        self._data_request_cache = set()
+        # Non-blocking get requests {DataId : [ Set of Ranks ]}
+        self._nonblocking_get_requests = defaultdict(set)
+        # Blocking get requests {DataId : [ Set of Ranks ]}
+        self._blocking_get_requests = defaultdict(set)
+        # Blocking wait requests {DataId : Rank}
+        self._blocking_wait_requests = {}
+        # Data requests
+        self._data_requests = set()
 
     @classmethod
     def get_instance(cls):
@@ -74,21 +74,21 @@ class RequestStore:
             If ``True``, the request should be processed immediatly
             even for a worker since it can get into controller mode.
         """
-        if request_type == self.REQ_DATA:
+        if request_type == self.GET:
             if is_blocking_op:
-                self._blocking_data_request[data_id].add(rank)
+                self._blocking_get_requests[data_id].add(rank)
             else:
-                self._data_request[data_id].add(rank)
-        elif request_type == self.REQ_WAIT:
-            self._wait_request[data_id] = rank
-        elif request_type == self.REQ_DATA_CACHE:
-            self._data_request_cache.add(data_id)
+                self._nonblocking_get_requests[data_id].add(rank)
+        elif request_type == self.WAIT:
+            self._blocking_wait_requests[data_id] = rank
+        elif request_type == self.DATA:
+            self._data_requests.add(data_id)
         else:
             raise ValueError("Unsupported request type option!")
 
-    def is_already_requested(self, data_id):
+    def is_data_already_requested(self, data_id):
         """
-        Check if particular `data_id` was already requested from another MPI process.
+        Check if data by particular `data_id` was already requested from another MPI process.
 
         Parameters
         ----------
@@ -100,18 +100,18 @@ class RequestStore:
         bool
             ``True`` if communnication request was happened for this ID.
         """
-        return data_id in self._data_request_cache
+        return data_id in self._data_requests
 
-    def clear_cache(self, data_id):
+    def discard_data_request(self, data_id):
         """
-        Clear internal cache for happened communication requests.
+        Discard data request by `data_id` because the data has become available.
 
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
             An ID to data.
         """
-        self._data_request_cache.discard(data_id)
+        self._data_requests.discard(data_id)
 
     def check_pending_get_requests(self, data_ids):
         """
@@ -127,19 +127,19 @@ class RequestStore:
 
         def check_request(data_id):
             # Check non-blocking data requests for one of the workers
-            if data_id in self._data_request:
-                ranks_with_get_request = self._data_request[data_id]
+            if data_id in self._nonblocking_get_requests:
+                ranks_with_get_request = self._nonblocking_get_requests[data_id]
                 for rank_num in ranks_with_get_request:
                     # Data is already in DataMap, so not problem here
                     self.process_get_request(rank_num, data_id, is_blocking_op=False)
-                del self._data_request[data_id]
+                del self._nonblocking_get_requests[data_id]
             # Check blocking data requests for other of the workers
-            if data_id in self._blocking_data_request:
-                ranks_with_get_request = self._blocking_data_request[data_id]
+            if data_id in self._blocking_get_requests:
+                ranks_with_get_request = self._blocking_get_requests[data_id]
                 for rank_num in ranks_with_get_request:
                     # Data is already in DataMap, so not problem here
                     self.process_get_request(rank_num, data_id, is_blocking_op=True)
-                del self._blocking_data_request[data_id]
+                del self._blocking_get_requests[data_id]
 
         if isinstance(data_ids, (list, tuple)):
             for data_id in data_ids:
@@ -161,7 +161,7 @@ class RequestStore:
         """
         if isinstance(data_ids, (list, tuple)):
             for data_id in data_ids:
-                if data_id in self._wait_request:
+                if data_id in self._blocking_wait_requests:
                     # Data is already in DataMap, so not problem here.
                     # We use a blocking send here because the receiver is waiting for the result.
                     communication.mpi_send_object(
@@ -169,16 +169,16 @@ class RequestStore:
                         data_id,
                         communication.MPIRank.ROOT,
                     )
-                    del self._wait_request[data_id]
+                    del self._blocking_wait_requests[data_id]
         else:
-            if data_ids in self._wait_request:
+            if data_ids in self._blocking_wait_requests:
                 # We use a blocking send here because the receiver is waiting for the result.
                 communication.mpi_send_object(
                     communication.MPIState.get_instance().comm,
                     data_ids,
                     communication.MPIRank.ROOT,
                 )
-                del self._wait_request[data_ids]
+                del self._blocking_wait_requests[data_ids]
 
     def process_wait_request(self, data_id):
         """
@@ -205,7 +205,7 @@ class RequestStore:
             )
             logger.debug("Wait data {} id is ready".format(data_id._id))
         else:
-            self.put(data_id, communication.MPIRank.ROOT, self.REQ_WAIT)
+            self.put(data_id, communication.MPIRank.ROOT, self.WAIT)
             logger.debug("Pending wait request {} id".format(data_id._id))
 
     def process_get_request(self, source_rank, data_id, is_blocking_op=False):
@@ -280,4 +280,4 @@ class RequestStore:
             logger.debug(
                 "Pending request {} id to {} rank".format(data_id._id, source_rank)
             )
-            self.put(data_id, source_rank, self.REQ_DATA, is_blocking_op=is_blocking_op)
+            self.put(data_id, source_rank, self.GET, is_blocking_op=is_blocking_op)
