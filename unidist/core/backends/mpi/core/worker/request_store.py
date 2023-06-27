@@ -23,9 +23,18 @@ class RequestStore:
     """
     Class that stores data requests that couldn't be satisfied now.
 
+    Attributes
+    ----------
+    GET : int, default 0
+        `Get` request from other worker to be executed.
+    WAIT : int, default 1
+        `Wait` request from other worker to be executed.
+    DATA : int, default 2
+        Data request to other worker.
+
     Notes
     -----
-    Supports GET and WAIT requests.
+    Supports `GET` and `WAIT` requests.
     """
 
     __instance = None
