@@ -144,7 +144,7 @@ class TaskStore:
         async_operations.extend(h_list)
 
         # Save request in order to prevent massive communication during pending task checks
-        RequestStore.get_instance().put(data_id, dest_rank, RequestStore.REQ_DATA_CACHE)
+        RequestStore.get_instance().put(data_id, dest_rank, RequestStore.DATA)
 
     def unwrap_local_data_id(self, arg):
         """
@@ -175,7 +175,7 @@ class TaskStore:
                 # Data is already local or was pushed from master
                 return value, False
             elif object_store.contains_data_owner(arg):
-                if not RequestStore.get_instance().is_already_requested(arg):
+                if not RequestStore.get_instance().is_data_already_requested(arg):
                     # Request the data from an owner worker
                     owner_rank = object_store.get_data_owner(arg)
                     if owner_rank != communication.MPIState.get_instance().rank:
