@@ -13,7 +13,6 @@ except ImportError:
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
-from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
@@ -143,6 +142,7 @@ class WaitHandler:
                             communication.MPIState.get_instance().comm,
                             operation_data,
                             communication.MPIRank.ROOT,
+                            tag=common.MPITag.OBJECT,
                         )
                         self.ready = []
                         self.awaited_data_ids = []
@@ -163,9 +163,10 @@ def monitor_loop():
     """
     task_counter = TaskCounter.get_instance()
     mpi_state = communication.MPIState.get_instance()
-    async_operations = AsyncOperations.get_instance()
     wait_handler = WaitHandler.get_instance()
     data_id_tracker = DataIDTracker.get_instance()
+    workers_ready_to_shutdown = []
+    shutdown_workers = False
 
     while True:
         # Listen receive operation from any source
@@ -173,16 +174,16 @@ def monitor_loop():
         # Proceed the request
         if operation_type == common.Operation.TASK_DONE:
             task_counter.increment()
-            output_data_ids = communication.recv_simple_operation(
-                mpi_state.comm, source_rank
+            output_data_ids = communication.mpi_recv_object(
+                mpi_state.comm, source_rank, tag=common.MPITag.OBJECT
             )
             data_id_tracker.add_to_completed(output_data_ids)
             wait_handler.process_wait_requests()
         elif operation_type == common.Operation.WAIT:
             # TODO: WAIT request can be received from several workers,
             # but not only from master. Handle this case when requested.
-            operation_data = communication.recv_simple_operation(
-                mpi_state.comm, source_rank
+            operation_data = communication.mpi_recv_object(
+                mpi_state.comm, source_rank, tag=common.MPITag.OBJECT
             )
             awaited_data_ids = operation_data["data_ids"]
             num_returns = operation_data["num_returns"]
@@ -194,14 +195,32 @@ def monitor_loop():
                 mpi_state.comm,
                 task_counter.task_counter,
                 source_rank,
+                tag=common.MPITag.OBJECT,
             )
-        elif operation_type == common.Operation.CANCEL:
-            async_operations.finish()
+        elif operation_type == common.Operation.READY_TO_SHUTDOWN:
+            workers_ready_to_shutdown.append(source_rank)
+            shutdown_workers = (
+                len(workers_ready_to_shutdown) == mpi_state.world_size - 2
+            )  # "-2" to exclude master and monitor ranks
+        else:
+            raise ValueError(f"Unsupported operation: {operation_type}")
+
+        if shutdown_workers:
+            for rank_id in range(
+                communication.MPIRank.FIRST_WORKER, mpi_state.world_size
+            ):
+                communication.mpi_send_object(
+                    mpi_state.comm,
+                    common.Operation.SHUTDOWN,
+                    rank_id,
+                    tag=common.MPITag.OPERATION,
+                )
+            communication.mpi_send_object(
+                mpi_state.comm,
+                common.Operation.SHUTDOWN,
+                communication.MPIRank.ROOT,
+                tag=common.MPITag.OBJECT,
+            )
             if not MPI.Is_finalized():
                 MPI.Finalize()
             break  # leave event loop and shutdown monitoring
-        else:
-            raise ValueError("Unsupported operation!")
-
-        # Check completion status of previous async MPI routines
-        async_operations.check()

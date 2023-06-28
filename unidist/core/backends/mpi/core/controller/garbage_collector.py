@@ -126,10 +126,12 @@ class GarbageCollector:
                         mpi_state.comm,
                         common.Operation.GET_TASK_COUNT,
                         communication.MPIRank.MONITOR,
+                        tag=common.MPITag.OPERATION,
                     )
-                    executed_task_counter = communication.recv_simple_operation(
+                    executed_task_counter = communication.mpi_recv_object(
                         mpi_state.comm,
                         communication.MPIRank.MONITOR,
+                        tag=common.MPITag.OBJECT,
                     )
 
                     logger.debug(

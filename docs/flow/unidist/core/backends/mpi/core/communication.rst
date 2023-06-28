@@ -23,7 +23,7 @@ Simple operations involve send/receive objects of standard Python data types.
 .. autofunction:: unidist.core.backends.mpi.core.communication.mpi_recv_buffer
 .. autofunction:: unidist.core.backends.mpi.core.communication.send_simple_operation
 .. autofunction:: unidist.core.backends.mpi.core.communication.isend_simple_operation
-.. autofunction:: unidist.core.backends.mpi.core.communication.recv_simple_operation
+.. autofunction:: unidist.core.backends.mpi.core.communication.mpi_recv_object
 
 Complex operations involve send/receive objects of custom data types, functions and classes with native buffers support.
 Several levels of serialization handle this case, including `msgpack`, `cloudpickle` and `pickle` libraries.

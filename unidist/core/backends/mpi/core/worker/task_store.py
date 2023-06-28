@@ -93,6 +93,14 @@ class TaskStore:
                     updated_list.append(pending_request)
             self._pending_tasks_list = updated_list
 
+    def clear_pending_tasks(self):
+        """
+        Clear a list of pending task execution requests.
+        """
+        w_logger.debug("Clear pending tasks")
+
+        self._pending_tasks_list.clear()
+
     def check_pending_actor_tasks(self):
         """
         Check a list of pending actor task execution requests and process all ready tasks.
@@ -108,6 +116,14 @@ class TaskStore:
                 if pending_request:
                     updated_list.append(pending_request)
             self._pending_actor_tasks_list = updated_list
+
+    def clear_pending_actor_tasks(self):
+        """
+        Clear a list of pending actor task execution requests.
+        """
+        w_logger.debug("Clear pending actor tasks")
+
+        self._pending_actor_tasks_list.clear()
 
     def request_worker_data(self, dest_rank, data_id):
         """
@@ -262,9 +278,7 @@ class TaskStore:
                             object_store.put(data_id, output_values)
                             completed_data_ids = [data_id]
 
-                        RequestStore.get_instance().check_pending_get_requests(
-                            output_data_ids
-                        )
+                RequestStore.get_instance().check_pending_get_requests(output_data_ids)
                 # Monitor the task execution
                 # We use a blocking send here because we have to wait for
                 # completion of the communication, which is necessary for the pipeline to continue.
@@ -333,6 +347,7 @@ class TaskStore:
                         data_id = object_store.get_unique_data_id(output_data_ids)
                         object_store.put(data_id, output_values)
                         completed_data_ids = [data_id]
+            RequestStore.get_instance().check_pending_get_requests(output_data_ids)
             # Monitor the task execution.
             # We use a blocking send here because we have to wait for
             # completion of the communication, which is necessary for the pipeline to continue.
@@ -365,7 +380,11 @@ class TaskStore:
         kwargs = request["kwargs"]
         output_ids = request["output"]
 
+        w_logger.debug("REMOTE task: {}".format(task))
         w_logger.debug("REMOTE args: {}".format(common.unwrapped_data_ids_list(args)))
+        w_logger.debug(
+            "REMOTE kwargs: {}".format(common.unwrapped_data_ids_list(kwargs))
+        )
         w_logger.debug(
             "REMOTE outputs: {}".format(common.unwrapped_data_ids_list(output_ids))
         )

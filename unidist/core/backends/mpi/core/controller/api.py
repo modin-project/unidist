@@ -264,19 +264,31 @@ def shutdown():
     """
     global is_mpi_shutdown
     if not is_mpi_shutdown:
+        async_operations = AsyncOperations.get_instance()
+        async_operations.finish()
         mpi_state = communication.MPIState.get_instance()
         # Send shutdown commands to all ranks
-        for rank_id in range(communication.MPIRank.MONITOR, mpi_state.world_size):
+        for rank_id in range(communication.MPIRank.FIRST_WORKER, mpi_state.world_size):
             # We use a blocking send here because we have to wait for
             # completion of the communication, which is necessary for the pipeline to continue.
             communication.mpi_send_object(
-                mpi_state.comm, common.Operation.CANCEL, rank_id
+                mpi_state.comm,
+                common.Operation.CANCEL,
+                rank_id,
+                tag=common.MPITag.OPERATION,
             )
             logger.debug("Shutdown rank {}".format(rank_id))
-        async_operations = AsyncOperations.get_instance()
-        async_operations.finish()
+        # Make sure that monitor has sent the shutdown signal to all workers.
+        op_type = communication.mpi_recv_object(
+            mpi_state.comm,
+            communication.MPIRank.MONITOR,
+            tag=common.MPITag.OBJECT,
+        )
+        if op_type != common.Operation.SHUTDOWN:
+            raise ValueError(f"Got wrong operation type {op_type}.")
         if not MPI.Is_finalized():
             MPI.Finalize()
+        logger.debug("Shutdown root")
         is_mpi_shutdown = True
 
 
@@ -418,9 +430,10 @@ def wait(data_ids, num_returns=1):
         operation_data,
         communication.MPIRank.MONITOR,
     )
-    data = communication.recv_simple_operation(
+    data = communication.mpi_recv_object(
         mpi_state.comm,
         communication.MPIRank.MONITOR,
+        tag=common.MPITag.OBJECT,
     )
     ready.extend(data["ready"])
     not_ready = data["not_ready"]

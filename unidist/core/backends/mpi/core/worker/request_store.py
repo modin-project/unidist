@@ -122,6 +122,15 @@ class RequestStore:
         """
         self._data_requests.discard(data_id)
 
+    def clear_get_requests(self):
+        """Clear blocking and non-blocking get requests."""
+        self._blocking_get_requests.clear()
+        self._nonblocking_get_requests.clear()
+
+    def clear_wait_requests(self):
+        """Clear blocking wait requests requests."""
+        self._blocking_wait_requests.clear()
+
     def check_pending_get_requests(self, data_ids):
         """
         Check if `GET` event on this `data_ids` is waiting to be processed.
@@ -177,6 +186,7 @@ class RequestStore:
                         communication.MPIState.get_instance().comm,
                         data_id,
                         communication.MPIRank.ROOT,
+                        tag=common.MPITag.OBJECT,
                     )
                     del self._blocking_wait_requests[data_id]
         else:
@@ -186,6 +196,7 @@ class RequestStore:
                     communication.MPIState.get_instance().comm,
                     data_ids,
                     communication.MPIRank.ROOT,
+                    tag=common.MPITag.OBJECT,
                 )
                 del self._blocking_wait_requests[data_ids]
 
@@ -211,6 +222,7 @@ class RequestStore:
                 communication.MPIState.get_instance().comm,
                 data_id,
                 communication.MPIRank.ROOT,
+                tag=common.MPITag.OBJECT,
             )
             logger.debug("Wait data {} id is ready".format(data_id._id))
         else:
