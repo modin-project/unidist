@@ -65,12 +65,16 @@ class Operation:
 
 class MPITag:
     """
-    Class that describes tags that are used internally.
+    Class that describes tags that are used internally for communications.
 
     Attributes
     ----------
     OPERATION : int, default: 111
         The tag for send/recv of an operation type.
+    OBJECT : int, default: 112
+        The tag for send/recv of a regular Python object.
+    BUFFER : int, default: 113
+        The tag for send/recv of a buffer-like object.
     """
 
     OPERATION = 111

@@ -167,7 +167,9 @@ def monitor_loop():
     data_id_tracker = DataIDTracker.get_instance()
     workers_ready_to_shutdown = []
     shutdown_workers = False
-
+    # Once all workers excluding ``Root`` and ``Monitor`` ranks are ready to shutdown,
+    # ``Monitor` sends the shutdown signal to every worker, as well as notifies ``Root`` that
+    # it can exit the program.
     while True:
         # Listen receive operation from any source
         operation_type, source_rank = communication.recv_operation_type(mpi_state.comm)
@@ -201,7 +203,7 @@ def monitor_loop():
             workers_ready_to_shutdown.append(source_rank)
             shutdown_workers = (
                 len(workers_ready_to_shutdown) == mpi_state.world_size - 2
-            )  # "-2" to exclude master and monitor ranks
+            )  # "-2" to exclude ``Root`` and ``Monitor`` ranks
         else:
             raise ValueError(f"Unsupported operation: {operation_type}")
 

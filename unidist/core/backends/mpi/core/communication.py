@@ -225,8 +225,9 @@ def mpi_recv_object(comm, source_rank, tag=MPI.ANY_TAG, cancel_recv=False):
 
     Returns
     -------
-    object
-        Received data object from another MPI process.
+    object or None
+        Received data object from another MPI process or
+        ``None`` if the message was cancelled.
 
     Notes
     -----
@@ -560,7 +561,8 @@ def recv_complex_data(comm, source_rank, cancel_recv=False):
     Returns
     -------
     object
-        Received data object from another MPI process.
+        Received data object from another MPI process or
+        ``None`` if the message was cancelled.
     """
     # Recv main message pack buffer.
     # First MPI call uses busy wait loop to remove possible contention
@@ -571,7 +573,7 @@ def recv_complex_data(comm, source_rank, cancel_recv=False):
     msgpack_buffer = bytearray(info["s_data_len"])
     buffer_count = info["buffer_count"]
     raw_buffers = list(map(bytearray, info["raw_buffers_len"]))
-    all_cancelled = []
+    cancelled_requests = []
     with pkl5._bigmpi as bigmpi:
         while not comm.Iprobe(source=source_rank, tag=common.MPITag.BUFFER):
             time.sleep(backoff)
@@ -581,7 +583,7 @@ def recv_complex_data(comm, source_rank, cancel_recv=False):
         if cancel_recv:
             request.Cancel()
         request.Wait(status=status)
-        all_cancelled.append(status.Is_cancelled())
+        cancelled_requests.append(status.Is_cancelled())
         for rbuf in raw_buffers:
             while not comm.Iprobe(source=source_rank, tag=common.MPITag.BUFFER):
                 time.sleep(backoff)
@@ -591,9 +593,9 @@ def recv_complex_data(comm, source_rank, cancel_recv=False):
             if cancel_recv:
                 request.Cancel()
             request.Wait(status=status)
-            all_cancelled.append(status.Is_cancelled())
+            cancelled_requests.append(status.Is_cancelled())
 
-    if any(cancelled for cancelled in all_cancelled):
+    if any(cancelled for cancelled in cancelled_requests):
         return None
     else:
         # Set the necessary metadata for unpacking
