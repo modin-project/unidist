@@ -43,4 +43,4 @@ Complex operations as above, but operating with a bytearray of already serialize
 To reduce possible contention, MPI communication module supports custom receive data functions with a busy-wait loop underneath.
 
 .. autofunction:: unidist.core.backends.mpi.core.communication.mpi_busy_wait_recv
-.. autofunction:: unidist.core.backends.mpi.core.communication.recv_operation_type
+.. autofunction:: unidist.core.backends.mpi.core.communication.mpi_recv_operation
