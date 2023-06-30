@@ -142,7 +142,6 @@ class WaitHandler:
                             communication.MPIState.get_instance().comm,
                             operation_data,
                             communication.MPIRank.ROOT,
-                            tag=common.MPITag.OBJECT,
                         )
                         self.ready = []
                         self.awaited_data_ids = []
@@ -172,21 +171,17 @@ def monitor_loop():
     # it can exit the program.
     while True:
         # Listen receive operation from any source
-        operation_type, source_rank = communication.recv_operation_type(mpi_state.comm)
+        operation_type, source_rank = communication.mpi_recv_operation(mpi_state.comm)
         # Proceed the request
         if operation_type == common.Operation.TASK_DONE:
             task_counter.increment()
-            output_data_ids = communication.mpi_recv_object(
-                mpi_state.comm, source_rank, tag=common.MPITag.OBJECT
-            )
+            output_data_ids = communication.mpi_recv_object(mpi_state.comm, source_rank)
             data_id_tracker.add_to_completed(output_data_ids)
             wait_handler.process_wait_requests()
         elif operation_type == common.Operation.WAIT:
             # TODO: WAIT request can be received from several workers,
             # but not only from master. Handle this case when requested.
-            operation_data = communication.mpi_recv_object(
-                mpi_state.comm, source_rank, tag=common.MPITag.OBJECT
-            )
+            operation_data = communication.mpi_recv_object(mpi_state.comm, source_rank)
             awaited_data_ids = operation_data["data_ids"]
             num_returns = operation_data["num_returns"]
             wait_handler.add_wait_request(awaited_data_ids, num_returns)
@@ -197,7 +192,6 @@ def monitor_loop():
                 mpi_state.comm,
                 task_counter.task_counter,
                 source_rank,
-                tag=common.MPITag.OBJECT,
             )
         elif operation_type == common.Operation.READY_TO_SHUTDOWN:
             workers_ready_to_shutdown.append(source_rank)
@@ -211,17 +205,15 @@ def monitor_loop():
             for rank_id in range(
                 communication.MPIRank.FIRST_WORKER, mpi_state.world_size
             ):
-                communication.mpi_send_object(
+                communication.mpi_send_operation(
                     mpi_state.comm,
                     common.Operation.SHUTDOWN,
                     rank_id,
-                    tag=common.MPITag.OPERATION,
                 )
             communication.mpi_send_object(
                 mpi_state.comm,
                 common.Operation.SHUTDOWN,
                 communication.MPIRank.ROOT,
-                tag=common.MPITag.OBJECT,
             )
             if not MPI.Is_finalized():
                 MPI.Finalize()

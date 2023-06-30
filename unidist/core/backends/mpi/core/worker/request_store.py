@@ -186,7 +186,6 @@ class RequestStore:
                         communication.MPIState.get_instance().comm,
                         data_id,
                         communication.MPIRank.ROOT,
-                        tag=common.MPITag.OBJECT,
                     )
                     del self._blocking_wait_requests[data_id]
         else:
@@ -196,7 +195,6 @@ class RequestStore:
                     communication.MPIState.get_instance().comm,
                     data_ids,
                     communication.MPIRank.ROOT,
-                    tag=common.MPITag.OBJECT,
                 )
                 del self._blocking_wait_requests[data_ids]
 
@@ -222,7 +220,6 @@ class RequestStore:
                 communication.MPIState.get_instance().comm,
                 data_id,
                 communication.MPIRank.ROOT,
-                tag=common.MPITag.OBJECT,
             )
             logger.debug("Wait data {} id is ready".format(data_id._id))
         else:

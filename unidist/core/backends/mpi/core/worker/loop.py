@@ -94,7 +94,7 @@ async def worker_loop():
     while True:
         # Listen receive operation from any source
         operation_type, source_rank = await async_wrap(
-            communication.recv_operation_type
+            communication.mpi_recv_operation
         )(mpi_state.comm)
         w_logger.debug("common.Operation processing - {}".format(operation_type))
 
@@ -119,7 +119,6 @@ async def worker_loop():
             request = communication.mpi_recv_object(
                 mpi_state.comm,
                 source_rank,
-                tag=common.MPITag.OBJECT,
                 cancel_recv=ready_to_shutdown_posted,
             )
             if request is not None and not ready_to_shutdown_posted:
@@ -155,7 +154,6 @@ async def worker_loop():
             request = communication.mpi_recv_object(
                 mpi_state.comm,
                 source_rank,
-                tag=common.MPITag.OBJECT,
                 cancel_recv=ready_to_shutdown_posted,
             )
             if request is not None and not ready_to_shutdown_posted:
@@ -169,16 +167,16 @@ async def worker_loop():
                 )
 
         elif operation_type == common.Operation.WAIT:
-            request = communication.mpi_recv_object(
-                mpi_state.comm, source_rank, tag=common.MPITag.OBJECT
-            )
+            request = communication.mpi_recv_object(mpi_state.comm, source_rank)
             if request is not None and not ready_to_shutdown_posted:
                 w_logger.debug("WAIT for {} id".format(request["id"]._id))
                 request["id"] = object_store.get_unique_data_id(request["id"])
                 request_store.process_wait_request(request["id"])
 
         elif operation_type == common.Operation.ACTOR_CREATE:
-            request = communication.recv_complex_data(mpi_state.comm, source_rank)
+            request = communication.recv_complex_data(
+                mpi_state.comm, source_rank, cancel_recv=ready_to_shutdown_posted
+            )
             if request is not None and not ready_to_shutdown_posted:
                 cls = request["class"]
                 args = request["args"]
@@ -187,7 +185,9 @@ async def worker_loop():
                 actor_map[handler] = cls(*args, **kwargs)
 
         elif operation_type == common.Operation.ACTOR_EXECUTE:
-            request = communication.recv_complex_data(mpi_state.comm, source_rank)
+            request = communication.recv_complex_data(
+                mpi_state.comm, source_rank, cancel_recv=ready_to_shutdown_posted
+            )
 
             if request is not None and not ready_to_shutdown_posted:
                 # Prepare the data
@@ -215,11 +215,10 @@ async def worker_loop():
             task_store.clear_pending_actor_tasks()
             request_store.clear_get_requests()
             request_store.clear_wait_requests()
-            communication.mpi_send_object(
+            communication.mpi_send_operation(
                 mpi_state.comm,
                 common.Operation.READY_TO_SHUTDOWN,
                 communication.MPIRank.MONITOR,
-                tag=common.MPITag.OPERATION,
             )
             ready_to_shutdown_posted = True
         elif operation_type == common.Operation.SHUTDOWN and ready_to_shutdown_posted:

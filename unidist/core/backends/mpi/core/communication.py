@@ -156,34 +156,32 @@ def get_topology():
 # ---------------------------- #
 
 
-def mpi_send_object(comm, data, dest_rank, tag=0):
+def mpi_send_operation(comm, op_type, dest_rank):
     """
-    Send Python object to another MPI rank in a blocking way.
+    Send an operation type to another MPI rank in a blocking way.
 
     Parameters
     ----------
     comm : object
         MPI communicator object.
-    data : object
-        Data to send.
+    op_type : unidist.core.backends.mpi.core.common.Operation
+        An operation type to send.
     dest_rank : int
         Target MPI process to transfer data.
-    tag : int, default: 0
-        Tag value of a message.
-        The default value must be equal to the default in mpi4py.
 
     Notes
     -----
-    This blocking send is used when we have to wait for completion of the communication,
+    * This blocking send is used when we have to wait for completion of the communication,
     which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
-    Otherwise, use non-blocking ``mpi_isend_object``.
+    Otherwise, use non-blocking ``mpi_isend_operation``.
+    * The special tag is used for this communication, namely, ``common.MPITag.OPERATION``.
     """
-    comm.send(data, dest=dest_rank, tag=tag)
+    comm.send(op_type, dest=dest_rank, tag=common.MPITag.OPERATION)
 
 
-def mpi_isend_object(comm, data, dest_rank, tag=0):
+def mpi_send_object(comm, data, dest_rank):
     """
-    Send Python object to another MPI rank in a non-blocking way.
+    Send a Python object to another MPI rank in a blocking way.
 
     Parameters
     ----------
@@ -193,19 +191,103 @@ def mpi_isend_object(comm, data, dest_rank, tag=0):
         Data to send.
     dest_rank : int
         Target MPI process to transfer data.
-    tag : int, default: 0
-        Tag value of a message.
-        The default value must be equal to the default in mpi4py.
+
+    Notes
+    -----
+    * This blocking send is used when we have to wait for completion of the communication,
+    which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
+    Otherwise, use non-blocking ``mpi_isend_object``.
+    * The special tag is used for this communication, namely, ``common.MPITag.OBJECT``.
+    """
+    comm.send(data, dest=dest_rank, tag=common.MPITag.OBJECT)
+
+
+def mpi_isend_operation(comm, op_type, dest_rank):
+    """
+    Send an operation type to another MPI rank in a non-blocking way.
+
+    Parameters
+    ----------
+    comm : object
+        MPI communicator object.
+    op_type : unidist.core.backends.mpi.core.common.Operation
+        An operation type to send.
+    dest_rank : int
+        Target MPI process to transfer data.
 
     Returns
     -------
     object
         A handler to MPI_Isend communication result.
+
+    Notes
+    -----
+    The special tag is used for this communication, namely, ``common.MPITag.OPERATION``.
     """
-    return comm.isend(data, dest=dest_rank, tag=tag)
+    return comm.isend(op_type, dest=dest_rank, tag=common.MPITag.OPERATION)
 
 
-def mpi_recv_object(comm, source_rank, tag=MPI.ANY_TAG, cancel_recv=False):
+def mpi_isend_object(comm, data, dest_rank):
+    """
+    Send a Python object to another MPI rank in a non-blocking way.
+
+    Parameters
+    ----------
+    comm : object
+        MPI communicator object.
+    data : object
+        Data to send.
+    dest_rank : int
+        Target MPI process to transfer data.
+
+    Returns
+    -------
+    object
+        A handler to MPI_Isend communication result.
+
+    Notes
+    -----
+    * The special tag is used for this communication, namely, ``common.MPITag.OBJECT``.
+    """
+    return comm.isend(data, dest=dest_rank, tag=common.MPITag.OBJECT)
+
+
+def mpi_recv_operation(comm):
+    """
+    Worker receive operation type interface.
+
+    Busy waits to avoid contention. Receives data from any source.
+
+    Parameters
+    ----------
+    comm : object
+        MPI communicator object.
+
+    Returns
+    -------
+    unidist.core.backends.mpi.core.common.Operation
+        Operation type.
+    int
+        Source rank.
+
+    Notes
+    -----
+    The special tag is used for this communication, namely, ``common.MPITag.OPERATION``.
+    """
+    backoff = MpiBackoff.get()
+    status = MPI.Status()
+    source = MPI.ANY_SOURCE
+    tag = common.MPITag.OPERATION
+    while not comm.iprobe(source=source, tag=tag, status=status):
+        time.sleep(backoff)
+    source = status.source
+    tag = status.tag
+    op_type = comm.recv(buf=None, source=source, tag=tag, status=status)
+    log_operation(op_type, status)
+    return op_type, status.Get_source()
+
+
+def mpi_recv_object(comm, source_rank, cancel_recv=False):
     """
     Receive an object of a standard Python data type.
 
@@ -215,9 +297,6 @@ def mpi_recv_object(comm, source_rank, tag=MPI.ANY_TAG, cancel_recv=False):
         MPI communicator object.
     source_rank : int
         Source MPI process to receive data from.
-    tag : int, default: MPI.ANY_TAG
-        Tag value of a message.
-        The default value must be equal to the default in mpi4py.
     cancel_recv : bool, default: False
         Whether to cancel an incoming message or not.
         This can happen when a worker is getting to shutdown so
@@ -231,10 +310,12 @@ def mpi_recv_object(comm, source_rank, tag=MPI.ANY_TAG, cancel_recv=False):
 
     Notes
     -----
-    De-serialization is a simple pickle.load in this case
+    * De-serialization is a simple pickle.load in this case.
+    * The special tag is used for this communication, namely, ``common.MPITag.OBJECT``.
     """
     backoff = MpiBackoff.get()
     status = MPI.Status()
+    tag = common.MPITag.OBJECT
     while not comm.Iprobe(source=source_rank, tag=tag):
         time.sleep(backoff)
     request = comm.irecv(source=source_rank, tag=tag)
@@ -263,34 +344,14 @@ def mpi_send_buffer(comm, buffer_size, buffer, dest_rank):
 
     Notes
     -----
-    This blocking send is used when we have to wait for completion of the communication,
+    * This blocking send is used when we have to wait for completion of the communication,
     which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
     Otherwise, use non-blocking ``mpi_isend_buffer``.
+    * The special tags are used for this communication, namely,
+    ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     comm.send(buffer_size, dest=dest_rank, tag=common.MPITag.OBJECT)
     comm.Send([buffer, MPI.CHAR], dest=dest_rank, tag=common.MPITag.BUFFER)
-
-
-def mpi_recv_buffer(comm, source_rank):
-    """
-    Receive data buffer.
-
-    Parameters
-    ----------
-    comm : object
-        MPI communicator object.
-    source_rank : int
-        Communication event source rank.
-
-    Returns
-    -------
-    object
-        Array buffer or serialized object.
-    """
-    buf_size = comm.recv(source=source_rank, tag=common.MPITag.OBJECT)
-    s_buffer = bytearray(buf_size)
-    comm.Recv([s_buffer, MPI.CHAR], source=source_rank, tag=common.MPITag.BUFFER)
-    return s_buffer
 
 
 def mpi_isend_buffer(comm, buffer_size, buffer, dest_rank):
@@ -312,6 +373,11 @@ def mpi_isend_buffer(comm, buffer_size, buffer, dest_rank):
     -------
     object
         A handler to MPI_Isend communication result.
+
+    Notes
+    -----
+    * The special tags are used for this communication, namely,
+    ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     requests = []
     h1 = comm.isend(buffer_size, dest=dest_rank, tag=common.MPITag.OBJECT)
@@ -319,6 +385,33 @@ def mpi_isend_buffer(comm, buffer_size, buffer, dest_rank):
     h2 = comm.Isend([buffer, MPI.CHAR], dest=dest_rank, tag=common.MPITag.BUFFER)
     requests.append((h2, buffer))
     return requests
+
+
+def mpi_recv_buffer(comm, source_rank):
+    """
+    Receive data buffer.
+
+    Parameters
+    ----------
+    comm : object
+        MPI communicator object.
+    source_rank : int
+        Communication event source rank.
+
+    Returns
+    -------
+    object
+        Array buffer or serialized object.
+
+    Notes
+    -----
+    * The special tags are used for this communication, namely,
+    ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
+    """
+    buf_size = comm.recv(source=source_rank, tag=common.MPITag.OBJECT)
+    s_buffer = bytearray(buf_size)
+    comm.Recv([s_buffer, MPI.CHAR], source=source_rank, tag=common.MPITag.BUFFER)
+    return s_buffer
 
 
 def mpi_busy_wait_recv(comm, source_rank):
@@ -331,6 +424,15 @@ def mpi_busy_wait_recv(comm, source_rank):
         MPI communicator object.
     source_rank : int
         Source MPI process to receive data.
+
+    Returns
+    -------
+    object
+        Received data.
+
+    Notes
+    -----
+    The special tag is used for this communication, namely, ``common.MPITag.OBJECT``.
     """
     backoff = MpiBackoff.get()
     req_handle = comm.irecv(source=source_rank, tag=common.MPITag.OBJECT)
@@ -340,37 +442,6 @@ def mpi_busy_wait_recv(comm, source_rank):
             return data
         else:
             time.sleep(backoff)
-
-
-def recv_operation_type(comm):
-    """
-    Worker receive operation type interface.
-
-    Busy waits to avoid contention. Receives data from any source.
-
-    Parameters
-    ----------
-    comm : object
-        MPI communicator object.
-
-    Returns
-    -------
-    unidist.core.backends.mpi.core.common.Operation
-        Operation type.
-    int
-        Source rank.
-    """
-    backoff = MpiBackoff.get()
-    status = MPI.Status()
-    source = MPI.ANY_SOURCE
-    tag = common.MPITag.OPERATION
-    while not comm.iprobe(source=source, tag=tag, status=status):
-        time.sleep(backoff)
-    source = status.source
-    tag = status.tag
-    op_type = comm.recv(buf=None, source=source, tag=tag, status=status)
-    log_operation(op_type, status)
-    return op_type, status.Get_source()
 
 
 # --------------------------------- #
@@ -396,6 +467,11 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank):
         See details in :py:class:`~unidist.core.backends.mpi.core.serialization.ComplexDataSerializer`.
     dest_rank : int
         Target MPI process to transfer data.
+
+    Notes
+    -----
+    The special tags are used for this communication, namely,
+    ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     info = {
         "s_data_len": len(s_data),
@@ -434,9 +510,11 @@ def send_complex_data(comm, data, dest_rank):
 
     Notes
     -----
-    This blocking send is used when we have to wait for completion of the communication,
+    * This blocking send is used when we have to wait for completion of the communication,
     which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
     Otherwise, use non-blocking ``isend_complex_data``.
+    * The special tags are used for this communication, namely,
+    ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     serializer = ComplexDataSerializer()
     # Main job
@@ -477,6 +555,11 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank)
     -------
     list
         A list of pairs, ``MPI_Isend`` handler and associated data to send.
+
+    Notes
+    -----
+    * The special tags are used for this communication, namely,
+    ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     handlers = []
     info = {
@@ -523,6 +606,11 @@ def isend_complex_data(comm, data, dest_rank):
         A list of pickle buffers.
     list
         A list of buffers amount for each object.
+
+    Notes
+    -----
+    * The special tags are used for this communication, namely,
+    ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     handlers = []
 
@@ -563,6 +651,11 @@ def recv_complex_data(comm, source_rank, cancel_recv=False):
     object
         Received data object from another MPI process or
         ``None`` if the message was cancelled.
+
+    Notes
+    -----
+    * The special tags are used for this communication, namely,
+    ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     # Recv main message pack buffer.
     # First MPI call uses busy wait loop to remove possible contention
@@ -631,11 +724,13 @@ def send_simple_operation(comm, operation_type, operation_data, dest_rank):
     which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
     Otherwise, use non-blocking ``isend_simple_operation``.
     * Serialization of the data to be sent takes place just using ``pickle.dump`` in this case.
+    * The special tags are used for this communication, namely,
+    ``common.MPITag.OPERATION`` and ``common.MPITag.OBJECT``.
     """
     # Send operation type
-    mpi_send_object(comm, operation_type, dest_rank, tag=common.MPITag.OPERATION)
+    mpi_send_operation(comm, operation_type, dest_rank)
     # Send the details of a communication request
-    mpi_send_object(comm, operation_data, dest_rank, tag=common.MPITag.OBJECT)
+    mpi_send_object(comm, operation_data, dest_rank)
 
 
 def isend_simple_operation(comm, operation_type, operation_data, dest_rank):
@@ -660,14 +755,16 @@ def isend_simple_operation(comm, operation_type, operation_data, dest_rank):
 
     Notes
     -----
-    Serialization of the data to be sent takes place just using ``pickle.dump`` in this case.
+    * Serialization of the data to be sent takes place just using ``pickle.dump`` in this case.
+    * The special tags are used for this communication, namely,
+    ``common.MPITag.OPERATION`` and ``common.MPITag.OBJECT``.
     """
     # Send operation type
     handlers = []
-    h1 = mpi_isend_object(comm, operation_type, dest_rank, tag=common.MPITag.OPERATION)
+    h1 = mpi_isend_operation(comm, operation_type, dest_rank)
     handlers.append((h1, operation_type))
     # Send the details of a communication request
-    h2 = mpi_isend_object(comm, operation_data, dest_rank, tag=common.MPITag.OBJECT)
+    h2 = mpi_isend_object(comm, operation_data, dest_rank)
     handlers.append((h2, operation_data))
     return handlers
 
@@ -702,13 +799,15 @@ def isend_complex_operation(
 
     Notes
     -----
-    Function always returns a ``dict`` containing async handlers to the sent MPI operations.
+    * Function always returns a ``dict`` containing async handlers to the sent MPI operations.
     In addition, ``None`` is returned if `operation_data` is already serialized,
     otherwise ``dict`` containing data serialized in this function.
+    * The special tags are used for this communication, namely,
+    ``common.MPITag.OPERATION``, ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     # Send operation type
     handlers = []
-    h1 = mpi_isend_object(comm, operation_type, dest_rank, tag=common.MPITag.OPERATION)
+    h1 = mpi_isend_operation(comm, operation_type, dest_rank)
     handlers.append((h1, None))
 
     # Send operation data
@@ -756,10 +855,15 @@ def isend_serialized_operation(comm, operation_type, operation_data, dest_rank):
     -------
     list
         A list of pairs, ``MPI_Isend`` handler and associated data to send.
+
+    Notes
+    -----
+    The special tags are used for this communication, namely,
+    ``common.MPITag.OPERATION``, ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     handlers = []
     # Send operation type
-    h1 = mpi_isend_object(comm, operation_type, dest_rank, tag=common.MPITag.OPERATION)
+    h1 = mpi_isend_operation(comm, operation_type, dest_rank)
     handlers.append((h1, operation_type))
     # Send the details of a communication request
     h2_list = mpi_isend_buffer(comm, len(operation_data), operation_data, dest_rank)
@@ -784,6 +888,11 @@ def recv_serialized_data(comm, source_rank):
     -------
     object
         Received de-serialized data object from another MPI process.
+
+    Notes
+    -----
+    The special tags are used for this communication, namely,
+    ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     s_buffer = mpi_recv_buffer(comm, source_rank)
     return SimpleDataSerializer().deserialize_pickle(s_buffer)
