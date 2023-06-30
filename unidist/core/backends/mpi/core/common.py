@@ -17,7 +17,7 @@ class Operation:
     Attributes
     ----------
     EXECUTE : int, default 1
-        Execute remote task.
+        Execute a remote task.
     GET : int, default 2
         Return local data to a requester.
     PUT_DATA : int, default 3
@@ -35,9 +35,14 @@ class Operation:
     TASK_DONE : int, default 9
         Increment global task counter.
     GET_TASK_COUNT : int, default 10
-        Exit event loop.
-    CANCEL : int, default 11
         Return global task counter to a requester.
+    CANCEL : int, default 11
+        Send a message to a worker to exit the event loop.
+    READY_TO_SHUTDOWN : int, default 12
+        Send a message to monitor from a worker,
+        which is ready to shutdown.
+    SHUTDOWN : int, default 13
+        Send a message from monitor to a worker to shutdown.
     """
 
     ### --- Master/worker operations --- ###
@@ -54,6 +59,27 @@ class Operation:
     GET_TASK_COUNT = 10
     ### --- Common operations --- ###
     CANCEL = 11
+    READY_TO_SHUTDOWN = 12
+    SHUTDOWN = 13
+
+
+class MPITag:
+    """
+    Class that describes tags that are used internally for communications.
+
+    Attributes
+    ----------
+    OPERATION : int, default: 111
+        The tag for send/recv of an operation type.
+    OBJECT : int, default: 112
+        The tag for send/recv of a regular Python object.
+    BUFFER : int, default: 113
+        The tag for send/recv of a buffer-like object.
+    """
+
+    OPERATION = 111
+    OBJECT = 112
+    BUFFER = 113
 
 
 default_class_properties = dir(type("dummy", (object,), {}))

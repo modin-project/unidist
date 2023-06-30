@@ -61,9 +61,8 @@ class AsyncOperations:
         ]
 
     def finish(self):
-        """Cancel all MPI async send requests."""
-        for handler, data in self._send_async_handlers:
+        """Finish all MPI async send requests."""
+        for handler, _ in self._send_async_handlers:
             logger.debug("WAIT ASYNC HANDLER {}".format(handler))
-            handler.Cancel()
             handler.Wait()
         self._send_async_handlers.clear()

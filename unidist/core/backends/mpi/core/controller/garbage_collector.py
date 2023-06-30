@@ -122,12 +122,12 @@ class GarbageCollector:
                     # Compare submitted and executed tasks
                     # We use a blocking send here because we have to wait for
                     # completion of the communication, which is necessary for the pipeline to continue.
-                    communication.mpi_send_object(
+                    communication.mpi_send_operation(
                         mpi_state.comm,
                         common.Operation.GET_TASK_COUNT,
                         communication.MPIRank.MONITOR,
                     )
-                    executed_task_counter = communication.recv_simple_operation(
+                    executed_task_counter = communication.mpi_recv_object(
                         mpi_state.comm,
                         communication.MPIRank.MONITOR,
                     )
