@@ -58,6 +58,59 @@ Open MPI library. If you are using a conda environment, then the required path w
 
   mpiexec -n 1 --prefix $CONDA_PATH/envs/<ENV_NAME> python script.py
 
+
+Error when using Open MPI while running in a cluster: ``OpenSSL version mismatch. Built against 30000020, you have 30100010``
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Sometimes, when you run a program with Open MPI in a cluster, you may see the following error:
+
+.. code-block:: bash
+
+  OpenSSL version mismatch. Built against 30000020, you have 30100010
+  --------------------------------------------------------------------------
+  ORTE was unable to reliably start one or more daemons.
+  This usually is caused by:
+  
+  * not finding the required libraries and/or binaries on
+    one or more nodes. Please check your PATH and LD_LIBRARY_PATH
+    settings, or configure OMPI with --enable-orterun-prefix-by-default
+  
+  * lack of authority to execute on one or more specified nodes.
+    Please verify your allocation and authorities.
+  
+  * the inability to write startup files into /tmp (--tmpdir/orte_tmpdir_base).
+    Please check with your sys admin to determine the correct location to use.
+  
+  *  compilation of the orted with dynamic libraries when static are required
+    (e.g., on Cray). Please check your configure cmd line and consider using
+    one of the contrib/platform definitions for your system type.
+  
+  * an inability to create a connection back to mpirun due to a
+    lack of common network interfaces and/or no route found between
+    them. Please check network connectivity (including firewalls
+    and network routing requirements).
+  --------------------------------------------------------------------------
+
+This is because OpenMPI uses OpenSSH, but its version was built on a different version of OpenSSL than yours.
+
+**Solution**
+
+You need to check version compatibility for OpenSSH and OpenSSL and update them if necessary.
+
+.. code-block:: bash
+
+  $ openssl version
+  OpenSSL 3.0.9 30 May 2023 (Library: OpenSSL 3.0.9 30 May 2023)
+  $ ssh -V
+  OpenSSH_8.9p1 Ubuntu-3ubuntu0.1, OpenSSL 3.0.2 15 Mar 2022
+
+If you use a conda just add ``openssh`` library to your environment:
+
+.. code-block:: bash
+
+  conda install -c conda-forge openssh
+
+
 Error when using MPI backend: ``mpi4py.MPI.Exception: MPI_ERR_SPAWN: could not spawn processes``
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
