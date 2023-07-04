@@ -86,7 +86,7 @@ def is_internal_host_communication_supported():
 
     Notes
     -----
-    MPI prior to the 3.0 standard does not support shared memory and splitting the communicator into the host.
+    Prior to the MPI 3.0 standard there is no support for shared memory.
     """
     return MPI.VERSION >= 3
 
@@ -103,15 +103,15 @@ class MPIState:
     Attributes
     ----------
     comm : mpi4py.MPI.Comm
-        MPI communicator.
+        Global MPI communicator.
     host_comm : mpi4py.MPI.Comm
-        Splited MPI communicator for current host
+        MPI subcommunicator for the current host.
     rank : int
         Rank of a process.
-    world_sise : int
+    world_size : int
         Number of processes.
     host : str
-        IP-address of current host
+        IP-address of the current host.
     topology : dict
         Dictionary, containing workers ranks assignments by IP-addresses in
         the form: `{"node_ip0": [rank_2, rank_3, ...], "node_ip1": [rank_i, ...], ...}`.
@@ -123,14 +123,13 @@ class MPIState:
         # attributes get actual values when MPI is initialized in `init` function
         self.comm = comm
         self.rank = comm.Get_rank()
+        self.world_size = comm.Get_size()
 
         if is_internal_host_communication_supported():
             self.host_comm = comm.Split_type(MPI.COMM_TYPE_SHARED)
         else:
             self.host_comm = None
-
         self.host = socket.gethostbyname(socket.gethostname())
-        self.world_size = comm.Get_size()
 
         # Get topology of MPI cluster.
         host_rank = (

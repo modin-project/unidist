@@ -175,7 +175,7 @@ def init():
                 os.environ["I_MPI_SPAWN"] = "1"
 
             host_list = hosts.split(",") if hosts is not None else ["localhost"]
-            hosts_count = len(host_list)
+            host_count = len(host_list)
 
             if communication.is_internal_host_communication_supported():
                 # +1 for monitor process on each host
@@ -183,17 +183,17 @@ def init():
             else:
                 # +1 for just a single process monitor
                 nprocs_to_spawn = cpu_count + 1
-            if hosts_count > 1:
+            if host_count > 1:
                 if "Open MPI" in lib_version:
                     workers_per_host = [
-                        int(nprocs_to_spawn / hosts_count)
-                        + (1 if i < nprocs_to_spawn % hosts_count else 0)
-                        for i in range(hosts_count)
+                        int(nprocs_to_spawn / host_count)
+                        + (1 if i < nprocs_to_spawn % host_count else 0)
+                        for i in range(host_count)
                     ]
                     hosts = ",".join(
                         [
                             f"{host_list[i]}:{workers_per_host[i]}"
-                            for i in range(hosts_count)
+                            for i in range(host_count)
                         ]
                     )
                     info.Set("add-host", hosts)
