@@ -91,11 +91,12 @@ Sometimes, when you run a program with Open MPI in a cluster, you may see the fo
     and network routing requirements).
   --------------------------------------------------------------------------
 
-This is because OpenMPI uses OpenSSH, but its version was built on a different version of OpenSSL than yours.
+This may happen due to the fact that OpenMPI uses OpenSSH
+but its version is built on a different version of OpenSSL than yours.
 
 **Solution**
 
-You need to check version compatibility for OpenSSH and OpenSSL and update them if necessary.
+You should check for version compatibility of OpenSSH and OpenSSL and update them if necessary.
 
 .. code-block:: bash
 
@@ -104,7 +105,7 @@ You need to check version compatibility for OpenSSH and OpenSSL and update them 
   $ ssh -V
   OpenSSH_8.9p1 Ubuntu-3ubuntu0.1, OpenSSL 3.0.2 15 Mar 2022
 
-If you use a conda just add ``openssh`` library to your environment:
+If you use ``conda``, just add ``openssh`` library to your environment.
 
 .. code-block:: bash
 
