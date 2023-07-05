@@ -134,7 +134,7 @@ class MasterDataID(DataID):
         return DataID(self._id)
 
 
-def get_logger(logger_name, file_name):
+def get_logger(logger_name, file_name, activate=None):
     """
     Configure logger and get it's instance.
 
@@ -144,8 +144,9 @@ def get_logger(logger_name, file_name):
         Name of a logger.
     file_name : str
         File name.
-    activate : bool
-        Write logs or not.
+    activate : optional, default: None
+        Whether to enable logging or not.
+        If ``None``, the value is superseded with ``MpiLog``.
 
     Returns
     -------
@@ -159,7 +160,9 @@ def get_logger(logger_name, file_name):
         f_handler.setFormatter(f_format)
         logger.addHandler(f_handler)
 
-    if MpiLog.get():
+    if activate is None:
+        activate = MpiLog.get()
+    if activate:
         logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.NOTSET)

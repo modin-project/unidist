@@ -36,6 +36,7 @@ from unidist.config import (
     ValueSource,
     MpiPickleThreshold,
     MpiBackoff,
+    MpiLog,
 )
 
 
@@ -156,6 +157,8 @@ def init():
                 py_str += [f"cfg.MpiPickleThreshold.put({MpiPickleThreshold.get()})"]
             if MpiBackoff.get_value_source() != ValueSource.DEFAULT:
                 py_str += [f"cfg.MpiBackoff.put({MpiBackoff.get()})"]
+            if MpiLog.get_value_source() != ValueSource.DEFAULT:
+                py_str += [f"cfg.MpiLog.put({MpiLog.get()})"]
             py_str += ["unidist.init()"]
             py_str = "; ".join(py_str)
             args += [py_str]
