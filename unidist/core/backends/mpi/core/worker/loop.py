@@ -159,7 +159,7 @@ async def worker_loop():
             object_store.put(result["id"], result["data"])
 
             # Clear cached request to another worker, if data_id became available
-            request_store.clear_cache(result["id"])
+            request_store.discard_data_request(result["id"])
 
             # Check pending requests. Maybe some data became available.
             task_store.check_pending_tasks()

@@ -140,7 +140,7 @@ def get_complex_data(comm, owner_rank):
             "data": data,
         }
     if info_package["package_type"] == communication.DataInfoType.LOCAL_DATA:
-        return communication.recv_complex_data(comm, owner_rank, info_package)
+        return communication.recv_complex_data(comm, owner_rank, info=info_package)
     else:
         raise ValueError("Unexpected package of data info!")
 

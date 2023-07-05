@@ -39,7 +39,6 @@ from unidist.config import (
     MpiPickleThreshold,
     MpiBackoff,
     MpiLog,
-    MpiSharingThreshold,
     MpiSharedMemoryThreshold,
 )
 
@@ -162,11 +161,9 @@ def init():
                 py_str += [f"cfg.MpiBackoff.put({MpiBackoff.get()})"]
             if MpiLog.get_value_source() != ValueSource.DEFAULT:
                 py_str += [f"cfg.MpiLog.put({MpiLog.get()})"]
-            if MpiSharingThreshold.get_value_source() != ValueSource.DEFAULT:
-                py_str += [f"cfg.MpiSharingThreshold.put({MpiSharingThreshold.get()})"]
             if MpiSharedMemoryThreshold.get_value_source() != ValueSource.DEFAULT:
                 py_str += [
-                    f"cfg.MpiSharingThreshold.put({MpiSharedMemoryThreshold.get()})"
+                    f"cfg.MpiSharedMemoryThreshold.put({MpiSharedMemoryThreshold.get()})"
                 ]
             py_str += ["unidist.init()"]
             py_str = "; ".join(py_str)

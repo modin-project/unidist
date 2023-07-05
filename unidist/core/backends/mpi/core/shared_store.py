@@ -87,11 +87,7 @@ class SharedStore:
         )
         shared_buffer, _ = win.Shared_query(communication.MPIRank.MONITOR)
 
-        service_size = (
-            self.SERVICE_COUNT
-            if mpi_state.is_monitor_process()
-            else 0
-        )
+        service_size = self.SERVICE_COUNT if mpi_state.is_monitor_process() else 0
         win_service = MPI.Win.Allocate_shared(
             service_size, MPI.INT.size, comm=mpi_state.host_comm, info=info
         )

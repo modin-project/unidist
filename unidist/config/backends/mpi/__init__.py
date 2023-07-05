@@ -10,7 +10,6 @@ from .envvars import (
     MpiPickleThreshold,
     MpiBackoff,
     MpiLog,
-    MpiSharingThreshold,
     MpiSharedMemoryThreshold,
 )
 

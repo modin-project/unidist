@@ -13,7 +13,6 @@ except ImportError:
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
-from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.shared_store import SharedStore
 
 # TODO: Find a way to move this after all imports
@@ -198,7 +197,7 @@ def monitor_loop():
                 task_counter.task_counter,
                 source_rank,
             )
-        elif operation_type == common.Operation.RESERVE_SHARING_MEMORY:
+        elif operation_type == common.Operation.RESERVE_SHARED_MEMORY:
             request = communication.mpi_recv_object(mpi_state.comm, source_rank)
             first_index = shared_index
             last_index = first_index + request["size"]
@@ -207,7 +206,7 @@ def monitor_loop():
                 mpi_state.comm, data=(first_index, last_index), dest_rank=source_rank
             )
         elif operation_type == common.Operation.REQUEST_SHARED_DATA:
-            info_package = communication.recv_simple_data(mpi_state.comm, source_rank)
+            info_package = communication.mpi_recv_object(mpi_state.comm, source_rank)
             if not shared_store.contains_shared_info(info_package["id"]):
                 shared_store.put_shared_info(info_package["id"], info_package)
             sh_buf = shared_store.get_shared_buffer(info_package["id"])

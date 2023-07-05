@@ -524,11 +524,13 @@ def mpi_send_buffer(comm, buffer_size, buffer, dest_rank):
 
 
 def mpi_send_shared_buffer(comm, shared_buffer, dest_rank):
-    return comm.Send([shared_buffer, MPI.CHAR], dest=dest_rank)
+    return comm.Send(
+        [shared_buffer, MPI.CHAR], dest=dest_rank, tag=common.MPITag.BUFFER
+    )
 
 
 def mpi_recv_shared_buffer(comm, shared_buffer, source_rank):
-    comm.Recv([shared_buffer, MPI.CHAR], source=source_rank)
+    comm.Recv([shared_buffer, MPI.CHAR], source=source_rank, tag=common.MPITag.BUFFER)
 
 
 def mpi_isend_buffer(comm, buffer_size, buffer, dest_rank):
@@ -815,7 +817,7 @@ def isend_complex_data(comm, data, dest_rank):
     return handlers, s_data, raw_buffers, buffer_count, info_package
 
 
-def recv_complex_data(comm, source_rank):
+def recv_complex_data(comm, source_rank, info=None, cancel_recv=False):
     """
     Receive the data that may consist of different user provided complex types, lambdas and buffers.
 
@@ -838,10 +840,17 @@ def recv_complex_data(comm, source_rank):
     * The special tags are used for this communication, namely,
     ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
-    info = comm.recv(source=source_rank, tag=common.MPITag.OBJECT)
+    # Recv main message pack buffer.
+    # First MPI call uses busy wait loop to remove possible contention
+    # in a long running data receive operations.
+    backoff = MpiBackoff.get()
+    status = MPI.Status()
+    if info is None:
+        info = mpi_busy_wait_recv(comm, source_rank)
     msgpack_buffer = bytearray(info["s_data_len"])
     buffer_count = info["buffer_count"]
-    raw_buffers = list(map(bytearray, info["raw_buffers_len"]))
+    raw_buffers = list(map(bytearray, info["raw_buffers_lens"]))
+    cancelled_requests = []
     with pkl5._bigmpi as bigmpi:
         comm.Recv(bigmpi(msgpack_buffer), source=source_rank, tag=common.MPITag.BUFFER)
         for rbuf in raw_buffers:

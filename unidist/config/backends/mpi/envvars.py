@@ -49,10 +49,6 @@ class MpiLog(EnvironmentVariable, type=bool):
     varname = "UNIDIST_MPI_LOG"
 
 
-class MpiSharingThreshold(EnvironmentVariable, type=int):
-    """Minimum data size for sending with shared memory"""
-
-
 class MpiSharedMemoryThreshold(EnvironmentVariable, type=int):
     """Minimum size of data to put into the shared memory."""
 
