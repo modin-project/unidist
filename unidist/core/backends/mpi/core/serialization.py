@@ -8,7 +8,13 @@ import importlib
 import inspect
 import sys
 from collections.abc import KeysView
-from mpi4py.MPI import memory
+
+try:
+    import mpi4py
+except ImportError:
+    raise ImportError(
+        "Missing dependency 'mpi4py'. Use pip or conda to install it."
+    ) from None
 
 # Serialization libraries
 if sys.version_info[1] < 8:  # check the minor Python version
@@ -25,6 +31,11 @@ import msgpack
 import gc  # msgpack optimization
 
 from unidist.config import MpiPickleThreshold
+
+# TODO: Find a way to move this after all imports
+mpi4py.rc(recv_mprobe=False, initialize=False)
+from mpi4py.MPI import memory  # noqa: E402
+
 
 # Pickle 5 protocol compatible types check
 compatible_modules = ("pandas", "numpy")
