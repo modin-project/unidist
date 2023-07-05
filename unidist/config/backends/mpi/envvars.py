@@ -40,3 +40,10 @@ class MpiBackoff(EnvironmentVariable, type=float):
 
     default = 0.0001
     varname = "UNIDIST_MPI_BACKOFF"
+
+
+class MpiLog(EnvironmentVariable, type=bool):
+    """Whether to enable logging for MPI backend or not."""
+
+    default = False
+    varname = "UNIDIST_MPI_LOG"
