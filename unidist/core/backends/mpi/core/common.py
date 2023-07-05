@@ -8,6 +8,7 @@ import logging
 import inspect
 
 from unidist.core.backends.common.data_id import DataID, is_data_id
+from unidist.config import MpiLog
 
 
 class Operation:
@@ -133,7 +134,7 @@ class MasterDataID(DataID):
         return DataID(self._id)
 
 
-def get_logger(logger_name, file_name, activate=False):
+def get_logger(logger_name, file_name):
     """
     Configure logger and get it's instance.
 
@@ -158,7 +159,7 @@ def get_logger(logger_name, file_name, activate=False):
         f_handler.setFormatter(f_format)
         logger.addHandler(f_handler)
 
-    if activate:
+    if MpiLog.get():
         logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.NOTSET)
