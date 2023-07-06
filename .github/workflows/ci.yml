@@ -44,7 +44,7 @@ jobs:
       - run: pip install flake8 flake8-print
       - run: flake8 --enable=T .
 
-  test-ubuntu:
+  test-all:
     needs: [lint-black, lint-flake8]
     runs-on: ubuntu-latest
     defaults:
@@ -52,6 +52,9 @@ jobs:
         shell: bash -l {0}
     strategy:
       matrix:
+        os:
+          - ubuntu
+          - windows
         python-version: ["3.8", "3.9"]
         backend: ["ray", "mpi", "dask", "pymp", "pyseq"]
     env:
@@ -74,6 +77,17 @@ jobs:
         run: |
           conda info
           conda list
+      - name: Start local ray cluster and tell unidist to use it
+        # Try a few times to start ray to work around
+        # https://github.com/modin-project/modin/issues/4562
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 5
+          max_attempts: 5
+          command: |
+            ray start --head --port=6379 --object-store-memory=1000000000
+        run: echo "UNIDIST_RAY_CLUSTER=True" >> $GITHUB_ENV
+        if: matrix.backend == 'ray'
       - run: python -m pytest unidist/test/test_actor.py
         if: matrix.backend != 'mpi'
       - run: python -m pytest unidist/test/test_async_actor.py
@@ -92,52 +106,6 @@ jobs:
         if: matrix.backend == 'mpi'
       - run: mpiexec -n 1 python -m pytest unidist/test/test_general.py
         if: matrix.backend == 'mpi'
-
-  test-windows:
-    needs: [lint-black, lint-flake8]
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: bash -l {0}
-    strategy:
-      matrix:
-        python-version: ["3.8", "3.9"]
-        backend: ["ray", "mpi", "dask", "pymp", "pyseq"]
-    env:
-      UNIDIST_BACKEND: ${{matrix.backend}}
-    name: test-windows (backend ${{matrix.backend}}, python ${{matrix.python-version}})
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 2
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          activate-environment: unidist
-          environment-file: environment.yml
-          python-version: ${{matrix.python-version}}
-          channel-priority: strict
-          # we set use-only-tar-bz2 to false in order for conda to properly find new packages to be installed
-          # for more info see https://github.com/conda-incubator/setup-miniconda/issues/264
-          use-only-tar-bz2: false
-      - name: Conda environment
-        run: |
-          conda info
-          conda list
-      - run: python -m pytest unidist/test/test_actor.py
-        if: matrix.backend != 'mpi'
-      - run: python -m pytest unidist/test/test_async_actor.py
-        if: matrix.backend != 'mpi'
-      - run: python -m pytest unidist/test/test_task.py
-        if: matrix.backend != 'mpi'
-      - run: python -m pytest unidist/test/test_general.py
-        if: matrix.backend != 'mpi'
-      # when using a directory to run with mpiexec MPI gets hung after executing tests
-      # so we run the test files one by one
-      - run: mpiexec -n 1 python -m pytest unidist/test/test_actor.py
-        if: matrix.backend == 'mpi'
-      - run: mpiexec -n 1 python -m pytest unidist/test/test_async_actor.py
-        if: matrix.backend == 'mpi'
-      - run: mpiexec -n 1 python -m pytest unidist/test/test_task.py
-        if: matrix.backend == 'mpi'
-      - run: mpiexec -n 1 python -m pytest unidist/test/test_general.py
-        if: matrix.backend == 'mpi'
+      - name: Stop local ray cluster
+        run: ray stop
+        if: matrix.backend == 'ray'
