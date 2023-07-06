@@ -3,6 +3,8 @@ channels:
   - conda-forge
 dependencies:
   # for development
+  # https://github.com/modin-project/unidist/issues/324
+  - pydantic<2
   - ray-default>=1.13.0
   - dask>=2.22.0
   - distributed>=2.22.0
