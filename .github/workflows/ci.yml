@@ -1,13 +1,14 @@
 name: ci
 on:
   pull_request:
-    - .github/workflows/**
-    - unidist/**
-    - environment.yml
-    - requirements.txt
-    - setup.cfg
-    - setup.py
-    - versioneer.py
+    paths:
+      - .github/workflows/**
+      - unidist/**
+      - environment.yml
+      - requirements.txt
+      - setup.cfg
+      - setup.py
+      - versioneer.py
   push:
 concurrency:
   # Cancel other jobs in the same branch. We don't care whether CI passes
