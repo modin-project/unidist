@@ -85,7 +85,7 @@ jobs:
           timeout_minutes: 5
           max_attempts: 5
           command: |
-            ray start --head --port=6379 --object-store-memory=1000000000
+            ray start --head --port=6379
         if: matrix.backend == 'ray'
       - name: Tell unidist to use existing ray cluster
         run: echo "UNIDIST_RAY_CLUSTER=True" >> $GITHUB_ENV
