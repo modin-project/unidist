@@ -4,6 +4,8 @@ dask[complete]>=2.22.0
 distributed>=2.22.0
 mpi4py-mpich
 msgpack>=1.0.0
+# https://github.com/modin-project/unidist/issues/324
+pydantic<2
 ray[default]>=1.13.0
 packaging
 psutil
