@@ -1,0 +1,16 @@
+name: ci-required
+on: pull_request
+concurrency:
+  # Cancel other jobs in the same branch. We don't care whether CI passes
+  # on old commits.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check-pr-title:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: Slashgear/action-check-pr-title@v3.0.0
+      with:
+        # NOTE: If you change the allowed prefixes here, update
+        # the documentation about them in /docs/development/contributing.rst
+        regexp: '^(?:FEAT|DOCS|FIX|REFACTOR|TEST|PERF)-#\d+:'

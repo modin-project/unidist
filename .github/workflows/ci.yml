@@ -1,15 +1,20 @@
 name: ci
-on: pull_request
+on:
+  pull_request:
+    - .github/workflows/**
+    - unidist/**
+    - environment.yml
+    - requirements.txt
+    - setup.cfg
+    - setup.py
+    - versioneer.py
+  push:
+concurrency:
+  # Cancel other jobs in the same branch. We don't care whether CI passes
+  # on old commits.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  check-pr-title:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: Slashgear/action-check-pr-title@v3.0.0
-      with:
-        # NOTE: If you change the allowed prefixes here, update
-        # the documentation about them in /docs/developer/contributing.rst
-        regexp: '^(?:FEAT|DOCS|FIX|REFACTOR|TEST|PERF)-#\d+:'
-
   lint-black:
     name: lint (black)
     runs-on: ubuntu-latest
@@ -46,7 +51,7 @@ jobs:
         shell: bash -l {0}
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9"]
+        python-version: ["3.8", "3.9"]
         backend: ["ray", "mpi", "dask", "pymp", "pyseq"]
     env:
       UNIDIST_BACKEND: ${{matrix.backend}}
@@ -64,17 +69,17 @@ jobs:
           # we set use-only-tar-bz2 to false in order for conda to properly find new packages to be installed
           # for more info see https://github.com/conda-incubator/setup-miniconda/issues/264
           use-only-tar-bz2: false
-      # we install pickle5 here as it is missing in Ray for python 3.7 from PyPI
-      # remove this when we return Ray back to installation from conda-forge
-      # see details in https://github.com/modin-project/unidist/issues/219
-      - name: Pickle5 installation for python 3.7
-        run: conda install pickle5 -c conda-forge
-        if: matrix.python-version == '3.7'
       - name: Conda environment
         run: |
           conda info
           conda list
-      - run: python -m pytest unidist/test/
+      - run: python -m pytest unidist/test/test_actor.py
+        if: matrix.backend != 'mpi'
+      - run: python -m pytest unidist/test/test_async_actor.py
+        if: matrix.backend != 'mpi'
+      - run: python -m pytest unidist/test/test_task.py
+        if: matrix.backend != 'mpi'
+      - run: python -m pytest unidist/test/test_general.py
         if: matrix.backend != 'mpi'
       # when using a directory to run with mpiexec MPI gets hung after executing tests
       # so we run the test files one by one
@@ -95,7 +100,7 @@ jobs:
         shell: bash -l {0}
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9"]
+        python-version: ["3.8", "3.9"]
         backend: ["ray", "mpi", "dask", "pymp", "pyseq"]
     env:
       UNIDIST_BACKEND: ${{matrix.backend}}
@@ -113,17 +118,17 @@ jobs:
           # we set use-only-tar-bz2 to false in order for conda to properly find new packages to be installed
           # for more info see https://github.com/conda-incubator/setup-miniconda/issues/264
           use-only-tar-bz2: false
-      # we install pickle5 here as it is missing in Ray for python 3.7 from PyPI
-      # remove this when we return Ray back to installation from conda-forge
-      # see details in https://github.com/modin-project/unidist/issues/219
-      - name: Pickle5 installation for python 3.7
-        run: conda install pickle5 -c conda-forge
-        if: matrix.python-version == '3.7'
       - name: Conda environment
         run: |
           conda info
           conda list
-      - run: python -m pytest unidist/test/
+      - run: python -m pytest unidist/test/test_actor.py
+        if: matrix.backend != 'mpi'
+      - run: python -m pytest unidist/test/test_async_actor.py
+        if: matrix.backend != 'mpi'
+      - run: python -m pytest unidist/test/test_task.py
+        if: matrix.backend != 'mpi'
+      - run: python -m pytest unidist/test/test_general.py
         if: matrix.backend != 'mpi'
       # when using a directory to run with mpiexec MPI gets hung after executing tests
       # so we run the test files one by one
