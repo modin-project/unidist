@@ -4,6 +4,7 @@
 
 """High-level API of MPI backend."""
 
+import os
 import sys
 import atexit
 import signal
@@ -165,8 +166,16 @@ def init():
 
             hosts = MpiHosts.get()
             info = MPI.Info.Create()
+            lib_version = MPI.Get_library_version()
+            if "Intel" in lib_version:
+                # To make dynamic spawn of MPI processes work properly
+                # we should set this environment variable.
+                # See more about Intel MPI environment variables in
+                # https://www.intel.com/content/www/us/en/docs/mpi-library/developer-reference-linux/2021-8/other-environment-variables.html.
+                os.environ["I_MPI_SPAWN"] = "1"
+
             if hosts:
-                if "Open MPI" in MPI.Get_library_version():
+                if "Open MPI" in lib_version:
                     host_list = str(hosts).split(",")
                     workers_per_host = [
                         int(nprocs_to_spawn / len(host_list))
