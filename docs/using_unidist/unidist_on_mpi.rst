@@ -81,7 +81,7 @@ you should set the ``UNIDIST_IS_MPI_SPAWN_WORKERS`` environment variable to ``Fa
 
     import os
 
-    os.environ["UNIDIST_IS_MPI_SPAWN_WORKERS"] = False
+    os.environ["UNIDIST_IS_MPI_SPAWN_WORKERS"] = "False"
 
 or set the associated configuration value:
 
@@ -156,7 +156,7 @@ you should set the ``UNIDIST_IS_MPI_SPAWN_WORKERS`` environment variable to ``Fa
 
     import os
 
-    os.environ["UNIDIST_IS_MPI_SPAWN_WORKERS"] = False
+    os.environ["UNIDIST_IS_MPI_SPAWN_WORKERS"] = "False"
 
 or set the associated configuration value:
 
