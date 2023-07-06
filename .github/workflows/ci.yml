@@ -45,7 +45,7 @@ jobs:
       - run: flake8 --enable=T .
 
   test-ubuntu:
-    needs: [check-pr-title, lint-black, lint-flake8]
+    needs: [lint-black, lint-flake8]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -94,7 +94,7 @@ jobs:
         if: matrix.backend == 'mpi'
 
   test-windows:
-    needs: [check-pr-title, lint-black, lint-flake8]
+    needs: [lint-black, lint-flake8]
     runs-on: windows-latest
     defaults:
       run:
