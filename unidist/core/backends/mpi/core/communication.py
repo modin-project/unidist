@@ -138,12 +138,12 @@ class MPIState:
         cluster_info = self.comm.allgather((self.host, self.rank, host_rank))
 
         self.topology = defaultdict(dict)
-        self.__host_rank_by_rank = defaultdict(None)
         self.__host_by_rank = defaultdict(None)
         for host, rank, host_rank in cluster_info:
             self.topology[host][host_rank] = rank
-            self.__host_rank_by_rank[rank] = host_rank
             self.__host_by_rank[rank] = host
+
+        self.monitor_processes = [self.topology[host][MPIRank.MONITOR] for host in self.topology]
 
         self.workers = []
         for host in self.topology:
@@ -209,9 +209,9 @@ class MPIState:
         """
         if rank is None:
             rank = self.rank
-        return self.__host_rank_by_rank[rank] == MPIRank.MONITOR
+        return rank in self.monitor_processes
 
-    def get_monitor_by_worker_rank(self, rank):
+    def get_monitor_by_worker_rank(self, rank=None):
         """
         Get the monitor process rank for the host that includes this rank
 
@@ -228,6 +228,8 @@ class MPIState:
         if self.host_comm is None:
             return MPIRank.MONITOR
 
+        if rank is None:
+            rank = self.rank
         host = self.__host_by_rank[rank]
         if host is None:
             raise ValueError("Unknown rank of workers")
@@ -247,24 +249,36 @@ def reserve_shared_memory(comm, data_id, data, is_serialized=False):
     if is_serialized:
         s_data = data["s_data"]
         raw_buffers = data["raw_buffers"]
-
-        reservation_data = _send_reserve_operation_impl(
-            comm, data_id, s_data, raw_buffers
-        )
-
+        data_size = len(s_data) + sum([len(buf) for buf in raw_buffers])
+        reservation_data = send_reserve_operation(comm, data_id, data_size)
         return reservation_data, None
     else:
-        reservation_data, serialized_data = send_reserve_operation(comm, data_id, data)
+        serializer = ComplexDataSerializer()
+        # Main job
+        s_data = serializer.serialize(data)
+        # Retrive the metadata
+        raw_buffers = serializer.buffers
+        buffer_count = serializer.buffer_count
+
+        data_size = len(s_data) + sum([len(buf) for buf in raw_buffers])
+
+        reservation_data = send_reserve_operation(comm, data_id, data_size)
+        serialized_data = {
+            "s_data": s_data,
+            "raw_buffers": raw_buffers,
+            "buffer_count": buffer_count,
+        }
+        
         return reservation_data, serialized_data
 
 
-def _send_reserve_operation_impl(comm, data_id, s_data, raw_buffers):
+def send_reserve_operation(comm, data_id, data_size):
     operation_type = common.Operation.RESERVE_SHARED_MEMORY
     mpi_state = MPIState.get_instance()
 
     operation_data = {
         "id": data_id,
-        "size": len(s_data) + sum([len(buf) for buf in raw_buffers]),
+        "size": data_size,
     }
     # We use a blocking send here because we have to wait for
     # completion of the communication, which is necessary for the pipeline to continue.
@@ -272,27 +286,9 @@ def _send_reserve_operation_impl(comm, data_id, s_data, raw_buffers):
         comm,
         operation_type,
         operation_data,
-        mpi_state.get_monitor_by_worker_rank(MPIRank.ROOT),
+        mpi_state.get_monitor_by_worker_rank(),
     )
-    firstIndex, lastIndex = mpi_busy_wait_recv(comm, MPIRank.MONITOR)
-    return {"firstIndex": firstIndex, "lastIndex": lastIndex}
-
-
-def send_reserve_operation(comm, data_id, data):
-    serializer = ComplexDataSerializer()
-    # Main job
-    s_data = serializer.serialize(data)
-    # Retrive the metadata
-    raw_buffers = serializer.buffers
-    buffer_count = serializer.buffer_count
-
-    reservation_data = _send_reserve_operation_impl(comm, data_id, s_data, raw_buffers)
-
-    return reservation_data, {
-        "s_data": s_data,
-        "raw_buffers": raw_buffers,
-        "buffer_count": buffer_count,
-    }
+    return mpi_busy_wait_recv(comm, mpi_state.get_monitor_by_worker_rank())
 
 
 # ------------------ #
@@ -324,15 +320,16 @@ def get_data_info(s_data_len, raw_buffers_lens, buffer_count):
 
 
 def get_shared_info(
-    data_id, s_data_len, raw_buffers_lens, buffer_count, first_shared_index
+    s_data_len, raw_buffers_lens, buffer_count, first_shared_index, last_shared_index, service_index
 ):
     info_package = {}
     info_package["package_type"] = DataInfoType.SHARED_DATA
-    info_package["id"] = data_id
     info_package["s_data_len"] = s_data_len
     info_package["raw_buffers_lens"] = raw_buffers_lens
     info_package["buffer_count"] = buffer_count
     info_package["first_shared_index"] = first_shared_index
+    info_package["last_shared_index"] = last_shared_index
+    info_package["service_index"] = service_index
     return info_package
 
 

@@ -13,6 +13,7 @@ except ImportError:
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
+from unidist.core.backends.mpi.core.monitor.shared_memory_manager import SharedMemoryMahager
 from unidist.core.backends.mpi.core.shared_store import SharedStore
 
 # TODO: Find a way to move this after all imports
@@ -165,14 +166,15 @@ def monitor_loop():
     mpi_state = communication.MPIState.get_instance()
     wait_handler = WaitHandler.get_instance()
     data_id_tracker = DataIDTracker.get_instance()
-    shared_store = shared_store = SharedStore.get_instance()
+    shared_store = SharedStore.get_instance()
 
-    shared_index = 0
     workers_ready_to_shutdown = []
     shutdown_workers = False
     # Once all workers excluding ``Root`` and ``Monitor`` ranks are ready to shutdown,
     # ``Monitor` sends the shutdown signal to every worker, as well as notifies ``Root`` that
     # it can exit the program.
+    shm_manager = SharedMemoryMahager(shared_store.shared_memory_size)
+
     while True:
         # Listen receive operation from any source
         operation_type, source_rank = communication.mpi_recv_operation(mpi_state.comm)
@@ -199,11 +201,13 @@ def monitor_loop():
             )
         elif operation_type == common.Operation.RESERVE_SHARED_MEMORY:
             request = communication.mpi_recv_object(mpi_state.comm, source_rank)
-            first_index = shared_index
-            last_index = first_index + request["size"]
-            shared_index = last_index
+            if request["id"] in shm_manager.deleted_ids:
+                communication.mpi_send_object(
+                mpi_state.comm, data=ValueError("This data was already deleted."), dest_rank=source_rank
+            )
+            reservation_info = shm_manager.put(request["id"], request["size"])
             communication.mpi_send_object(
-                mpi_state.comm, data=(first_index, last_index), dest_rank=source_rank
+                mpi_state.comm, data=reservation_info, dest_rank=source_rank
             )
         elif operation_type == common.Operation.REQUEST_SHARED_DATA:
             info_package = communication.mpi_recv_object(mpi_state.comm, source_rank)
@@ -215,6 +219,11 @@ def monitor_loop():
                 sh_buf,
                 dest_rank=source_rank,
             )
+        elif operation_type == common.Operation.CLEANUP:
+            cleanup_list = communication.recv_serialized_data(
+                mpi_state.comm, source_rank
+            )
+            shm_manager.clear(cleanup_list)            
         elif operation_type == common.Operation.READY_TO_SHUTDOWN:
             workers_ready_to_shutdown.append(source_rank)
             shutdown_workers = (

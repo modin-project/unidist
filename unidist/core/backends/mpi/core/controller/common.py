@@ -110,16 +110,20 @@ def get_complex_data(comm, owner_rank):
     if info_package["package_type"] == communication.DataInfoType.SHARED_DATA:
         object_store = ObjectStore.get_instance()
         shared_store = SharedStore.get_instance()
-        info_package["id"] = object_store.get_unique_data_id(info_package["id"])
-        shared_store.put_shared_info(info_package["id"], info_package)
+        data_id = info_package.pop("id", None)
+        data_id = object_store.get_unique_data_id(data_id)
 
         # check data in shared memory
-        is_contained_in_shared_memory = SharedStore.get_instance().contains(
-            info_package["id"]
-        )
+        if shared_store.check_serice_index(data_id, info_package["service_index"]):
+            shared_store.put_shared_info(data_id, info_package)
+        else:
+            shared_data_len = info_package["last_shared_index"] - info_package["first_shared_index"]
+            reservation_info = communication.send_reserve_operation(comm, data_id, shared_data_len)
+            info_package["first_shared_index"] = reservation_info["first_index"]
+            info_package["service_index"] = reservation_info["service_index"]
+            shared_store.put_shared_info(data_id, info_package)
 
-        if not is_contained_in_shared_memory:
-            sh_buf = shared_store.get_shared_buffer(info_package["id"])
+            sh_buf = shared_store.get_shared_buffer(data_id)
             # recv serialized data to shared memory
             owner_monitor = (
                 communication.MPIState.get_instance().get_monitor_by_worker_rank(
@@ -133,13 +137,14 @@ def get_complex_data(comm, owner_rank):
                 dest_rank=owner_monitor,
             )
             communication.mpi_recv_shared_buffer(comm, sh_buf, owner_monitor)
-            shared_store.put_service_info(info_package["id"])
-        data = shared_store.get(info_package["id"])
+            shared_store.put_service_info(info_package["service_index"], data_id, info_package["first_shared_index"])
+            
+        data = shared_store.get(data_id)
         return {
-            "id": info_package["id"],
+            "id": data_id,
             "data": data,
         }
-    if info_package["package_type"] == communication.DataInfoType.LOCAL_DATA:
+    elif info_package["package_type"] == communication.DataInfoType.LOCAL_DATA:
         return communication.recv_complex_data(comm, owner_rank, info=info_package)
     else:
         raise ValueError("Unexpected package of data info!")
@@ -267,6 +272,7 @@ def _push_shared_data(dest_rank, data_id, is_blocking_op):
     operation_type = common.Operation.PUT_SHARED_DATA
     async_operations = AsyncOperations.get_instance()
     info_package = shared_store.get_data_shared_info(data_id)
+    info_package["id"] = data_id
     if is_blocking_op:
         communication.mpi_send_object(mpi_state.comm, info_package, dest_rank)
     else:

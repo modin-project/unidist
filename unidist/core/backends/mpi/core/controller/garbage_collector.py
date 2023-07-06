@@ -62,15 +62,16 @@ class GarbageCollector:
         # Cache serialized list of data IDs
         s_cleanup_list = SimpleDataSerializer().serialize_pickle(cleanup_list)
         async_operations = AsyncOperations.get_instance()
-        for rank_id in mpi_state.workers:
-            if rank_id != mpi_state.rank:
-                h_list = communication.isend_serialized_operation(
-                    mpi_state.comm,
-                    common.Operation.CLEANUP,
-                    s_cleanup_list,
-                    rank_id,
-                )
-                async_operations.extend(h_list)
+        for host in mpi_state.topology:
+            for rank_id in mpi_state.topology[host]:
+                if not mpi_state.is_root_process(rank_id) and rank_id != mpi_state.rank:
+                    h_list = communication.isend_serialized_operation(
+                        mpi_state.comm,
+                        common.Operation.CLEANUP,
+                        s_cleanup_list,
+                        rank_id,
+                    )
+                    async_operations.extend(h_list)
 
     def increment_task_counter(self):
         """

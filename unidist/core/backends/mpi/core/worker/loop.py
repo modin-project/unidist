@@ -7,6 +7,7 @@ import asyncio
 from functools import wraps, partial
 
 from unidist.core.backends.mpi.core.controller.common import get_complex_data
+from unidist.core.backends.mpi.core.shared_store import SharedStore
 
 try:
     import mpi4py
@@ -115,11 +116,17 @@ async def worker_loop():
                     task_store.check_pending_tasks()
 
         elif operation_type == common.Operation.GET:
-            request = communication.mpi_recv_object(mpi_state.comm, source_rank)
-            if not ready_to_shutdown_posted:
-                request["id"] = object_store.get_unique_data_id(request["id"])
+            request = communication.mpi_recv_object(
+                mpi_state.comm,
+                source_rank,
+                cancel_recv=ready_to_shutdown_posted,
+            )
+            if request is not None and not ready_to_shutdown_posted:
+                data_id = object_store.get_unique_data_id(request["id"])
                 request_store.process_get_request(
-                    request["source"], request["id"], request["is_blocking_op"]
+                    request["source"],
+                    data_id,
+                    request["is_blocking_op"]
                 )
 
         elif operation_type == common.Operation.PUT_DATA:
@@ -155,7 +162,6 @@ async def worker_loop():
 
         elif operation_type == common.Operation.PUT_SHARED_DATA:
             result = get_complex_data(mpi_state.comm, source_rank)
-            result["id"] = object_store.get_unique_data_id(result["id"])
             object_store.put(result["id"], result["data"])
 
             # Clear cached request to another worker, if data_id became available

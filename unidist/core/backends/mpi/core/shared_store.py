@@ -30,12 +30,13 @@ class SharedStore:
     # [array of int]    buffer_count                  -> [int]   first index of service buffer
     #                                                 -> [int]   last index of service buffer
     __instance = None
-    INFO_COUNT = 3
+    INFO_COUNT = 4
     WORKER_ID_INDEX = 0
     DATA_NUMBER_INDEX = 1
     FIRST_DATA_INDEX = 2
+    REFERENCES_NUMBER = 3
 
-    SERVICE_COUNT = 10000
+    SERVICE_COUNT = 100000
 
     def __init__(self):
         (
@@ -44,7 +45,7 @@ class SharedStore:
             self.service_buffer,
         ) = self.__init_shared_memory()
 
-        # Shared memory range {DataID: (firstIndex, lastIndex)}
+        # Shared memory range {DataID: reservation_info}
         self._shared_info = weakref.WeakKeyDictionary()
         self._helper_buffer = array("L", [0])
 
@@ -70,34 +71,38 @@ class SharedStore:
                 system_memory = virtual_memory
 
             # use only 95% of available memory because the rest is needed for local storages of workers
-            shared_memory_size = int(system_memory * 0.95)
+            self.shared_memory_size = int(system_memory * 0.95)
         else:
-            shared_memory_size = 0
+            self.shared_memory_size = 0
 
         info = MPI.Info.Create()
         info.Set("alloc_shared_noncontig", "true")
         win = MPI.Win.Allocate_shared(
-            shared_memory_size, MPI.BYTE.size, comm=mpi_state.host_comm, info=info
+            self.shared_memory_size, MPI.BYTE.size, comm=mpi_state.host_comm, info=info
         )
         win_helper = MPI.Win.Allocate_shared(
-            1 if shared_memory_size > 0 else 0,
+            1 if self.shared_memory_size > 0 else 0,
             MPI.INT.size,
             comm=mpi_state.host_comm,
             info=info,
         )
         shared_buffer, _ = win.Shared_query(communication.MPIRank.MONITOR)
 
-        service_size = self.SERVICE_COUNT if mpi_state.is_monitor_process() else 0
-        win_service = MPI.Win.Allocate_shared(
-            service_size, MPI.INT.size, comm=mpi_state.host_comm, info=info
+        service_size = (
+            self.SERVICE_COUNT
+            if mpi_state.is_monitor_process()
+            else 0
         )
-        service_buffer, itemsize = win_service.Shared_query(
+        self.win_service = MPI.Win.Allocate_shared(
+            service_size, MPI.LONG.size, comm=mpi_state.host_comm, info=info
+        )
+        service_buffer, itemsize = self.win_service.Shared_query(
             communication.MPIRank.MONITOR
         )
         ary = np.ndarray(
             buffer=service_buffer,
-            dtype="i",
-            shape=(int(len(service_buffer) / itemsize),),
+            dtype="l",
+            shape=(int(len(service_buffer) / itemsize), )
         )
         if service_size:
             ary[True] = -1
@@ -130,20 +135,33 @@ class SharedStore:
     def service_iterator(self):
         current = 0
         while current < len(self.service_buffer) - self.INFO_COUNT:
-            yield self.service_buffer[
+            yield current, self.service_buffer[
                 current + self.WORKER_ID_INDEX
             ], self.service_buffer[
                 current + self.DATA_NUMBER_INDEX
             ], self.service_buffer[
                 current + self.FIRST_DATA_INDEX
-            ]
+            ], self.service_buffer[
+                current + self.REFERENCES_NUMBER
+            ],
             current += self.INFO_COUNT
 
-    def get_first_index(self, data_id):
+    def check_serice_index(self, data_id, service_index):
         worker_id, data_number = self.parse_data_id(data_id)
-        for w_id, d_id, f_index in self.service_iterator():
-            if w_id == worker_id and d_id == data_number:
-                return f_index
+        w_id = self.service_buffer[service_index + self.WORKER_ID_INDEX]
+        d_id = self.service_buffer[service_index + self.DATA_NUMBER_INDEX]
+        result = w_id == worker_id and d_id == data_number
+        return result
+
+    def get_service_index(self, data_id):
+        if data_id in self._shared_info:
+            return self._shared_info[data_id]["service_index"]
+        return None
+
+    def get_first_index(self, data_id):
+        service_index = self.get_service_index(data_id)
+        if service_index is not None:
+            return self.service_buffer[service_index + self.FIRST_DATA_INDEX]
         return None
 
     def contains_shared_info(self, data_id):
@@ -160,41 +178,39 @@ class SharedStore:
         self._shared_info[data_id] = shared_info
 
     def get_data_shared_info(self, data_id):
-        return self._shared_info[data_id]
+        return self._shared_info[data_id].copy()
 
     def parse_data_id(self, data_id):
         splited_id = str(data_id).replace(")", "").split("_")
         return int(splited_id[1]), int(splited_id[3])
 
-    def reserve_shared_memory(self, data):
-        serializer = ComplexDataSerializer()
-        # Main job
-        s_data = serializer.serialize(data)
-        # Retrive the metadata
-        raw_buffers = serializer.buffers
-        buffer_count = serializer.buffer_count
-        size = len(s_data) + sum([len(buf) for buf in raw_buffers])
+    def increment_ref_number(self, data_id):
+        if MPI.Is_finalized():
+            return
+        service_index = self.get_service_index(data_id)
+        if service_index is None:
+            raise KeyError("it is not possible to increment the reference number for this data_id because it is not part of the shared data")
+        self.win_service.Lock(communication.MPIRank.MONITOR)
+        prev_ref_number = self.service_buffer[service_index + self.REFERENCES_NUMBER]
+        self.service_buffer[service_index + self.REFERENCES_NUMBER] = prev_ref_number + 1
+        self.win_service.Unlock(communication.MPIRank.MONITOR)
+        weakref.finalize(data_id, self.decrement_ref_number, str(data_id), service_index)
 
-        self._helper_win.Lock(communication.MPIRank.MONITOR)
-        self._helper_win.Get(self._helper_buffer, communication.MPIRank.MONITOR)
-        firstIndex = self._helper_buffer[0]
-        lastIndex = firstIndex + size
-        self._helper_buffer[0] = lastIndex
-        self._helper_win.Put(array("L", [lastIndex]), communication.MPIRank.MONITOR)
-        self._helper_win.Unlock(communication.MPIRank.MONITOR)
-        return {"firstIndex": firstIndex, "lastIndex": lastIndex}, {
-            "s_data": s_data,
-            "raw_buffers": raw_buffers,
-            "buffer_count": buffer_count,
-        }
+    def decrement_ref_number(self, data_id, service_index):
+        # we must to set service_index in args because it will be deleted before than this function is called
+        if MPI.Is_finalized():
+            return
+        if self.check_serice_index(data_id, service_index):
+            self.win_service.Lock(communication.MPIRank.MONITOR)
+            prev_ref_number = self.service_buffer[service_index + self.REFERENCES_NUMBER]
+            self.service_buffer[service_index + self.REFERENCES_NUMBER] = prev_ref_number - 1
+            self.win_service.Unlock(communication.MPIRank.MONITOR)
+
+    def get_ref_number(self, service_index):
+        return self.service_buffer[service_index + self.REFERENCES_NUMBER]
 
     def get(self, data_id):
-        # index = self.get_index(data_id)
-        # buffer_lens = self.service_buffer[
-        #     self.buffer_len_firsts[index] : self.buffer_count_firsts[index]
-        # ]
-
-        info_package = SharedStore.get_instance().get_data_shared_info(data_id)
+        info_package = self.get_data_shared_info(data_id)
         first_index = info_package["first_shared_index"]
         buffer_lens = info_package["raw_buffers_lens"]
         buffer_count = info_package["buffer_count"]
@@ -215,7 +231,9 @@ class SharedStore:
         deserializer = ComplexDataSerializer(raw_buffers, buffer_count)
 
         # Start unpacking
-        return deserializer.deserialize(s_data)
+        data =  deserializer.deserialize(s_data)
+        self.increment_ref_number(data_id)
+        return data
 
     def get_shared_buffer(self, data_id):
         info_package = self.get_data_shared_info(data_id)
@@ -229,25 +247,32 @@ class SharedStore:
 
         return self.shared_buffer[first_index:last_index]
 
-    def put_service_info(self, data_id):
-        info_package = self.get_data_shared_info(data_id)
-        first_index = info_package["first_shared_index"]
+    def put_service_info(self, service_index, data_id, first_index):
         worker_id, data_number = self.parse_data_id(data_id)
-        index_to_write = 0
-        for w_id, d_num, f_i in self.service_iterator():
-            if w_id == -1 or d_num == -1:
-                break
-            else:
-                index_to_write += self.INFO_COUNT
-        if index_to_write >= self.SERVICE_COUNT:
-            raise BufferError("Service buffer overflow")
-        self.service_buffer[index_to_write + self.WORKER_ID_INDEX] = worker_id
-        self.service_buffer[index_to_write + self.DATA_NUMBER_INDEX] = data_number
-        self.service_buffer[index_to_write + self.FIRST_DATA_INDEX] = first_index
+
+        self.win_service.Lock(communication.MPIRank.MONITOR)
+        try:
+            self.service_buffer[service_index + self.WORKER_ID_INDEX] = worker_id
+            self.service_buffer[service_index + self.DATA_NUMBER_INDEX] = data_number
+            self.service_buffer[service_index + self.FIRST_DATA_INDEX] = first_index
+            self.service_buffer[service_index + self.REFERENCES_NUMBER] = 0
+        except:
+            print(service_index)
+
+        self.win_service.Unlock(communication.MPIRank.MONITOR)
+
+    def delete_service_info(self, service_index):
+        self.win_service.Lock(communication.MPIRank.MONITOR)
+        self.service_buffer[service_index + self.WORKER_ID_INDEX] = -1
+        self.service_buffer[service_index + self.DATA_NUMBER_INDEX] = -1
+        self.service_buffer[service_index + self.FIRST_DATA_INDEX] = -1
+        self.service_buffer[service_index + self.REFERENCES_NUMBER] = -1
+        self.win_service.Unlock(communication.MPIRank.MONITOR)
 
     def put(self, data_id, reservation_data, serialized_data):
-        first_index = reservation_data["firstIndex"]
-        last_index = reservation_data["lastIndex"]
+        first_index = reservation_data["first_index"]
+        last_index = reservation_data["last_index"]
+        service_index = reservation_data["service_index"]
 
         s_data = serialized_data["s_data"]
         raw_buffers = serialized_data["raw_buffers"]
@@ -279,7 +304,8 @@ class SharedStore:
             last_prev_index = raw_buffer_last_index
 
         sharing_info = communication.get_shared_info(
-            data_id, s_data_len, buffer_lens, buffer_count, first_index
+            s_data_len, buffer_lens, buffer_count, first_index, last_index, service_index
         )
         self.put_shared_info(data_id, sharing_info)
-        self.put_service_info(data_id)
+        self.put_service_info(service_index, data_id, first_index)
+        self.increment_ref_number(data_id)

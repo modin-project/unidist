@@ -237,7 +237,7 @@ def init():
         signal.signal(signal.SIGINT, _termination_handler)
         return
     elif mpi_state.is_monitor_process():
-        from unidist.core.backends.mpi.core.monitor import monitor_loop
+        from unidist.core.backends.mpi.core.monitor.loop import monitor_loop
 
         monitor_loop()
         # If the user executes a program in SPMD mode,

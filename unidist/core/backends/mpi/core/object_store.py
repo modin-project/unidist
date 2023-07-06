@@ -167,6 +167,9 @@ class ObjectStore:
         -----
         We need to use a unique data ID reference for the garbage colleactor to work correctly.
         """
+        if communication.MPIState.get_instance().is_root_process():
+            # Root process must not have a strong references and user always have actual data_id
+            return data_id 
         if data_id not in self._data_id_map:
             self._data_id_map[data_id] = data_id
         return self._data_id_map[data_id]
@@ -187,6 +190,7 @@ class ObjectStore:
         """
         for data_id in cleanup_list:
             self._data_id_map.pop(data_id, None)
+            self._sent_data_map.pop(data_id, None)
 
     def generate_data_id(self, gc):
         """
