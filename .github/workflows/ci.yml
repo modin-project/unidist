@@ -77,7 +77,7 @@ jobs:
         run: |
           conda info
           conda list
-      - name: Start local ray cluster and tell unidist to use it
+      - name: Start local ray cluster
         # Try a few times to start ray to work around
         # https://github.com/modin-project/modin/issues/4562
         uses: nick-fields/retry@v2
@@ -86,6 +86,8 @@ jobs:
           max_attempts: 5
           command: |
             ray start --head --port=6379 --object-store-memory=1000000000
+        if: matrix.backend == 'ray'
+      - name: Tell unidist to use existing ray cluster
         run: echo "UNIDIST_RAY_CLUSTER=True" >> $GITHUB_ENV
         if: matrix.backend == 'ray'
       - run: python -m pytest unidist/test/test_actor.py
