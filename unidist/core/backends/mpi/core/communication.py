@@ -287,7 +287,7 @@ def mpi_recv_operation(comm):
     return op_type, status.Get_source()
 
 
-def mpi_recv_object(comm, source_rank, cancel_recv=False):
+def mpi_recv_object(comm, source_rank):
     """
     Receive an object of a standard Python data type.
 
@@ -297,34 +297,18 @@ def mpi_recv_object(comm, source_rank, cancel_recv=False):
         MPI communicator object.
     source_rank : int
         Source MPI process to receive data from.
-    cancel_recv : bool, default: False
-        Whether to cancel an incoming message or not.
-        This can happen when a worker is getting to shutdown so
-        there is no need to receive the message.
 
     Returns
     -------
-    object or None
-        Received data object from another MPI process or
-        ``None`` if the message was cancelled.
+    object
+        Received data object from another MPI process.
 
     Notes
     -----
     * De-serialization is a simple pickle.load in this case.
     * The special tag is used for this communication, namely, ``common.MPITag.OBJECT``.
     """
-    backoff = MpiBackoff.get()
-    status = MPI.Status()
-    tag = common.MPITag.OBJECT
-    while not comm.Iprobe(source=source_rank, tag=tag):
-        time.sleep(backoff)
-    request = comm.irecv(source=source_rank, tag=tag)
-    if cancel_recv:
-        request.cancel()
-    data = request.wait(status=status)
-    if status.Is_cancelled():
-        data = None
-    return data
+    return comm.recv(source=source_rank, tag=common.MPITag.OBJECT)
 
 
 def mpi_send_buffer(comm, buffer_size, buffer, dest_rank):
@@ -629,7 +613,7 @@ def isend_complex_data(comm, data, dest_rank):
     return handlers, s_data, raw_buffers, buffer_count
 
 
-def recv_complex_data(comm, source_rank, cancel_recv=False):
+def recv_complex_data(comm, source_rank):
     """
     Receive the data that may consist of different user provided complex types, lambdas and buffers.
 
@@ -641,61 +625,31 @@ def recv_complex_data(comm, source_rank, cancel_recv=False):
         MPI communicator object.
     source_rank : int
         Source MPI process to receive data from.
-    cancel_recv : bool, default: False
-        Whether to cancel an incoming message or not.
-        This can happen when a worker is getting to shutdown so
-        there is no need to receive the message.
 
     Returns
     -------
     object
-        Received data object from another MPI process or
-        ``None`` if the message was cancelled.
+        Received data object from another MPI process.
 
     Notes
     -----
     * The special tags are used for this communication, namely,
     ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
-    # Recv main message pack buffer.
-    # First MPI call uses busy wait loop to remove possible contention
-    # in a long running data receive operations.
-    backoff = MpiBackoff.get()
-    status = MPI.Status()
-    info = mpi_busy_wait_recv(comm, source_rank)
+    info = comm.recv(source=source_rank, tag=common.MPITag.OBJECT)
     msgpack_buffer = bytearray(info["s_data_len"])
     buffer_count = info["buffer_count"]
     raw_buffers = list(map(bytearray, info["raw_buffers_len"]))
-    cancelled_requests = []
     with pkl5._bigmpi as bigmpi:
-        while not comm.Iprobe(source=source_rank, tag=common.MPITag.BUFFER):
-            time.sleep(backoff)
-        request = comm.Irecv(
-            bigmpi(msgpack_buffer), source=source_rank, tag=common.MPITag.BUFFER
-        )
-        if cancel_recv:
-            request.Cancel()
-        request.Wait(status=status)
-        cancelled_requests.append(status.Is_cancelled())
+        comm.Recv(bigmpi(msgpack_buffer), source=source_rank, tag=common.MPITag.BUFFER)
         for rbuf in raw_buffers:
-            while not comm.Iprobe(source=source_rank, tag=common.MPITag.BUFFER):
-                time.sleep(backoff)
-            request = comm.Irecv(
-                bigmpi(rbuf), source=source_rank, tag=common.MPITag.BUFFER
-            )
-            if cancel_recv:
-                request.Cancel()
-            request.Wait(status=status)
-            cancelled_requests.append(status.Is_cancelled())
+            comm.Recv(bigmpi(rbuf), source=source_rank, tag=common.MPITag.BUFFER)
 
-    if any(cancelled for cancelled in cancelled_requests):
-        return None
-    else:
-        # Set the necessary metadata for unpacking
-        deserializer = ComplexDataSerializer(raw_buffers, buffer_count)
+    # Set the necessary metadata for unpacking
+    deserializer = ComplexDataSerializer(raw_buffers, buffer_count)
 
-        # Start unpacking
-        return deserializer.deserialize(msgpack_buffer)
+    # Start unpacking
+    return deserializer.deserialize(msgpack_buffer)
 
 
 # ---------- #
