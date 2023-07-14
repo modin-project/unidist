@@ -5,8 +5,8 @@
 
 <p align="center">
 <a href="https://github.com/modin-project/unidist/actions"><img src="https://github.com/modin-project/unidist/workflows/master/badge.svg" align="center"></a>
-<a href="https://unidist.readthedocs.io/en/latest/?badge=latest"><img alt="" src="https://readthedocs.org/projects/unidist/badge/?version=latest" align="center"></a>
-<a href="https://pypi.org/project/unidist/"><img src="https://badge.fury.io/py/unidist.svg" alt="PyPI version" align="center"></a>
+<a href="https://unidist.readthedocs.io/en/0.4.1/?badge=0.4.1"><img alt="" src="https://readthedocs.org/projects/unidist/badge/?version=0.4.1" align="center"></a>
+<a href="https://pypi.org/project/unidist/0.4.1/"><img src="https://img.shields.io/badge/pypi-0.4.1-blue.svg" alt="PyPI version" align="center"></a>
 </p>
 
 ### What is unidist?
