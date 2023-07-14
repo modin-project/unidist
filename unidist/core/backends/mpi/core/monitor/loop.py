@@ -205,15 +205,23 @@ def monitor_loop():
                 communication.mpi_send_object(
                 mpi_state.comm, data=ValueError("This data was already deleted."), dest_rank=source_rank
             )
-            reservation_info = shm_manager.put(request["id"], request["size"])
+            if request["id"] in shm_manager.reservation_info:
+                reservation_info = shm_manager.reservation_info[request["id"]] | {"is_first_request": False}
+            else:
+                reservation_info = shm_manager.put(request["id"], request["size"]) | {"is_first_request": True}
+
             communication.mpi_send_object(
                 mpi_state.comm, data=reservation_info, dest_rank=source_rank
             )
         elif operation_type == common.Operation.REQUEST_SHARED_DATA:
             info_package = communication.mpi_recv_object(mpi_state.comm, source_rank)
-            if not shared_store.contains_shared_info(info_package["id"]):
-                shared_store.put_shared_info(info_package["id"], info_package)
-            sh_buf = shared_store.get_shared_buffer(info_package["id"])
+            data_id = info_package.pop("id", None)
+            if data_id is None:
+                raise ValueError("Requested DataId is None")
+            if request["id"] not in shm_manager.reservation_info:
+                raise RuntimeError(f"The monitor do not known the data id {data_id}")
+            reservation_info = shm_manager.reservation_info[data_id]
+            sh_buf = shared_store.get_shared_buffer(reservation_info["first_index"], reservation_info["last_index"])
             communication.mpi_send_shared_buffer(
                 mpi_state.comm,
                 sh_buf,
@@ -227,15 +235,17 @@ def monitor_loop():
         elif operation_type == common.Operation.READY_TO_SHUTDOWN:
             workers_ready_to_shutdown.append(source_rank)
             shutdown_workers = (
-                len(workers_ready_to_shutdown) == mpi_state.world_size - 2
+                len(workers_ready_to_shutdown) == len(mpi_state.workers)
             )  # "-2" to exclude ``Root`` and ``Monitor`` ranks
+        elif operation_type == common.Operation.SHUTDOWN:
+            if not MPI.Is_finalized():
+                MPI.Finalize()
+            break  # leave event loop and shutdown monitoring
         else:
             raise ValueError(f"Unsupported operation: {operation_type}")
 
         if shutdown_workers:
-            for rank_id in range(
-                communication.MPIRank.FIRST_WORKER, mpi_state.world_size
-            ):
+            for rank_id in mpi_state.workers + [rank for rank in mpi_state.monitor_processes if rank != mpi_state.rank]:
                 communication.mpi_send_operation(
                     mpi_state.comm,
                     common.Operation.SHUTDOWN,

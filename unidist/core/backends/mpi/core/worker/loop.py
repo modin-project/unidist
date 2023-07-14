@@ -220,7 +220,7 @@ async def worker_loop():
             communication.mpi_send_operation(
                 mpi_state.comm,
                 common.Operation.READY_TO_SHUTDOWN,
-                communication.MPIRank.MONITOR,
+                mpi_state.get_monitor_by_worker_rank(communication.MPIRank.ROOT),
             )
             ready_to_shutdown_posted = True
         elif operation_type == common.Operation.SHUTDOWN and ready_to_shutdown_posted:

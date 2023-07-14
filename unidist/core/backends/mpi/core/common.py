@@ -52,7 +52,7 @@ class Operation:
     PUT_DATA = 3
     PUT_OWNER = 4
     PUT_SHARED_DATA = 12
-    REQUEST_SHARED_DATA = 14
+    REQUEST_SHARED_DATA = 15
     WAIT = 5
     ACTOR_CREATE = 6
     ACTOR_EXECUTE = 7
@@ -60,7 +60,7 @@ class Operation:
     ### --- Monitor operations --- ###
     TASK_DONE = 9
     GET_TASK_COUNT = 10
-    RESERVE_SHARED_MEMORY = 13
+    RESERVE_SHARED_MEMORY = 14
     ### --- Common operations --- ###
     CANCEL = 11
     READY_TO_SHUTDOWN = 12

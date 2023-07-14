@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Common functionality related to `controller`."""
+import time
 import itertools
 
 from unidist.core.backends.common.data_id import is_data_id
@@ -117,27 +118,30 @@ def get_complex_data(comm, owner_rank):
         if shared_store.check_serice_index(data_id, info_package["service_index"]):
             shared_store.put_shared_info(data_id, info_package)
         else:
-            shared_data_len = info_package["last_shared_index"] - info_package["first_shared_index"]
+            shared_data_len = info_package["s_data_len"] + sum([buf for buf in info_package["raw_buffers_lens"]])
             reservation_info = communication.send_reserve_operation(comm, data_id, shared_data_len)
-            info_package["first_shared_index"] = reservation_info["first_index"]
             info_package["service_index"] = reservation_info["service_index"]
-            shared_store.put_shared_info(data_id, info_package)
-
-            sh_buf = shared_store.get_shared_buffer(data_id)
-            # recv serialized data to shared memory
-            owner_monitor = (
-                communication.MPIState.get_instance().get_monitor_by_worker_rank(
-                    owner_rank
+            if reservation_info["is_first_request"]:
+                sh_buf = shared_store.get_shared_buffer(reservation_info["first_index"], reservation_info["last_index"])
+                # recv serialized data to shared memory
+                owner_monitor = (
+                    communication.MPIState.get_instance().get_monitor_by_worker_rank(
+                        owner_rank
+                    )
                 )
-            )
-            communication.send_simple_operation(
-                comm,
-                operation_type=common.Operation.REQUEST_SHARED_DATA,
-                operation_data=info_package,
-                dest_rank=owner_monitor,
-            )
-            communication.mpi_recv_shared_buffer(comm, sh_buf, owner_monitor)
-            shared_store.put_service_info(info_package["service_index"], data_id, info_package["first_shared_index"])
+                communication.send_simple_operation(
+                    comm,
+                    operation_type=common.Operation.REQUEST_SHARED_DATA,
+                    operation_data={"id": data_id},
+                    dest_rank=owner_monitor,
+                )
+                communication.mpi_recv_shared_buffer(comm, sh_buf, owner_monitor)
+                shared_store.put_service_info(info_package["service_index"], data_id, reservation_info["first_index"])
+                shared_store.put_shared_info(data_id, info_package)
+            else:
+                while not shared_store.check_serice_index(data_id, info_package["service_index"]):
+                    time.sleep(0.1)
+                shared_store.put_shared_info(data_id, info_package)
             
         data = shared_store.get(data_id)
         return {
@@ -272,14 +276,14 @@ def _push_shared_data(dest_rank, data_id, is_blocking_op):
     operation_type = common.Operation.PUT_SHARED_DATA
     async_operations = AsyncOperations.get_instance()
     info_package = shared_store.get_data_shared_info(data_id)
-    info_package["id"] = data_id
+    operation_data = {"id": data_id} | info_package
     if is_blocking_op:
-        communication.mpi_send_object(mpi_state.comm, info_package, dest_rank)
+        communication.mpi_send_object(mpi_state.comm, operation_data, dest_rank)
     else:
         h_list = communication.isend_simple_operation(
             mpi_state.comm,
             operation_type,
-            info_package,
+            operation_data,
             dest_rank,
         )
         async_operations.extend(h_list)

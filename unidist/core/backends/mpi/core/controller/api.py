@@ -286,7 +286,7 @@ def shutdown():
         async_operations.finish()
         mpi_state = communication.MPIState.get_instance()
         # Send shutdown commands to all ranks
-        for rank_id in range(communication.MPIRank.FIRST_WORKER, mpi_state.world_size):
+        for rank_id in mpi_state.workers:
             # We use a blocking send here because we have to wait for
             # completion of the communication, which is necessary for the pipeline to continue.
             communication.mpi_send_operation(
@@ -304,6 +304,7 @@ def shutdown():
             raise ValueError(f"Got wrong operation type {op_type}.")
         if not MPI.Is_finalized():
             MPI.Finalize()
+        
         logger.debug("Shutdown root")
         is_mpi_shutdown = True
 

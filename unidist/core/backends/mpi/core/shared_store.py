@@ -6,6 +6,7 @@
 
 import os
 import sys
+from types import MappingProxyType
 import psutil
 import weakref
 import numpy as np
@@ -175,19 +176,27 @@ class SharedStore:
             return True
 
     def put_shared_info(self, data_id, shared_info):
-        self._shared_info[data_id] = shared_info
+        if data_id not in self._shared_info:
+            self._shared_info[data_id] = MappingProxyType(shared_info)
+            service_index = shared_info["service_index"]
+            self.increment_ref_number(data_id, service_index)
+            weakref.finalize(data_id, self.decrement_ref_number, str(data_id), service_index)
+
 
     def get_data_shared_info(self, data_id):
-        return self._shared_info[data_id].copy()
+        return self._shared_info[data_id]
+    
+    def clear_shared_info(self, cleanup_list):
+        for data_id in cleanup_list:
+            self._shared_info.pop(data_id, None)
 
     def parse_data_id(self, data_id):
         splited_id = str(data_id).replace(")", "").split("_")
         return int(splited_id[1]), int(splited_id[3])
 
-    def increment_ref_number(self, data_id):
+    def increment_ref_number(self, data_id, service_index):
         if MPI.Is_finalized():
             return
-        service_index = self.get_service_index(data_id)
         if service_index is None:
             raise KeyError("it is not possible to increment the reference number for this data_id because it is not part of the shared data")
         self.win_service.Lock(communication.MPIRank.MONITOR)
@@ -211,10 +220,12 @@ class SharedStore:
 
     def get(self, data_id):
         info_package = self.get_data_shared_info(data_id)
-        first_index = info_package["first_shared_index"]
         buffer_lens = info_package["raw_buffers_lens"]
         buffer_count = info_package["buffer_count"]
         s_data_len = info_package["s_data_len"]
+        service_index = info_package["service_index"]
+
+        first_index = self.service_buffer[service_index + self.FIRST_DATA_INDEX]
 
         s_data_last_index = first_index + s_data_len
         s_data = self.shared_buffer[first_index:s_data_last_index].toreadonly()
@@ -232,32 +243,21 @@ class SharedStore:
 
         # Start unpacking
         data =  deserializer.deserialize(s_data)
-        self.increment_ref_number(data_id)
+        self.increment_ref_number(data_id, service_index)
+        weakref.finalize(data, self.decrement_ref_number, str(data_id), service_index)
         return data
 
-    def get_shared_buffer(self, data_id):
-        info_package = self.get_data_shared_info(data_id)
-        first_index = info_package["first_shared_index"]
-        buffer_lens = info_package["raw_buffers_lens"]
-        s_data_len = info_package["s_data_len"]
-
-        last_index = first_index + s_data_len
-        for raw_buffer_len in buffer_lens:
-            last_index += raw_buffer_len
-
+    def get_shared_buffer(self, first_index, last_index):
         return self.shared_buffer[first_index:last_index]
 
     def put_service_info(self, service_index, data_id, first_index):
         worker_id, data_number = self.parse_data_id(data_id)
 
         self.win_service.Lock(communication.MPIRank.MONITOR)
-        try:
-            self.service_buffer[service_index + self.WORKER_ID_INDEX] = worker_id
-            self.service_buffer[service_index + self.DATA_NUMBER_INDEX] = data_number
-            self.service_buffer[service_index + self.FIRST_DATA_INDEX] = first_index
-            self.service_buffer[service_index + self.REFERENCES_NUMBER] = 0
-        except:
-            print(service_index)
+        self.service_buffer[service_index + self.WORKER_ID_INDEX] = worker_id
+        self.service_buffer[service_index + self.DATA_NUMBER_INDEX] = data_number
+        self.service_buffer[service_index + self.FIRST_DATA_INDEX] = first_index
+        self.service_buffer[service_index + self.REFERENCES_NUMBER] = 0
 
         self.win_service.Unlock(communication.MPIRank.MONITOR)
 
@@ -306,6 +306,5 @@ class SharedStore:
         sharing_info = communication.get_shared_info(
             s_data_len, buffer_lens, buffer_count, first_index, last_index, service_index
         )
-        self.put_shared_info(data_id, sharing_info)
         self.put_service_info(service_index, data_id, first_index)
-        self.increment_ref_number(data_id)
+        self.put_shared_info(data_id, sharing_info)

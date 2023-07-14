@@ -100,19 +100,20 @@ class SharedMemoryMahager:
         ])
 
         if self.monitor_comm is not None:
-            all_refs = array('B', [1]*len(cleanup_list))
+            all_refs = array('B', [1]*len(has_refs))
             self.monitor_comm.Allreduce(has_refs, all_refs, MPI.MAX)
         else:
             all_refs = has_refs
 
         for data_id, referers in zip(cleanup_list, all_refs):
-            if referers == 0 and data_id in self.reservation_info:
-                reservation_info = self.reservation_info[data_id]
-                del self.reservation_info[data_id]
-                self.deleted_ids.append(data_id)
-                self.shared_store.delete_service_info(reservation_info["service_index"])
-                self.free_service_indexes.push(reservation_info["service_index"], reservation_info["service_index"]+SharedStore.INFO_COUNT)
-                self.free_memory.push(reservation_info["first_index"], reservation_info["last_index"])
+            if referers == 0:
+                if data_id in self.reservation_info:
+                    reservation_info = self.reservation_info[data_id]
+                    self.deleted_ids.append(data_id)
+                    self.shared_store.delete_service_info(reservation_info["service_index"])
+                    self.free_service_indexes.push(reservation_info["service_index"], reservation_info["service_index"]+SharedStore.INFO_COUNT)
+                    self.free_memory.push(reservation_info["first_index"], reservation_info["last_index"])
+                    del self.reservation_info[data_id]
             else:
                 self.pending_cleanup.append(data_id)
         

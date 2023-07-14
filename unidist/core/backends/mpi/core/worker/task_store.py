@@ -6,6 +6,7 @@ import asyncio
 import functools
 import inspect
 import time
+import weakref
 
 from unidist.core.backends.common.data_id import is_data_id
 import unidist.core.backends.mpi.core.common as common
@@ -14,6 +15,7 @@ from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.object_store import ObjectStore
 from unidist.core.backends.mpi.core.shared_store import SharedStore
 from unidist.core.backends.mpi.core.worker.request_store import RequestStore
+from unidist.core.backends.mpi.utils import check_data_out_of_band
 
 mpi_state = communication.MPIState.get_instance()
 # Logger configuration
@@ -38,6 +40,8 @@ class TaskStore:
         self.event_loop = asyncio.get_event_loop()
         # Started async tasks
         self.background_tasks = set()
+
+        self.output_depends = weakref.WeakKeyDictionary()
 
     @classmethod
     def get_instance(cls):
@@ -163,6 +167,24 @@ class TaskStore:
         # Save request in order to prevent massive communication during pending task checks
         RequestStore.get_instance().put(data_id, dest_rank, RequestStore.DATA)
 
+    def check_local_data_id(self, arg):
+        if is_data_id(arg):
+            object_store = ObjectStore.get_instance()
+            arg = object_store.get_unique_data_id(arg)
+            if object_store.contains(arg):
+                return arg, False
+            elif object_store.contains_data_owner(arg):
+                if not RequestStore.get_instance().is_data_already_requested(arg):
+                    # Request the data from an owner worker
+                    owner_rank = object_store.get_data_owner(arg)
+                    if owner_rank != communication.MPIState.get_instance().rank:
+                        self.request_worker_data(owner_rank, arg)
+                return arg, True
+            else:
+                raise ValueError("DataID is missing!")
+        else:
+            return arg, False
+
     def unwrap_local_data_id(self, arg):
         """
         Inspect argument and get the ID associated data from the local object store if available.
@@ -186,18 +208,11 @@ class TaskStore:
         """
         if is_data_id(arg):
             object_store = ObjectStore.get_instance()
-            shared_store = SharedStore.get_instance()
             arg = object_store.get_unique_data_id(arg)
             if object_store.contains(arg):
                 value = ObjectStore.get_instance().get(arg)
                 # Data is already local or was pushed from master
                 return value, False
-            # elif shared_store.contains(arg):
-            #     value = shared_store.get(arg)
-            #     object_store.put(arg, value)
-            #     return value, False
-            elif shared_store.contains_shared_info(arg):
-                return arg, True
             elif object_store.contains_data_owner(arg):
                 if not RequestStore.get_instance().is_data_already_requested(arg):
                     # Request the data from an owner worker
@@ -209,6 +224,19 @@ class TaskStore:
                 raise ValueError("DataID is missing!")
         else:
             return arg, False
+        
+    def check_output_depends(self, data_ids, depends_id):
+        object_store = ObjectStore.get_instance()
+        if isinstance(data_ids, (list, tuple)):
+            for data_id in data_ids:
+                value = object_store.get(data_id)
+                if check_data_out_of_band(value):
+                    self.output_depends[data_id] = depends_id
+
+        else:
+            value = object_store.get(data_ids)
+            if check_data_out_of_band(value):
+                self.output_depends[data_ids] = depends_id
 
     def execute_received_task(self, output_data_ids, task, args, kwargs):
         """
@@ -263,11 +291,9 @@ class TaskStore:
                         and len(output_data_ids) > 1
                     ):
                         for output_id in output_data_ids:
-                            data_id = object_store.get_unique_data_id(output_id)
-                            object_store.put(data_id, e)
+                            object_store.put(output_id, e)
                     else:
-                        data_id = object_store.get_unique_data_id(output_data_ids)
-                        object_store.put(data_id, e)
+                        object_store.put(output_data_ids, e)
                 else:
                     if output_data_ids is not None:
                         if (
@@ -278,13 +304,11 @@ class TaskStore:
                             for idx, (output_id, value) in enumerate(
                                 zip(output_data_ids, output_values)
                             ):
-                                data_id = object_store.get_unique_data_id(output_id)
-                                object_store.put(data_id, value)
-                                completed_data_ids[idx] = data_id
+                                object_store.put(output_id, value)
+                                completed_data_ids[idx] = output_id
                         else:
-                            data_id = object_store.get_unique_data_id(output_data_ids)
-                            object_store.put(data_id, output_values)
-                            completed_data_ids = [data_id]
+                            object_store.put(output_data_ids, output_values)
+                            completed_data_ids = [output_data_ids]
 
                 RequestStore.get_instance().check_pending_get_requests(output_data_ids)
                 # Monitor the task execution
@@ -336,11 +360,9 @@ class TaskStore:
                     and len(output_data_ids) > 1
                 ):
                     for output_id in output_data_ids:
-                        data_id = object_store.get_unique_data_id(output_id)
-                        object_store.put(data_id, e)
+                        object_store.put(output_id, e)
                 else:
-                    data_id = object_store.get_unique_data_id(output_data_ids)
-                    object_store.put(data_id, e)
+                    object_store.put(output_data_ids, e)
             else:
                 if output_data_ids is not None:
                     if (
@@ -351,13 +373,11 @@ class TaskStore:
                         for idx, (output_id, value) in enumerate(
                             zip(output_data_ids, output_values)
                         ):
-                            data_id = object_store.get_unique_data_id(output_id)
-                            object_store.put(data_id, value)
-                            completed_data_ids[idx] = data_id
+                            object_store.put(output_id, value)
+                            completed_data_ids[idx] = output_id
                     else:
-                        data_id = object_store.get_unique_data_id(output_data_ids)
-                        object_store.put(data_id, output_values)
-                        completed_data_ids = [data_id]
+                        object_store.put(output_data_ids, output_values)
+                        completed_data_ids = [output_data_ids]
             RequestStore.get_instance().check_pending_get_requests(output_data_ids)
             # Monitor the task execution.
             # We use a blocking send here because we have to wait for
@@ -389,10 +409,12 @@ class TaskStore:
             Same request if the task couldn`t be executed, otherwise ``None``.
         """
         # Parse request
+        object_store = ObjectStore.get_instance()
+        shared_store = SharedStore.get_instance()
         task = request["task"]
         args = request["args"]
         kwargs = request["kwargs"]
-        output_ids = request["output"]
+        output_ids = [object_store.get_unique_data_id(data_id) for data_id in request["output"]]
 
         w_logger.debug("REMOTE task: {}".format(task))
         w_logger.debug("REMOTE args: {}".format(common.unwrapped_data_ids_list(args)))
@@ -404,9 +426,9 @@ class TaskStore:
         )
 
         # DataID -> real data
-        args, is_pending = common.materialize_data_ids(args, self.unwrap_local_data_id)
+        args, is_pending = common.materialize_data_ids(args, self.check_local_data_id)
         kwargs, is_kw_pending = common.materialize_data_ids(
-            kwargs, self.unwrap_local_data_id
+            kwargs, self.check_local_data_id
         )
 
         w_logger.debug("Is pending - {}".format(is_pending))
@@ -416,7 +438,16 @@ class TaskStore:
             request["kwargs"] = kwargs
             return request
         else:
+            args, is_pending = common.materialize_data_ids(args, self.unwrap_local_data_id)
+            kwargs, is_kw_pending = common.materialize_data_ids(
+                kwargs, self.unwrap_local_data_id
+            )
+
             self.execute_received_task(output_ids, task, args, kwargs)
+
+            shared_depends = [arg for arg in request["args"] if is_data_id(arg) and shared_store.contains_shared_info(arg)]
+            if shared_depends:
+                self.check_output_depends(output_ids, shared_depends)
             if output_ids is not None:
                 RequestStore.get_instance().check_pending_get_requests(output_ids)
                 RequestStore.get_instance().check_pending_wait_requests(output_ids)

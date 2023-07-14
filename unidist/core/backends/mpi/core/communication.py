@@ -327,8 +327,8 @@ def get_shared_info(
     info_package["s_data_len"] = s_data_len
     info_package["raw_buffers_lens"] = raw_buffers_lens
     info_package["buffer_count"] = buffer_count
-    info_package["first_shared_index"] = first_shared_index
-    info_package["last_shared_index"] = last_shared_index
+    # info_package["first_shared_index"] = first_shared_index
+    # info_package["last_shared_index"] = last_shared_index
     info_package["service_index"] = service_index
     return info_package
 
