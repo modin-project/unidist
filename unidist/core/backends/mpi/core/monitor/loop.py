@@ -23,6 +23,12 @@ mpi4py.rc(recv_mprobe=False, initialize=False)
 from mpi4py import MPI  # noqa: E402
 
 
+mpi_state = communication.MPIState.get_instance()
+logger_name = "monitor_{}".format(mpi_state.rank if mpi_state is not None else 0)
+log_file = "{}.log".format(logger_name)
+monitor_logger = common.get_logger(logger_name, log_file)
+
+
 class TaskCounter:
     __instance = None
 
@@ -180,6 +186,9 @@ def monitor_loop():
     while True:
         # Listen receive operation from any source
         operation_type, source_rank = communication.mpi_recv_operation(mpi_state.comm)
+        monitor_logger.debug(
+            f"common.Operation processing - {operation_type} from {source_rank} rank"
+        )
         # Proceed the request
         if operation_type == common.Operation.TASK_DONE:
             task_counter.increment()
@@ -209,14 +218,12 @@ def monitor_loop():
                     data=ValueError("This data was already deleted."),
                     dest_rank=source_rank,
                 )
-            if request["id"] in shm_manager.reservation_info:
-                reservation_info = shm_manager.reservation_info[request["id"]] | {
-                    "is_first_request": False
-                }
+            reservation_info = shm_manager.get(request["id"])
+            if reservation_info is None:
+                reservation_info = shm_manager.put(request["id"], request["size"])
+                reservation_info["is_first_request"] = True
             else:
-                reservation_info = shm_manager.put(request["id"], request["size"]) | {
-                    "is_first_request": True
-                }
+                reservation_info["is_first_request"] = False
 
             communication.mpi_send_object(
                 mpi_state.comm, data=reservation_info, dest_rank=source_rank
@@ -226,9 +233,9 @@ def monitor_loop():
             data_id = info_package.pop("id", None)
             if data_id is None:
                 raise ValueError("Requested DataId is None")
-            if request["id"] not in shm_manager.reservation_info:
+            reservation_info = shm_manager.get(data_id)
+            if reservation_info is None:
                 raise RuntimeError(f"The monitor do not known the data id {data_id}")
-            reservation_info = shm_manager.reservation_info[data_id]
             sh_buf = shared_store.get_shared_buffer(
                 reservation_info["first_index"], reservation_info["last_index"]
             )

@@ -56,7 +56,7 @@ class FreeMemoryRange:
 
 class SharedMemoryMahager:
     def __init__(self, shared_memory_len):
-        self.reservation_info = {}
+        self._reservation_info = {}
         self.free_memory = FreeMemoryRange(shared_memory_len)
         self.free_service_indexes = FreeMemoryRange(SharedStore.SERVICE_COUNT)
         self.deleted_ids = []
@@ -69,6 +69,11 @@ class SharedMemoryMahager:
 
             monitor_group = mpi_state.comm.Get_group().Incl(mpi_state.monitor_processes)
             self.monitor_comm = mpi_state.comm.Create_group(monitor_group)
+
+    def get(self, data_id):
+        if data_id not in self._reservation_info:
+            return None
+        return self._reservation_info[data_id].copy()
 
     def put(self, data_id, memory_len):
         first_index, last_index = self.free_memory.pop(memory_len)
@@ -84,8 +89,8 @@ class SharedMemoryMahager:
             "service_index": service_index,
         }
 
-        self.reservation_info[data_id] = reservation_info
-        return reservation_info
+        self._reservation_info[data_id] = reservation_info
+        return reservation_info.copy()
 
     def clear(self, data_id_list):
         cleanup_list = self.pending_cleanup + data_id_list
@@ -95,9 +100,9 @@ class SharedMemoryMahager:
             "B",
             [
                 1
-                if data_id in self.reservation_info
+                if data_id in self._reservation_info
                 and self.shared_store.get_ref_number(
-                    self.reservation_info[data_id]["service_index"]
+                    self._reservation_info[data_id]["service_index"]
                 )
                 > 0
                 else 0
@@ -113,8 +118,8 @@ class SharedMemoryMahager:
 
         for data_id, referers in zip(cleanup_list, all_refs):
             if referers == 0:
-                if data_id in self.reservation_info:
-                    reservation_info = self.reservation_info[data_id]
+                if data_id in self._reservation_info:
+                    reservation_info = self._reservation_info[data_id]
                     self.deleted_ids.append(data_id)
                     self.shared_store.delete_service_info(
                         data_id, reservation_info["service_index"]
@@ -126,6 +131,6 @@ class SharedMemoryMahager:
                     self.free_memory.push(
                         reservation_info["first_index"], reservation_info["last_index"]
                     )
-                    del self.reservation_info[data_id]
+                    del self._reservation_info[data_id]
             else:
                 self.pending_cleanup.append(data_id)
