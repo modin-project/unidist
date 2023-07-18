@@ -114,36 +114,39 @@ def get_complex_data(comm, owner_rank):
         data_id = info_package.pop("id", None)
         data_id = object_store.get_unique_data_id(data_id)
 
+        if object_store.contains(data_id):
+            return {
+                "id": data_id,
+                "data": object_store.get(data_id),
+            }
+
         # check data in shared memory
-        if shared_store.check_serice_index(data_id, info_package["service_index"]):
-            shared_store.put_shared_info(data_id, info_package)
-        else:
-            shared_data_len = info_package["s_data_len"] + sum([buf for buf in info_package["raw_buffers_lens"]])
-            reservation_info = communication.send_reserve_operation(comm, data_id, shared_data_len)
+        if not shared_store.check_serice_index(data_id, info_package["service_index"]):
+            shared_data_len = info_package["s_data_len"] + sum(
+                [buf for buf in info_package["raw_buffers_lens"]]
+            )
+            reservation_info = communication.send_reserve_operation(
+                comm, data_id, shared_data_len
+            )
             info_package["service_index"] = reservation_info["service_index"]
             if reservation_info["is_first_request"]:
-                sh_buf = shared_store.get_shared_buffer(reservation_info["first_index"], reservation_info["last_index"])
-                # recv serialized data to shared memory
-                owner_monitor = (
-                    communication.MPIState.get_instance().get_monitor_by_worker_rank(
-                        owner_rank
-                    )
-                )
-                communication.send_simple_operation(
+                shared_store.sync_shared_memory_from_another_host(
                     comm,
-                    operation_type=common.Operation.REQUEST_SHARED_DATA,
-                    operation_data={"id": data_id},
-                    dest_rank=owner_monitor,
+                    data_id,
+                    owner_rank,
+                    reservation_info["first_index"],
+                    reservation_info["last_index"],
+                    info_package["service_index"],
                 )
-                communication.mpi_recv_shared_buffer(comm, sh_buf, owner_monitor)
-                shared_store.put_service_info(info_package["service_index"], data_id, reservation_info["first_index"])
-                shared_store.put_shared_info(data_id, info_package)
             else:
-                while not shared_store.check_serice_index(data_id, info_package["service_index"]):
+                while not shared_store.check_serice_index(
+                    data_id, info_package["service_index"]
+                ):
                     time.sleep(0.1)
-                shared_store.put_shared_info(data_id, info_package)
-            
+
+        shared_store.put_shared_info(data_id, info_package)
         data = shared_store.get(data_id)
+        object_store.put(data_id, data)
         return {
             "id": data_id,
             "data": data,

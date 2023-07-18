@@ -304,7 +304,7 @@ def shutdown():
             raise ValueError(f"Got wrong operation type {op_type}.")
         if not MPI.Is_finalized():
             MPI.Finalize()
-        
+
         logger.debug("Shutdown root")
         is_mpi_shutdown = True
 

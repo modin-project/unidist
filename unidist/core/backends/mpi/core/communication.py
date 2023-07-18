@@ -143,7 +143,9 @@ class MPIState:
             self.topology[host][host_rank] = rank
             self.__host_by_rank[rank] = host
 
-        self.monitor_processes = [self.topology[host][MPIRank.MONITOR] for host in self.topology]
+        self.monitor_processes = [
+            self.topology[host][MPIRank.MONITOR] for host in self.topology
+        ]
 
         self.workers = []
         for host in self.topology:
@@ -268,7 +270,7 @@ def reserve_shared_memory(comm, data_id, data, is_serialized=False):
             "raw_buffers": raw_buffers,
             "buffer_count": buffer_count,
         }
-        
+
         return reservation_data, serialized_data
 
 
@@ -319,16 +321,12 @@ def get_data_info(s_data_len, raw_buffers_lens, buffer_count):
     return info_package
 
 
-def get_shared_info(
-    s_data_len, raw_buffers_lens, buffer_count, first_shared_index, last_shared_index, service_index
-):
+def get_shared_info(s_data_len, raw_buffers_lens, buffer_count, service_index):
     info_package = {}
     info_package["package_type"] = DataInfoType.SHARED_DATA
     info_package["s_data_len"] = s_data_len
     info_package["raw_buffers_lens"] = raw_buffers_lens
     info_package["buffer_count"] = buffer_count
-    # info_package["first_shared_index"] = first_shared_index
-    # info_package["last_shared_index"] = last_shared_index
     info_package["service_index"] = service_index
     return info_package
 

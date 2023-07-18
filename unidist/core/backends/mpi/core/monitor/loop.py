@@ -13,7 +13,9 @@ except ImportError:
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
-from unidist.core.backends.mpi.core.monitor.shared_memory_manager import SharedMemoryMahager
+from unidist.core.backends.mpi.core.monitor.shared_memory_manager import (
+    SharedMemoryMahager,
+)
 from unidist.core.backends.mpi.core.shared_store import SharedStore
 
 # TODO: Find a way to move this after all imports
@@ -203,12 +205,18 @@ def monitor_loop():
             request = communication.mpi_recv_object(mpi_state.comm, source_rank)
             if request["id"] in shm_manager.deleted_ids:
                 communication.mpi_send_object(
-                mpi_state.comm, data=ValueError("This data was already deleted."), dest_rank=source_rank
-            )
+                    mpi_state.comm,
+                    data=ValueError("This data was already deleted."),
+                    dest_rank=source_rank,
+                )
             if request["id"] in shm_manager.reservation_info:
-                reservation_info = shm_manager.reservation_info[request["id"]] | {"is_first_request": False}
+                reservation_info = shm_manager.reservation_info[request["id"]] | {
+                    "is_first_request": False
+                }
             else:
-                reservation_info = shm_manager.put(request["id"], request["size"]) | {"is_first_request": True}
+                reservation_info = shm_manager.put(request["id"], request["size"]) | {
+                    "is_first_request": True
+                }
 
             communication.mpi_send_object(
                 mpi_state.comm, data=reservation_info, dest_rank=source_rank
@@ -221,7 +229,9 @@ def monitor_loop():
             if request["id"] not in shm_manager.reservation_info:
                 raise RuntimeError(f"The monitor do not known the data id {data_id}")
             reservation_info = shm_manager.reservation_info[data_id]
-            sh_buf = shared_store.get_shared_buffer(reservation_info["first_index"], reservation_info["last_index"])
+            sh_buf = shared_store.get_shared_buffer(
+                reservation_info["first_index"], reservation_info["last_index"]
+            )
             communication.mpi_send_shared_buffer(
                 mpi_state.comm,
                 sh_buf,
@@ -231,11 +241,11 @@ def monitor_loop():
             cleanup_list = communication.recv_serialized_data(
                 mpi_state.comm, source_rank
             )
-            shm_manager.clear(cleanup_list)            
+            shm_manager.clear(cleanup_list)
         elif operation_type == common.Operation.READY_TO_SHUTDOWN:
             workers_ready_to_shutdown.append(source_rank)
-            shutdown_workers = (
-                len(workers_ready_to_shutdown) == len(mpi_state.workers)
+            shutdown_workers = len(workers_ready_to_shutdown) == len(
+                mpi_state.workers
             )  # "-2" to exclude ``Root`` and ``Monitor`` ranks
         elif operation_type == common.Operation.SHUTDOWN:
             if not MPI.Is_finalized():
@@ -245,7 +255,9 @@ def monitor_loop():
             raise ValueError(f"Unsupported operation: {operation_type}")
 
         if shutdown_workers:
-            for rank_id in mpi_state.workers + [rank for rank in mpi_state.monitor_processes if rank != mpi_state.rank]:
+            for rank_id in mpi_state.workers + [
+                rank for rank in mpi_state.monitor_processes if rank != mpi_state.rank
+            ]:
                 communication.mpi_send_operation(
                     mpi_state.comm,
                     common.Operation.SHUTDOWN,

@@ -63,7 +63,6 @@ class ObjectStore:
         data : object
             Data to be put.
         """
-        weakref.finalize(data_id, self.logger.debug, f'Data {str(data_id)} ({id(data_id)} was deleted)')
         self._data_map[data_id] = data
 
     def put_data_owner(self, data_id, rank):
@@ -170,7 +169,7 @@ class ObjectStore:
         """
         if communication.MPIState.get_instance().is_root_process():
             # Root process must not have a strong references and user always have actual data_id
-            return data_id 
+            return data_id
         if data_id not in self._data_id_map:
             self._data_id_map[data_id] = data_id
         return self._data_id_map[data_id]

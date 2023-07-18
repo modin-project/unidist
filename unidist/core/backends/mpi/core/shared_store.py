@@ -6,7 +6,7 @@
 
 import os
 import sys
-from types import MappingProxyType
+import copy
 import psutil
 import weakref
 import numpy as np
@@ -14,7 +14,7 @@ from array import array
 from mpi4py import MPI
 from unidist.config.backends.mpi.envvars import MpiSharedMemoryThreshold
 
-from unidist.core.backends.mpi.core import communication
+from unidist.core.backends.mpi.core import common, communication
 from unidist.core.backends.mpi.core.serialization import ComplexDataSerializer
 
 
@@ -49,6 +49,7 @@ class SharedStore:
         # Shared memory range {DataID: reservation_info}
         self._shared_info = weakref.WeakKeyDictionary()
         self._helper_buffer = array("L", [0])
+        self.logger = None
 
     def __init_shared_memory(self):
         mpi_state = communication.MPIState.get_instance()
@@ -89,11 +90,7 @@ class SharedStore:
         )
         shared_buffer, _ = win.Shared_query(communication.MPIRank.MONITOR)
 
-        service_size = (
-            self.SERVICE_COUNT
-            if mpi_state.is_monitor_process()
-            else 0
-        )
+        service_size = self.SERVICE_COUNT if mpi_state.is_monitor_process() else 0
         self.win_service = MPI.Win.Allocate_shared(
             service_size, MPI.LONG.size, comm=mpi_state.host_comm, info=info
         )
@@ -103,7 +100,7 @@ class SharedStore:
         ary = np.ndarray(
             buffer=service_buffer,
             dtype="l",
-            shape=(int(len(service_buffer) / itemsize), )
+            shape=(int(len(service_buffer) / itemsize),),
         )
         if service_size:
             ary[True] = -1
@@ -121,6 +118,11 @@ class SharedStore:
         """
         if cls.__instance is None:
             cls.__instance = SharedStore()
+        if cls.__instance.logger is None:
+            logger_name = f"shm_{communication.MPIState.get_instance().host}"
+            cls.__instance.logger = common.get_logger(
+                logger_name, f"{logger_name}.log", True
+            )
         return cls.__instance
 
     def is_should_be_shared(self, data):
@@ -177,15 +179,16 @@ class SharedStore:
 
     def put_shared_info(self, data_id, shared_info):
         if data_id not in self._shared_info:
-            self._shared_info[data_id] = MappingProxyType(shared_info)
+            self._shared_info[data_id] = copy.deepcopy(shared_info)
             service_index = shared_info["service_index"]
             self.increment_ref_number(data_id, service_index)
-            weakref.finalize(data_id, self.decrement_ref_number, str(data_id), service_index)
-
+            weakref.finalize(
+                data_id, self.decrement_ref_number, str(data_id), service_index
+            )
 
     def get_data_shared_info(self, data_id):
-        return self._shared_info[data_id]
-    
+        return copy.deepcopy(self._shared_info[data_id])
+
     def clear_shared_info(self, cleanup_list):
         for data_id in cleanup_list:
             self._shared_info.pop(data_id, None)
@@ -198,12 +201,19 @@ class SharedStore:
         if MPI.Is_finalized():
             return
         if service_index is None:
-            raise KeyError("it is not possible to increment the reference number for this data_id because it is not part of the shared data")
+            raise KeyError(
+                "it is not possible to increment the reference number for this data_id because it is not part of the shared data"
+            )
         self.win_service.Lock(communication.MPIRank.MONITOR)
         prev_ref_number = self.service_buffer[service_index + self.REFERENCES_NUMBER]
-        self.service_buffer[service_index + self.REFERENCES_NUMBER] = prev_ref_number + 1
+        self.service_buffer[service_index + self.REFERENCES_NUMBER] = (
+            prev_ref_number + 1
+        )
+        self.logger.debug(
+            f"Rank {communication.MPIState.get_instance().rank}: Increment references number for {data_id} from {prev_ref_number} to {prev_ref_number + 1}"
+        )
         self.win_service.Unlock(communication.MPIRank.MONITOR)
-        weakref.finalize(data_id, self.decrement_ref_number, str(data_id), service_index)
+        # weakref.finalize(data_id, self.decrement_ref_number, str(data_id), service_index)
 
     def decrement_ref_number(self, data_id, service_index):
         # we must to set service_index in args because it will be deleted before than this function is called
@@ -211,8 +221,15 @@ class SharedStore:
             return
         if self.check_serice_index(data_id, service_index):
             self.win_service.Lock(communication.MPIRank.MONITOR)
-            prev_ref_number = self.service_buffer[service_index + self.REFERENCES_NUMBER]
-            self.service_buffer[service_index + self.REFERENCES_NUMBER] = prev_ref_number - 1
+            prev_ref_number = self.service_buffer[
+                service_index + self.REFERENCES_NUMBER
+            ]
+            self.service_buffer[service_index + self.REFERENCES_NUMBER] = (
+                prev_ref_number - 1
+            )
+            self.logger.debug(
+                f"Rank {communication.MPIState.get_instance().rank}: Decrement references number for {data_id} from {prev_ref_number} to {prev_ref_number - 1}"
+            )
             self.win_service.Unlock(communication.MPIRank.MONITOR)
 
     def get_ref_number(self, service_index):
@@ -242,9 +259,10 @@ class SharedStore:
         deserializer = ComplexDataSerializer(raw_buffers, buffer_count)
 
         # Start unpacking
-        data =  deserializer.deserialize(s_data)
-        self.increment_ref_number(data_id, service_index)
-        weakref.finalize(data, self.decrement_ref_number, str(data_id), service_index)
+        data = deserializer.deserialize(s_data)
+        self.logger.debug(
+            f"Rank {communication.MPIState.get_instance().rank}: Get {data_id} from {first_index} to {prev_last_index}. Service index: {service_index}"
+        )
         return data
 
     def get_shared_buffer(self, first_index, last_index):
@@ -254,19 +272,40 @@ class SharedStore:
         worker_id, data_number = self.parse_data_id(data_id)
 
         self.win_service.Lock(communication.MPIRank.MONITOR)
-        self.service_buffer[service_index + self.WORKER_ID_INDEX] = worker_id
-        self.service_buffer[service_index + self.DATA_NUMBER_INDEX] = data_number
         self.service_buffer[service_index + self.FIRST_DATA_INDEX] = first_index
         self.service_buffer[service_index + self.REFERENCES_NUMBER] = 0
+        self.service_buffer[service_index + self.DATA_NUMBER_INDEX] = data_number
+        self.service_buffer[service_index + self.WORKER_ID_INDEX] = worker_id
 
         self.win_service.Unlock(communication.MPIRank.MONITOR)
 
-    def delete_service_info(self, service_index):
+    def delete_service_info(self, data_id, service_index):
         self.win_service.Lock(communication.MPIRank.MONITOR)
-        self.service_buffer[service_index + self.WORKER_ID_INDEX] = -1
-        self.service_buffer[service_index + self.DATA_NUMBER_INDEX] = -1
-        self.service_buffer[service_index + self.FIRST_DATA_INDEX] = -1
-        self.service_buffer[service_index + self.REFERENCES_NUMBER] = -1
+        # Read actual value
+        old_worker_id = self.service_buffer[service_index + self.WORKER_ID_INDEX]
+        old_data_id = self.service_buffer[service_index + self.DATA_NUMBER_INDEX]
+        old_first_index = self.service_buffer[service_index + self.FIRST_DATA_INDEX]
+        old_references_number = self.service_buffer[
+            service_index + self.REFERENCES_NUMBER
+        ]
+
+        # check if data_id is correct
+        if self.parse_data_id(data_id) == (old_worker_id, old_data_id):
+            self.service_buffer[service_index + self.WORKER_ID_INDEX] = -1
+            self.service_buffer[service_index + self.DATA_NUMBER_INDEX] = -1
+            self.service_buffer[service_index + self.FIRST_DATA_INDEX] = -1
+            self.service_buffer[service_index + self.REFERENCES_NUMBER] = -1
+            self.logger.debug(
+                f"Rank {communication.MPIState.get_instance().rank}: Clear {old_data_id}. Service index: {service_index} First index: {old_first_index} References number: {old_references_number}"
+            )
+        else:
+            self.logger.debug(
+                f"Rank {communication.MPIState.get_instance().rank}: Did not clear {old_data_id}, because there are was written another data_id: Data_ID(rank_{old_worker_id}_id_{old_data_id})"
+            )
+            self.logger.debug(
+                f"Service index: {service_index} First index: {old_first_index} References number: {old_references_number}"
+            )
+            raise RuntimeError("Unexpected data_id for cleanup shared memory")
         self.win_service.Unlock(communication.MPIRank.MONITOR)
 
     def put(self, data_id, reservation_data, serialized_data):
@@ -304,7 +343,30 @@ class SharedStore:
             last_prev_index = raw_buffer_last_index
 
         sharing_info = communication.get_shared_info(
-            s_data_len, buffer_lens, buffer_count, first_index, last_index, service_index
+            s_data_len, buffer_lens, buffer_count, service_index
         )
         self.put_service_info(service_index, data_id, first_index)
+        self.logger.debug(
+            f"Rank {communication.MPIState.get_instance().rank}: PUT {data_id} from {first_index} to {last_prev_index}. Service index: {service_index}"
+        )
         self.put_shared_info(data_id, sharing_info)
+
+    def sync_shared_memory_from_another_host(
+        self, comm, data_id, owner_rank, first_index, last_index, service_index
+    ):
+        sh_buf = self.get_shared_buffer(first_index, last_index)
+        # recv serialized data to shared memory
+        owner_monitor = (
+            communication.MPIState.get_instance().get_monitor_by_worker_rank(owner_rank)
+        )
+        communication.send_simple_operation(
+            comm,
+            operation_type=common.Operation.REQUEST_SHARED_DATA,
+            operation_data={"id": data_id},
+            dest_rank=owner_monitor,
+        )
+        communication.mpi_recv_shared_buffer(comm, sh_buf, owner_monitor)
+        self.put_service_info(service_index, data_id, first_index)
+        self.logger.debug(
+            f"Rank {communication.MPIState.get_instance().rank}: Sync_copy {data_id} from {owner_rank} rank. Put data from {first_index} to {last_index}. Service index: {service_index}"
+        )

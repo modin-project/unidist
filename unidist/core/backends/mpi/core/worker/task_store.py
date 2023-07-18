@@ -224,7 +224,7 @@ class TaskStore:
                 raise ValueError("DataID is missing!")
         else:
             return arg, False
-        
+
     def check_output_depends(self, data_ids, depends_id):
         object_store = ObjectStore.get_instance()
         if isinstance(data_ids, (list, tuple)):
@@ -414,7 +414,13 @@ class TaskStore:
         task = request["task"]
         args = request["args"]
         kwargs = request["kwargs"]
-        output_ids = [object_store.get_unique_data_id(data_id) for data_id in request["output"]]
+        output_ids = request["output"]
+        if isinstance(output_ids, (list, tuple)):
+            output_ids = [
+                object_store.get_unique_data_id(data_id) for data_id in output_ids
+            ]
+        elif output_ids is not None:
+            output_ids = object_store.get_unique_data_id(output_ids)
 
         w_logger.debug("REMOTE task: {}".format(task))
         w_logger.debug("REMOTE args: {}".format(common.unwrapped_data_ids_list(args)))
@@ -438,14 +444,20 @@ class TaskStore:
             request["kwargs"] = kwargs
             return request
         else:
-            args, is_pending = common.materialize_data_ids(args, self.unwrap_local_data_id)
+            args, is_pending = common.materialize_data_ids(
+                args, self.unwrap_local_data_id
+            )
             kwargs, is_kw_pending = common.materialize_data_ids(
                 kwargs, self.unwrap_local_data_id
             )
 
             self.execute_received_task(output_ids, task, args, kwargs)
 
-            shared_depends = [arg for arg in request["args"] if is_data_id(arg) and shared_store.contains_shared_info(arg)]
+            shared_depends = [
+                arg
+                for arg in request["args"]
+                if is_data_id(arg) and shared_store.contains_shared_info(arg)
+            ]
             if shared_depends:
                 self.check_output_depends(output_ids, shared_depends)
             if output_ids is not None:
