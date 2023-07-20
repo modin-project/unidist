@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """High-level API of MPI backend."""
+import os
 import sys
 import atexit
 import signal
@@ -302,6 +303,7 @@ def shutdown():
         )
         if op_type != common.Operation.SHUTDOWN:
             raise ValueError(f"Got wrong operation type {op_type}.")
+        SharedStore.get_instance().finalize()
         if not MPI.Is_finalized():
             MPI.Finalize()
 

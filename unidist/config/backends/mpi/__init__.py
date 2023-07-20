@@ -19,6 +19,5 @@ __all__ = [
     "MpiPickleThreshold",
     "MpiBackoff",
     "MpiLog",
-    "MpiSharingThreshold",
     "MpiSharedMemoryThreshold",
 ]

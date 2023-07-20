@@ -7,6 +7,7 @@ import asyncio
 from functools import wraps, partial
 
 from unidist.core.backends.mpi.core.controller.common import get_complex_data
+from unidist.core.backends.mpi.core.shared_store import SharedStore
 
 try:
     import mpi4py
@@ -115,11 +116,7 @@ async def worker_loop():
                     task_store.check_pending_tasks()
 
         elif operation_type == common.Operation.GET:
-            request = communication.mpi_recv_object(
-                mpi_state.comm,
-                source_rank,
-                cancel_recv=ready_to_shutdown_posted,
-            )
+            request = communication.mpi_recv_object(mpi_state.comm, source_rank)
             if request is not None and not ready_to_shutdown_posted:
                 data_id = object_store.get_unique_data_id(request["id"])
                 request_store.process_get_request(
@@ -221,6 +218,7 @@ async def worker_loop():
             ready_to_shutdown_posted = True
         elif operation_type == common.Operation.SHUTDOWN and ready_to_shutdown_posted:
             w_logger.debug("Exit worker event loop")
+            SharedStore.get_instance().finalize()
             if not MPI.Is_finalized():
                 MPI.Finalize()
             break  # leave event loop and shutdown worker

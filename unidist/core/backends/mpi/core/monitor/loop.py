@@ -255,6 +255,7 @@ def monitor_loop():
                 mpi_state.workers
             )  # "-2" to exclude ``Root`` and ``Monitor`` ranks
         elif operation_type == common.Operation.SHUTDOWN:
+            SharedStore.get_instance().finalize()
             if not MPI.Is_finalized():
                 MPI.Finalize()
             break  # leave event loop and shutdown monitoring
@@ -262,19 +263,19 @@ def monitor_loop():
             raise ValueError(f"Unsupported operation: {operation_type}")
 
         if shutdown_workers:
-            for rank_id in mpi_state.workers + [
-                rank for rank in mpi_state.monitor_processes if rank != mpi_state.rank
-            ]:
-                communication.mpi_send_operation(
-                    mpi_state.comm,
-                    common.Operation.SHUTDOWN,
-                    rank_id,
-                )
+            for rank_id in range(communication.MPIRank.ROOT + 1, mpi_state.world_size):
+                if rank_id != mpi_state.rank:
+                    communication.mpi_send_operation(
+                        mpi_state.comm,
+                        common.Operation.SHUTDOWN,
+                        rank_id,
+                    )
             communication.mpi_send_object(
                 mpi_state.comm,
                 common.Operation.SHUTDOWN,
                 communication.MPIRank.ROOT,
             )
+            SharedStore.get_instance().finalize()
             if not MPI.Is_finalized():
                 MPI.Finalize()
             break  # leave event loop and shutdown monitoring

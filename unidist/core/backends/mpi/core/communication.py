@@ -838,14 +838,11 @@ def recv_complex_data(comm, source_rank, info=None, cancel_recv=False):
     # Recv main message pack buffer.
     # First MPI call uses busy wait loop to remove possible contention
     # in a long running data receive operations.
-    backoff = MpiBackoff.get()
-    status = MPI.Status()
     if info is None:
         info = mpi_busy_wait_recv(comm, source_rank)
     msgpack_buffer = bytearray(info["s_data_len"])
     buffer_count = info["buffer_count"]
     raw_buffers = list(map(bytearray, info["raw_buffers_lens"]))
-    cancelled_requests = []
     with pkl5._bigmpi as bigmpi:
         comm.Recv(bigmpi(msgpack_buffer), source=source_rank, tag=common.MPITag.BUFFER)
         for rbuf in raw_buffers:
