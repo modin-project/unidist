@@ -24,7 +24,6 @@ from unidist.core.backends.mpi.core.controller.garbage_collector import (
     garbage_collector,
 )
 from unidist.core.backends.mpi.core.controller.common import (
-    put_to_shared_memory,
     request_worker_data,
     push_data,
     RoundRobin,
@@ -184,7 +183,7 @@ def init():
             host_list = hosts.split(",") if hosts is not None else ["localhost"]
             host_count = len(host_list)
 
-            if communication.is_internal_host_communication_supported():
+            if common.is_used_shared_memory():
                 # +1 for monitor process on each host
                 nprocs_to_spawn = cpu_count + len(host_list)
             else:
@@ -192,9 +191,10 @@ def init():
                 nprocs_to_spawn = cpu_count + 1
             if host_count > 1:
                 if "Open MPI" in lib_version:
+                    future_size = nprocs_to_spawn + 1  # + the current root process
                     workers_per_host = [
-                        int(nprocs_to_spawn / host_count)
-                        + (1 if i < nprocs_to_spawn % host_count else 0)
+                        int(future_size / host_count)
+                        + (1 if i < future_size % host_count else 0)
                         for i in range(host_count)
                     ]
                     hosts = ",".join(
@@ -354,10 +354,11 @@ def put(data):
         An ID of an object in object storage.
     """
     object_store = ObjectStore.get_instance()
+    shared_store = SharedStore.get_instance()
     data_id = object_store.generate_data_id(garbage_collector)
     object_store.put(data_id, data)
-    if sys.getsizeof(data) > MpiSharedMemoryThreshold.get():
-        put_to_shared_memory(data_id.base_data_id())
+    if shared_store.is_should_be_shared(data):
+        shared_store.put(data_id, data)
 
     logger.debug("PUT {} id".format(data_id._id))
 

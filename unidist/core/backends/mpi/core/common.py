@@ -6,9 +6,10 @@
 
 import logging
 import inspect
+from mpi4py import MPI
 
 from unidist.core.backends.common.data_id import DataID, is_data_id
-from unidist.config import MpiLog
+from unidist.config import MpiLog, IsMpiSpawnWorkers
 
 
 class Operation:
@@ -51,20 +52,20 @@ class Operation:
     GET = 2
     PUT_DATA = 3
     PUT_OWNER = 4
-    PUT_SHARED_DATA = 12
-    WAIT = 5
-    ACTOR_CREATE = 6
-    ACTOR_EXECUTE = 7
-    CLEANUP = 8
+    PUT_SHARED_DATA = 5
+    WAIT = 6
+    ACTOR_CREATE = 7
+    ACTOR_EXECUTE = 8
+    CLEANUP = 9
     ### --- Monitor operations --- ###
-    TASK_DONE = 9
-    GET_TASK_COUNT = 10
-    RESERVE_SHARED_MEMORY = 14
-    REQUEST_SHARED_DATA = 15
+    TASK_DONE = 10
+    GET_TASK_COUNT = 11
+    RESERVE_SHARED_MEMORY = 12
+    REQUEST_SHARED_DATA = 13
     ### --- Common operations --- ###
-    CANCEL = 11
-    READY_TO_SHUTDOWN = 12
-    SHUTDOWN = 13
+    CANCEL = 14
+    READY_TO_SHUTDOWN = 15
+    SHUTDOWN = 16
 
 
 class MPITag:
@@ -84,6 +85,103 @@ class MPITag:
     OPERATION = 111
     OBJECT = 112
     BUFFER = 113
+
+
+class DataInfoPackage(dict):
+    """
+    The class defines information packages for sending data.
+    """
+
+    OWNER_DATA = 0
+    SHARED_DATA = 1
+    LOCAL_DATA = 2
+
+    @classmethod
+    def get_owner_info(cls, data_id, owner_rank):
+        """
+        Get information package for sending data owner.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+        owner_rank : int
+            Rank of the owner process.
+
+        Returns
+        -------
+        dict
+            The information package.
+        """
+        return DataInfoPackage(
+            {
+                "package_type": DataInfoPackage.OWNER_DATA,
+                "id": data_id,
+                "owner": owner_rank,
+            }
+        )
+
+    @classmethod
+    def get_local_info(cls, s_data_len, raw_buffers_len, buffer_count):
+        """
+        Get information package for sending local data.
+
+        Parameters
+        ----------
+        s_data_len : int
+            Main buffer length.
+        raw_buffers_len : list
+            A list of ``PickleBuffer`` lengths.
+        buffer_count : list
+            List of the number of buffers for each object
+            to be serialized/deserialized using the pickle 5 protocol.
+        Returns
+        -------
+        dict
+            The information package.
+        """
+        return DataInfoPackage(
+            {
+                "package_type": DataInfoPackage.LOCAL_DATA,
+                "s_data_len": s_data_len,
+                "raw_buffers_len": raw_buffers_len,
+                "buffer_count": buffer_count,
+            }
+        )
+
+    @classmethod
+    def get_shared_info(
+        cls, data_id, s_data_len, raw_buffers_len, buffer_count, service_index
+    ):
+        """
+        Get information package for sending data using shared memory.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+        s_data_len : int
+            Main buffer length.
+        raw_buffers_len : list
+            A list of ``PickleBuffer`` lengths.
+        buffer_count : list
+            List of the number of buffers for each object
+            to be serialized/deserialized using the pickle 5 protocol.
+        service_index : int
+            Srevice shared memory index.
+        Returns
+        -------
+        dict
+            The information package.
+        """
+        return DataInfoPackage(
+            {
+                "package_type": DataInfoPackage.SHARED_DATA,
+                "id": data_id,
+                "s_data_len": s_data_len,
+                "raw_buffers_len": raw_buffers_len,
+                "buffer_count": buffer_count,
+                "service_index": service_index,
+            }
+        )
 
 
 default_class_properties = dir(type("dummy", (object,), {}))
@@ -325,3 +423,27 @@ def materialize_data_ids(data_ids, unwrap_data_id_impl, is_pending=False):
     else:
         unwrapped = _unwrap_data_id(data_ids)
         return unwrapped, is_pending
+
+
+def is_used_shared_memory():
+    """
+    Check if the Unidist on MPI support shared memory
+
+    Returns
+    -------
+    bool
+        True or False.
+
+    Notes
+    -----
+    Prior to the MPI 3.0 standard there is no support for shared memory.
+    """
+    if MPI.VERSION < 3:
+        return False
+
+    if "MPICH" in MPI.Get_library_version() and IsMpiSpawnWorkers.get():
+        # Mpich shared memory does not work with spawned processes
+        # https://github.com/pmodels/mpich/issues/6603
+        return False
+
+    return True

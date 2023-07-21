@@ -13,11 +13,26 @@ def initialize_mpi():
 
 
 def check_ndarray(ndarray):
-    if not ndarray.flags.owndata:
-        return True
+    """
+    Check if the numpy.ndarray is occupying or owning the memory it is using.
+
+    Returns
+    -------
+    bool
+        ``True`` if the data is occupying memory.
+    """
+    return not ndarray.flags.owndata
 
 
 def check_pandas_index(df_index):
+    """
+    Check if the pandas.Index is occupying or owning the memory it is using.
+
+    Returns
+    -------
+    bool
+        ``True`` if the data is occupying memory.
+    """
     if df_index._is_multi:
         if any(
             check_ndarray(df_index.get_level_values(i)._data)
@@ -27,9 +42,22 @@ def check_pandas_index(df_index):
     else:
         if check_ndarray(df_index._data):
             return True
+    return False
 
 
 def check_data_out_of_band(value):
+    """
+    Check if the data is occupying or owning the memory it is using.
+
+    Returns
+    -------
+    bool
+        ``True`` if the data is occupying memory.
+
+    Notes
+    -----
+    Only validation for numpy.ndarray, pandas.Dataframe and pandas.Series is currently supported.
+    """
     # check numpy
     try:
         import numpy as np
@@ -63,3 +91,4 @@ def check_data_out_of_band(value):
         # TODO: Add like blocks for other pandas classes
     except ImportError:
         pass
+    return False

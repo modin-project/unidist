@@ -58,7 +58,6 @@ class ObjectStore:
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
             An ID to data.
         data : object
             Data to be put.
@@ -72,7 +71,6 @@ class ObjectStore:
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
             An ID to data.
         rank : int
             Rank number where the data resides.
@@ -86,7 +84,6 @@ class ObjectStore:
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
             An ID to data.
 
         Returns
@@ -103,7 +100,6 @@ class ObjectStore:
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
             An ID to data.
 
         Returns
@@ -120,7 +116,6 @@ class ObjectStore:
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
             An ID to data.
 
         Returns
@@ -137,7 +132,6 @@ class ObjectStore:
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
             An ID to data.
 
         Returns
@@ -281,7 +275,6 @@ class ObjectStore:
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
             An ID to data.
         data : object
             Serialized data to cache.

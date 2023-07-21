@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Common functionality related to `controller`."""
-import time
 import itertools
 
 from unidist.core.backends.common.data_id import is_data_id
@@ -106,9 +105,9 @@ class RoundRobin:
         )
 
 
-def get_complex_data(comm, owner_rank):
+def get_data(comm, owner_rank):
     info_package = communication.mpi_recv_object(comm, owner_rank)
-    if info_package["package_type"] == communication.DataInfoType.SHARED_DATA:
+    if info_package["package_type"] == common.DataInfoPackage.SHARED_DATA:
         object_store = ObjectStore.get_instance()
         shared_store = SharedStore.get_instance()
         data_id = info_package.pop("id", None)
@@ -120,39 +119,16 @@ def get_complex_data(comm, owner_rank):
                 "data": object_store.get(data_id),
             }
 
-        # check data in shared memory
-        if not shared_store.check_serice_index(data_id, info_package["service_index"]):
-            shared_data_len = info_package["s_data_len"] + sum(
-                [buf for buf in info_package["raw_buffers_lens"]]
-            )
-            reservation_info = communication.send_reserve_operation(
-                comm, data_id, shared_data_len
-            )
-            info_package["service_index"] = reservation_info["service_index"]
-            if reservation_info["is_first_request"]:
-                shared_store.sync_shared_memory_from_another_host(
-                    comm,
-                    data_id,
-                    owner_rank,
-                    reservation_info["first_index"],
-                    reservation_info["last_index"],
-                    info_package["service_index"],
-                )
-            else:
-                while not shared_store.check_serice_index(
-                    data_id, info_package["service_index"]
-                ):
-                    time.sleep(0.1)
-
-        shared_store.put_shared_info(data_id, info_package)
-        data = shared_store.get(data_id)
+        data = shared_store.get(data_id, owner_rank, info_package)
         object_store.put(data_id, data)
         return {
             "id": data_id,
             "data": data,
         }
-    elif info_package["package_type"] == communication.DataInfoType.LOCAL_DATA:
-        return communication.recv_complex_data(comm, owner_rank, info=info_package)
+    elif info_package["package_type"] == common.DataInfoPackage.LOCAL_DATA:
+        return communication.recv_complex_data(
+            comm, owner_rank, info_package=info_package
+        )
     else:
         raise ValueError("Unexpected package of data info!")
 
@@ -198,7 +174,7 @@ def request_worker_data(data_id):
     )
 
     # Blocking get
-    complex_data = get_complex_data(mpi_state.comm, owner_rank)
+    complex_data = get_data(mpi_state.comm, owner_rank)
     if data_id.base_data_id() != complex_data["id"]:
         raise ValueError("Unexpected data_id!")
     data = complex_data["data"]
@@ -219,6 +195,12 @@ def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
         Target rank.
     data_id : unidist.core.backends.mpi.core.common.MasterDataID
         An ID to data.
+    is_blocking_op : bool
+        Whether the get request should be blocking or not.
+        If ``True``, the request should be processed immediatly
+        even for a worker since it can get into controller mode.
+    is_serialized : bool
+        `data_id` is already serialized or not.
     """
     object_store = ObjectStore.get_instance()
 
@@ -264,21 +246,25 @@ def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
 
 def _push_shared_data(dest_rank, data_id, is_blocking_op):
     """
-    Send data location associated with data ID to target rank.
+    catiSend data loon associated with data ID to target rank using shared memory.
 
     Parameters
     ----------
     dest_rank : int
         Target rank.
-    value : unidist.core.backends.mpi.core.common.MasterDataID
+    data_id : unidist.core.backends.common.data_id.DataID
         An ID to data.
+    is_blocking_op : bool
+        Whether the get request should be blocking or not.
+        If ``True``, the request should be processed immediatly
+        even for a worker since it can get into controller mode.
     """
     mpi_state = communication.MPIState.get_instance()
     shared_store = SharedStore.get_instance()
     mpi_state = communication.MPIState.get_instance()
     operation_type = common.Operation.PUT_SHARED_DATA
     async_operations = AsyncOperations.get_instance()
-    info_package = shared_store.get_data_shared_info(data_id)
+    info_package = shared_store.get_shared_info(data_id)
     info_package["id"] = data_id
     operation_data = info_package
     if is_blocking_op:
@@ -333,6 +319,10 @@ def push_data(dest_rank, value, is_blocking_op=False):
         Rank where task data is needed.
     value : iterable or dict or object
         Arguments to be sent.
+    is_blocking_op : bool
+        Whether the get request should be blocking or not.
+        If ``True``, the request should be processed immediatly
+        even for a worker since it can get into controller mode.
     """
     object_store = ObjectStore.get_instance()
     shared_store = SharedStore.get_instance()
@@ -345,14 +335,14 @@ def push_data(dest_rank, value, is_blocking_op=False):
             push_data(dest_rank, v)
     elif is_data_id(value):
         data_id = value
-        if shared_store.contains_shared_info(data_id):
+        if shared_store.contains(data_id):
             _push_shared_data(dest_rank, data_id, is_blocking_op)
         elif object_store.is_already_serialized(data_id):
             _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized=True)
         elif object_store.contains(data_id):
             data = object_store.get(data_id)
             if shared_store.is_should_be_shared(data):
-                put_to_shared_memory(data_id)
+                shared_store.put(data_id, data)
                 _push_shared_data(dest_rank, data_id, is_blocking_op)
             else:
                 _push_local_data(
@@ -362,19 +352,3 @@ def push_data(dest_rank, value, is_blocking_op=False):
             _push_data_owner(dest_rank, data_id)
         else:
             raise ValueError("Unknown DataID!")
-
-
-def put_to_shared_memory(data_id):
-    object_store = ObjectStore.get_instance()
-    shared_store = SharedStore.get_instance()
-
-    operation_data = object_store.get(data_id)
-    # reservation_data, serialized_data = shared_store.reserve_shared_memory(
-    #     operation_data
-    # )
-    mpi_state = communication.MPIState.get_instance()
-    reservation_data, serialized_data = communication.reserve_shared_memory(
-        mpi_state.comm, data_id, operation_data, is_serialized=False
-    )
-
-    shared_store.put(data_id, reservation_data, serialized_data)

@@ -168,6 +168,24 @@ class TaskStore:
         RequestStore.get_instance().put(data_id, dest_rank, RequestStore.DATA)
 
     def check_local_data_id(self, arg):
+        """
+        Inspect argument if the ID is available in the local object store.
+        If the object store is missing this data ID, request the data from another worker.
+
+        Parameters
+        ----------
+        arg : object or unidist.core.backends.common.data_id.DataID
+            Data ID or object to inspect.
+
+        Returns
+        -------
+        tuple
+            Same value and special flag.
+
+        Notes
+        -----
+        If the data ID could not be resolved, the function returns ``True``.
+        """
         if is_data_id(arg):
             object_store = ObjectStore.get_instance()
             arg = object_store.get_unique_data_id(arg)
@@ -456,7 +474,7 @@ class TaskStore:
             shared_depends = [
                 arg
                 for arg in request["args"]
-                if is_data_id(arg) and shared_store.contains_shared_info(arg)
+                if is_data_id(arg) and shared_store.contains(arg)
             ]
             if shared_depends:
                 self.check_output_depends(output_ids, shared_depends)

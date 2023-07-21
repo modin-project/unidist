@@ -239,7 +239,7 @@ def monitor_loop():
             sh_buf = shared_store.get_shared_buffer(
                 reservation_info["first_index"], reservation_info["last_index"]
             )
-            communication.mpi_send_shared_buffer(
+            communication.mpi_send_byte_buffer(
                 mpi_state.comm,
                 sh_buf,
                 dest_rank=source_rank,

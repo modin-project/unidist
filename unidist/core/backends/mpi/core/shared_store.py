@@ -6,10 +6,9 @@
 
 import os
 import sys
-import copy
+import time
 import psutil
 import weakref
-import numpy as np
 from array import array
 from mpi4py import MPI
 from unidist.config.backends.mpi.envvars import MpiSharedMemoryThreshold
@@ -19,198 +18,179 @@ from unidist.core.backends.mpi.core.serialization import ComplexDataSerializer
 
 
 class SharedSignaler:
+    """
+    Class that help to synchronize write to shared memory.
+
+    Parameters
+    ----------
+    win : MPI.win
+        The MPI window that was used to create the shared memory.
+
+    Notes
+    -----
+    This class should be used with the `with` statement.
+    """
+
     def __init__(self, win):
         self.win = win
 
     def __enter__(self):
+        """Lock the current MPI.Window for other processes."""
         self.win.Lock(communication.MPIRank.MONITOR)
 
     def __exit__(self, *args):
+        """Unlock the current MPI.Window for other processes."""
         self.win.Unlock(communication.MPIRank.MONITOR)
 
 
 class SharedStore:
-    # [byte]            shared buffer with serialized data
-    # [int]             service buffer                                                                      ?? How to delete data ??
-    # ?? [int int]      used ranges of shared buffer (use for reserve memory in shared buffer)
-    #
-    # [int]             DataId.WorkerId
-    # [int]             DataId.Number
-    # [int]             first index in shared buffer
-    # [array of int]    S_data len + raw_buffers_lens -> [int]   first index of service buffer
-    #                                                 -> [int]   last index of service buffer
-    # [array of int]    buffer_count                  -> [int]   first index of service buffer
-    #                                                 -> [int]   last index of service buffer
+    """
+    Class that provides access to data in shared memory
+
+    Notes
+    -----
+    This class initializes and manage shared memory.
+    """
+
     __instance = None
+
+    # Service constants defining the structure of the service buffer
+    SERVICE_COUNT = 20000
     INFO_COUNT = 4
     WORKER_ID_INDEX = 0
     DATA_NUMBER_INDEX = 1
     FIRST_DATA_INDEX = 2
     REFERENCES_NUMBER = 3
 
-    SERVICE_COUNT = 200000
-
     def __init__(self):
-        (
-            self.shared_buffer,
-            self._helper_win,
-            self.service_buffer,
-        ) = self.__init_shared_memory()
+        # The `MPI.Win` object to manage shared memory
+        self.win = None
+        # The `MPI.Win` object to manage service shared memory
+        self.win_service = None
+        # `MPI.memory` object for reading/writing data to shared memory
+        self.shared_buffer = None
+        # `memoryview` object for reading/writing data to service shared memory
+        # Service buffer includes service information about written shared data.
+        # The service info is set by the worker who sends the data to shared memory
+        # and is removed by the monitor if the data is cleared.
+        # The service info indicates that the current data is written to shared memory
+        # and shows the actual location and number of references.
+        self.service_buffer = None
+        # Length of shared memory buffer
+        self.shared_memory_size = None
+        # Length of service info in service buffer
+        self.service_info_max_count = None
 
-        # Shared memory range {DataID: reservation_info}
-        self._shared_info = weakref.WeakKeyDictionary()
-        self._helper_buffer = array("L", [0])
+        # Initialize all properties above
+        if common.is_used_shared_memory():
+            self._init_shared_memory()
+
+        # Logger will be initialized after `communicator.MPIState`
         self.logger = None
+        # Shared memory range {DataID: dict}
+        # Shared information is the necessary information to properly deserialize data from shared memory.
+        self._shared_info = weakref.WeakKeyDictionary()
+        # The list of `weakref.finalize` which should be canceled before closing the shared memory.
         self.finalizers = []
 
-    def finalize(self):
-        for f in self.finalizers:
-            f.detach()
+    def _get_allowed_memory_size(self):
+        """
+        Get allowed memory size for allocate shared memory.
 
-    def __init_shared_memory(self):
+        Returns
+        -------
+        int
+            The number of bytes available to allocate shared memory.
+        """
+        virtual_memory = psutil.virtual_memory().total
+        if sys.platform.startswith("linux"):
+            shm_fd = os.open("/dev/shm", os.O_RDONLY)
+            try:
+                shm_stats = os.fstatvfs(shm_fd)
+                system_memory = shm_stats.f_bsize * shm_stats.f_bavail
+                if system_memory / (virtual_memory / 2) < 0.99:
+                    print(
+                        f"The size of /dev/shm is too small ({system_memory} bytes). The required size "
+                        + f"at least half of RAM ({virtual_memory // 2} bytes). Please, delete files in /dev/shm or "
+                        + "increase size of /dev/shm with --shm-size in Docker."
+                    )
+            finally:
+                os.close(shm_fd)
+        else:
+            system_memory = virtual_memory
+        return system_memory
+
+    def _init_shared_memory(self):
+        """
+        Shared memory initializing
+        """
         mpi_state = communication.MPIState.get_instance()
 
-        virtual_memory = psutil.virtual_memory().total
-        if mpi_state.is_monitor_process():
-            if sys.platform.startswith("linux"):
-                shm_fd = os.open("/dev/shm", os.O_RDONLY)
-                try:
-                    shm_stats = os.fstatvfs(shm_fd)
-                    system_memory = shm_stats.f_bsize * shm_stats.f_bavail
-                    if system_memory / (virtual_memory / 2) < 0.99:
-                        print(
-                            f"The size of /dev/shm is too small ({system_memory} bytes). The required size "
-                            + f"at least half of RAM ({virtual_memory // 2} bytes). Please, delete files in /dev/shm or "
-                            + "increase size of /dev/shm with --shm-size in Docker."
-                        )
-                finally:
-                    os.close(shm_fd)
-            else:
-                system_memory = virtual_memory
-
-            # use only 95% of available memory because the rest is needed for local storages of workers
-            self.shared_memory_size = int(system_memory * 0.95)
-        else:
-            self.shared_memory_size = 0
+        # use only 95% of available memory because the rest is needed for local storages of workers
+        # Shared memory is allocated only once by the monitor process
+        self.shared_memory_size = (
+            int(self._get_allowed_memory_size() * 0.95)
+            if mpi_state.is_monitor_process()
+            else 0
+        )
 
         info = MPI.Info.Create()
         info.Set("alloc_shared_noncontig", "true")
         self.win = MPI.Win.Allocate_shared(
-            self.shared_memory_size, MPI.BYTE.size, comm=mpi_state.host_comm, info=info
-        )
-        win_helper = MPI.Win.Allocate_shared(
-            1 if self.shared_memory_size > 0 else 0,
-            MPI.INT.size,
+            self.shared_memory_size * MPI.BYTE.size,
+            MPI.BYTE.size,
             comm=mpi_state.host_comm,
             info=info,
         )
-        shared_buffer, _ = self.win.Shared_query(communication.MPIRank.MONITOR)
+        self.shared_buffer, _ = self.win.Shared_query(communication.MPIRank.MONITOR)
 
-        service_size = self.SERVICE_COUNT if mpi_state.is_monitor_process() else 0
+        # Service shared memory is allocated only once by the monitor process
+        self.service_info_max_count = self.SERVICE_COUNT
         self.win_service = MPI.Win.Allocate_shared(
-            service_size, MPI.LONG.size, comm=mpi_state.host_comm, info=info
+            self.service_info_max_count * MPI.LONG.size
+            if mpi_state.is_monitor_process()
+            else 0,
+            MPI.LONG.size,
+            comm=mpi_state.host_comm,
+            info=info,
         )
-        service_buffer, itemsize = self.win_service.Shared_query(
-            communication.MPIRank.MONITOR
-        )
-        ary = np.ndarray(
-            buffer=service_buffer,
-            dtype="l",
-            shape=(int(len(service_buffer) / itemsize),),
-        )
-        if service_size:
-            ary[True] = -1
+        service_buffer, _ = self.win_service.Shared_query(communication.MPIRank.MONITOR)
+        self.service_buffer = memoryview(service_buffer).cast("l")
+        # Set -1 to the service buffer because 0 is a valid value and may be recognized by mistake.
+        if mpi_state.is_monitor_process():
+            self.service_buffer[:] = array("l", [-1] * len(self.service_buffer))
 
-        return shared_buffer, win_helper, ary
-
-    @classmethod
-    def get_instance(cls):
+    def _parse_data_id(self, data_id):
         """
-        Get instance of ``SharedMemoryManager``.
+        Parse `DataID` object to pair of int.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+            The data identifier to be converted to a numerical form
 
         Returns
         -------
-        SharedMemoryManager
+        tuple
+            Pair of int that define the DataID
         """
-        if cls.__instance is None:
-            cls.__instance = SharedStore()
-        if cls.__instance.logger is None:
-            logger_name = f"shm_{communication.MPIState.get_instance().host}"
-            cls.__instance.logger = common.get_logger(
-                logger_name, f"{logger_name}.log", True
-            )
-        return cls.__instance
-
-    def is_should_be_shared(self, data):
-        # The original data size of numpy.ndarray is greater than the deserialized one using the pickle protocol 5
-        # https://discuss.python.org/t/pickle-original-data-size-is-greater-than-deserialized-one-using-pickle-5-protocol/23327
-        if str(type(data)) == "<class 'numpy.ndarray'>":
-            size = data.size * data.dtype.itemsize
-        else:
-            size = sys.getsizeof(data)
-
-        return size > MpiSharedMemoryThreshold.get()
-
-    def service_iterator(self):
-        current = 0
-        while current < len(self.service_buffer) - self.INFO_COUNT:
-            yield current, self.service_buffer[
-                current + self.WORKER_ID_INDEX
-            ], self.service_buffer[
-                current + self.DATA_NUMBER_INDEX
-            ], self.service_buffer[
-                current + self.FIRST_DATA_INDEX
-            ], self.service_buffer[
-                current + self.REFERENCES_NUMBER
-            ],
-            current += self.INFO_COUNT
-
-    def check_serice_index(self, data_id, service_index):
-        worker_id, data_number = self.parse_data_id(data_id)
-        w_id = self.service_buffer[service_index + self.WORKER_ID_INDEX]
-        d_id = self.service_buffer[service_index + self.DATA_NUMBER_INDEX]
-        result = w_id == worker_id and d_id == data_number
-        return result
-
-    def get_service_index(self, data_id):
-        if data_id in self._shared_info:
-            return self._shared_info[data_id]["service_index"]
-        return None
-
-    def get_first_index(self, data_id):
-        service_index = self.get_service_index(data_id)
-        if service_index is not None:
-            return self.service_buffer[service_index + self.FIRST_DATA_INDEX]
-        return None
-
-    def contains_shared_info(self, data_id):
-        return data_id in self._shared_info
-
-    def contains(self, data_id):
-        index = self.get_first_index(data_id)
-        if index is None:
-            return False
-        else:
-            return True
-
-    def put_shared_info(self, data_id, shared_info):
-        if data_id not in self._shared_info:
-            self._shared_info[data_id] = copy.deepcopy(shared_info)
-            service_index = shared_info["service_index"]
-            self.increment_ref_number(data_id, service_index)
-
-    def get_data_shared_info(self, data_id):
-        return copy.deepcopy(self._shared_info[data_id])
-
-    def clear_shared_info(self, cleanup_list):
-        for data_id in cleanup_list:
-            self._shared_info.pop(data_id, None)
-
-    def parse_data_id(self, data_id):
         splited_id = str(data_id).replace(")", "").split("_")
         return int(splited_id[1]), int(splited_id[3])
 
-    def increment_ref_number(self, data_id, service_index):
+    def _increment_ref_number(self, data_id, service_index):
+        """
+        Increment the number of references to indicate to the monitor that this data is being used.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+        service_index : int
+            The service buffer index.
+
+        Notes
+        -----
+        This function create `weakref.finalizer' with decrement function which will be called after data_id collecting.
+        """
         if MPI.Is_finalized():
             return
         if service_index is None:
@@ -229,15 +209,29 @@ class SharedStore:
             )
         self.finalizers.append(
             weakref.finalize(
-                data_id, self.decrement_ref_number, str(data_id), service_index
+                data_id, self._decrement_ref_number, str(data_id), service_index
             )
         )
 
-    def decrement_ref_number(self, data_id, service_index):
-        # we must to set service_index in args because it will be deleted before than this function is called
+    def _decrement_ref_number(self, data_id, service_index):
+        """
+        Decrement the number of references to indicate to the monitor that this data is no longer used.
+        When references count is 0, it can be cleared.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+        service_index : int
+            The service buffer index.
+
+        Notes
+        -----
+        This function is called in `weakref.finalizer' after data_id collecting.
+        """
+        # we must to set service_index in args because the shared_info will be deleted before than this function is called
         if MPI.Is_finalized():
             return
-        if self.check_serice_index(data_id, service_index):
+        if self._check_serice_info(data_id, service_index):
             with SharedSignaler(self.win_service):
                 prev_ref_number = self.service_buffer[
                     service_index + self.REFERENCES_NUMBER
@@ -249,15 +243,93 @@ class SharedStore:
                     f"Rank {communication.MPIState.get_instance().rank}: Decrement references number for {data_id} from {prev_ref_number} to {prev_ref_number - 1}"
                 )
 
-    def get_ref_number(self, service_index):
-        return self.service_buffer[service_index + self.REFERENCES_NUMBER]
+    def _put_service_info(self, service_index, data_id, first_index):
+        """
+        Set service information about written shared data.
 
-    def get(self, data_id):
-        info_package = self.get_data_shared_info(data_id)
-        buffer_lens = info_package["raw_buffers_lens"]
-        buffer_count = info_package["buffer_count"]
-        s_data_len = info_package["s_data_len"]
-        service_index = info_package["service_index"]
+        Parameters
+        ----------
+        service_index : int
+        data_id : unidist.core.backends.common.data_id.DataID
+        first_index : int
+
+        Notes
+        -----
+        This information must be set after writing data to shared memory.
+        """
+        worker_id, data_number = self._parse_data_id(data_id)
+
+        with SharedSignaler(self.win_service):
+            self.service_buffer[service_index + self.FIRST_DATA_INDEX] = first_index
+            self.service_buffer[service_index + self.REFERENCES_NUMBER] = 0
+            self.service_buffer[service_index + self.DATA_NUMBER_INDEX] = data_number
+            self.service_buffer[service_index + self.WORKER_ID_INDEX] = worker_id
+
+    def _check_serice_info(self, data_id, service_index):
+        """
+        Check if the `data_id` is in the shared memory on the current host.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+        service_index : int
+            The service buffer index.
+
+        Returns
+        -------
+        bool
+            Return the ``True`` status if `data_id` is in the shared memory.
+
+        Notes
+        -----
+        This check ensures that the data is physically located in shared memory.
+        """
+        worker_id, data_number = self._parse_data_id(data_id)
+        w_id = self.service_buffer[service_index + self.WORKER_ID_INDEX]
+        d_id = self.service_buffer[service_index + self.DATA_NUMBER_INDEX]
+        return w_id == worker_id and d_id == data_number
+
+    def _put_shared_info(self, data_id, shared_info):
+        """
+        Put required information to deserialize `data_id`.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+        shared_info : dict
+            Information required for data deserialization
+
+        Notes
+        -----
+        The store keeps a deep copy, because this information must not be changed.
+        """
+        if data_id not in self._shared_info:
+            self._shared_info[data_id] = {
+                "s_data_len": shared_info["s_data_len"],
+                "raw_buffers_len": shared_info["raw_buffers_len"].copy(),
+                "buffer_count": shared_info["buffer_count"].copy(),
+                "service_index": shared_info["service_index"],
+            }
+
+    def _read_from_shared_buffer(self, data_id, shared_info):
+        """
+        Read and deserialize data from the shared buffer.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+        shared_info : dict
+            Information for correct deserialization.
+
+        Returns
+        -------
+        object
+            Data for the current Id.
+        """
+        buffer_lens = shared_info["raw_buffers_len"]
+        buffer_count = shared_info["buffer_count"]
+        s_data_len = shared_info["s_data_len"]
+        service_index = shared_info["service_index"]
 
         first_index = self.service_buffer[service_index + self.FIRST_DATA_INDEX]
 
@@ -282,47 +354,23 @@ class SharedStore:
         )
         return data
 
-    def get_shared_buffer(self, first_index, last_index):
-        return self.shared_buffer[first_index:last_index]
+    def _write_to_shared_buffer(self, data_id, reservation_data, serialized_data):
+        """
+        Write serialized data to the shared buffer.
 
-    def put_service_info(self, service_index, data_id, first_index):
-        worker_id, data_number = self.parse_data_id(data_id)
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+        reservation_data : dict
+            Information about the reserved space in shared memory for the current DataId.
+        serialized_data : dict
+            Serialized data.
 
-        with SharedSignaler(self.win_service):
-            self.service_buffer[service_index + self.FIRST_DATA_INDEX] = first_index
-            self.service_buffer[service_index + self.REFERENCES_NUMBER] = 0
-            self.service_buffer[service_index + self.DATA_NUMBER_INDEX] = data_number
-            self.service_buffer[service_index + self.WORKER_ID_INDEX] = worker_id
-
-    def delete_service_info(self, data_id, service_index):
-        with SharedSignaler(self.win_service):
-            # Read actual value
-            old_worker_id = self.service_buffer[service_index + self.WORKER_ID_INDEX]
-            old_data_id = self.service_buffer[service_index + self.DATA_NUMBER_INDEX]
-            old_first_index = self.service_buffer[service_index + self.FIRST_DATA_INDEX]
-            old_references_number = self.service_buffer[
-                service_index + self.REFERENCES_NUMBER
-            ]
-
-            # check if data_id is correct
-            if self.parse_data_id(data_id) == (old_worker_id, old_data_id):
-                self.service_buffer[service_index + self.WORKER_ID_INDEX] = -1
-                self.service_buffer[service_index + self.DATA_NUMBER_INDEX] = -1
-                self.service_buffer[service_index + self.FIRST_DATA_INDEX] = -1
-                self.service_buffer[service_index + self.REFERENCES_NUMBER] = -1
-                self.logger.debug(
-                    f"Rank {communication.MPIState.get_instance().rank}: Clear {old_data_id}. Service index: {service_index} First index: {old_first_index} References number: {old_references_number}"
-                )
-            else:
-                self.logger.debug(
-                    f"Rank {communication.MPIState.get_instance().rank}: Did not clear {old_data_id}, because there are was written another data_id: Data_ID(rank_{old_worker_id}_id_{old_data_id})"
-                )
-                self.logger.debug(
-                    f"Service index: {service_index} First index: {old_first_index} References number: {old_references_number}"
-                )
-                raise RuntimeError("Unexpected data_id for cleanup shared memory")
-
-    def put(self, data_id, reservation_data, serialized_data):
+        Returns
+        -------
+        dict
+            Information required for correct data deserialization
+        """
         first_index = reservation_data["first_index"]
         last_index = reservation_data["last_index"]
         service_index = reservation_data["service_index"]
@@ -356,18 +404,39 @@ class SharedStore:
             buffer_lens.append(raw_buffer_len)
             last_prev_index = raw_buffer_last_index
 
-        sharing_info = communication.get_shared_info(
-            s_data_len, buffer_lens, buffer_count, service_index
-        )
-        self.put_service_info(service_index, data_id, first_index)
         self.logger.debug(
             f"Rank {communication.MPIState.get_instance().rank}: PUT {data_id} from {first_index} to {last_prev_index}. Service index: {service_index}"
         )
-        self.put_shared_info(data_id, sharing_info)
 
-    def sync_shared_memory_from_another_host(
+        return common.DataInfoPackage.get_shared_info(
+            data_id, s_data_len, buffer_lens, buffer_count, service_index
+        )
+
+    def _sync_shared_memory_from_another_host(
         self, comm, data_id, owner_rank, first_index, last_index, service_index
     ):
+        """
+        Receive shared data from another host including the owner's rank
+
+        Parameters
+        ----------
+        comm : object
+            MPI communicator object.
+        data_id : unidist.core.backends.common.data_id.DataID
+            Data identifier
+        owner_rank : int
+            Rank of the owner process.
+        first_index : int
+            First index in shared memory.
+        last_index : int
+            Last index in shared memory.
+        service_index : int
+            Service buffer index.
+
+        Notes
+        -----
+        After writting data, service information should be set.
+        """
         sh_buf = self.get_shared_buffer(first_index, last_index)
         # recv serialized data to shared memory
         owner_monitor = (
@@ -379,8 +448,296 @@ class SharedStore:
             operation_data={"id": data_id},
             dest_rank=owner_monitor,
         )
-        communication.mpi_recv_shared_buffer(comm, sh_buf, owner_monitor)
-        self.put_service_info(service_index, data_id, first_index)
+        communication.mpi_recv_byte_buffer(comm, sh_buf, owner_monitor)
         self.logger.debug(
             f"Rank {communication.MPIState.get_instance().rank}: Sync_copy {data_id} from {owner_rank} rank. Put data from {first_index} to {last_index}. Service index: {service_index}"
         )
+
+    @classmethod
+    def get_instance(cls):
+        """
+        Get instance of ``SharedMemoryManager``.
+
+        Returns
+        -------
+        SharedMemoryManager
+        """
+        if cls.__instance is None:
+            cls.__instance = SharedStore()
+        if cls.__instance.logger is None:
+            logger_name = f"shared_store_{communication.MPIState.get_instance().host}"
+            cls.__instance.logger = common.get_logger(
+                logger_name, f"{logger_name}.log", True
+            )
+        return cls.__instance
+
+    def is_should_be_shared(self, data):
+        """
+        Check if data should be sent using shared memory.
+
+        Parameters
+        ----------
+        data : object
+            Any data needed to be sent to another process.
+
+        Returns
+        -------
+        bool
+            Return the ``True`` status if data should be sent using shared memory.
+        """
+        if self.shared_buffer is None:
+            return False
+
+        size = sys.getsizeof(data)
+
+        # The original data size of numpy.ndarray is greater than the deserialized one using the pickle protocol 5
+        # https://discuss.python.org/t/pickle-original-data-size-is-greater-than-deserialized-one-using-pickle-5-protocol/23327
+        try:
+            import numpy as np
+
+            if isinstance(data, np.ndarray):
+                size = data.size * data.dtype.itemsize
+        except ImportError:
+            pass
+
+        return size > MpiSharedMemoryThreshold.get()
+
+    def contains(self, data_id):
+        """
+        Check if the store contains the `data_id` information required to deserialize the data.
+
+        Returns
+        -------
+        bool
+            Return the ``True`` status if shared store contains required information.
+
+        Notes
+        -----
+        This check does not ensure that the data is physically located in shared memory.
+        """
+        return data_id in self._shared_info
+
+    def get_shared_info(self, data_id):
+        """
+        Get required information to correct deserialize `data_id` from shared memory.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+
+        Returns
+        -------
+        dict
+            Information required for data deserialization
+
+        Notes
+        -----
+        The store return a deep copy, because this information must not be changed.
+        """
+        shared_info = self._shared_info[data_id]
+        return common.DataInfoPackage.get_shared_info(
+            data_id,
+            shared_info["s_data_len"],
+            shared_info["raw_buffers_len"],
+            shared_info["buffer_count"],
+            shared_info["service_index"],
+        )
+
+    def get_ref_number(self, data_id, service_index):
+        """
+        Get current references count of data_id by service index.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+        service_index : int
+            The service buffer index.
+
+        Returns
+        -------
+        int
+            The number of references to this data_id
+        """
+        # we must to set service_index in args because this function is called from monitor which can not known the shared_info
+        if not self._check_serice_info(data_id, service_index):
+            return 0
+        return self.service_buffer[service_index + self.REFERENCES_NUMBER]
+
+    def get_shared_buffer(self, first_index, last_index):
+        """
+        Get the requested range of shared memory
+
+        Parameters
+        ----------
+        first_index : int
+            Start of the requested range.
+        last_index : int
+            End of the requested range. (excluding)
+
+        Notes
+        -----
+        This function is used to synchronize shared memory between different hosts.
+        """
+        return self.shared_buffer[first_index:last_index]
+
+    def delete_service_info(self, data_id, service_index):
+        """
+        Delete service information for the current data Id.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+        service_index : int
+            The service buffer index.
+
+        Notes
+        -----
+        This function should be called by the monitor during the cleanup of shared data.
+        """
+        with SharedSignaler(self.win_service):
+            # Read actual value
+            old_worker_id = self.service_buffer[service_index + self.WORKER_ID_INDEX]
+            old_data_id = self.service_buffer[service_index + self.DATA_NUMBER_INDEX]
+            old_first_index = self.service_buffer[service_index + self.FIRST_DATA_INDEX]
+            old_references_number = self.service_buffer[
+                service_index + self.REFERENCES_NUMBER
+            ]
+
+            # check if data_id is correct
+            if self._parse_data_id(data_id) == (old_worker_id, old_data_id):
+                self.service_buffer[service_index + self.WORKER_ID_INDEX] = -1
+                self.service_buffer[service_index + self.DATA_NUMBER_INDEX] = -1
+                self.service_buffer[service_index + self.FIRST_DATA_INDEX] = -1
+                self.service_buffer[service_index + self.REFERENCES_NUMBER] = -1
+                self.logger.debug(
+                    f"Rank {communication.MPIState.get_instance().rank}: Clear {old_data_id}. Service index: {service_index} First index: {old_first_index} References number: {old_references_number}"
+                )
+            else:
+                self.logger.debug(
+                    f"Rank {communication.MPIState.get_instance().rank}: Did not clear {old_data_id}, because there are was written another data_id: Data_ID(rank_{old_worker_id}_id_{old_data_id})"
+                )
+                self.logger.debug(
+                    f"Service index: {service_index} First index: {old_first_index} References number: {old_references_number}"
+                )
+                raise RuntimeError("Unexpected data_id for cleanup shared memory")
+
+    def put(self, data_id, data):
+        """
+        Put data to shared memory
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+        data : object
+            The current data
+        """
+        mpi_state = communication.MPIState.get_instance()
+
+        # serialize data
+        serializer = ComplexDataSerializer()
+        s_data = serializer.serialize(data)
+        raw_buffers = serializer.buffers
+        buffer_count = serializer.buffer_count
+        data_size = len(s_data) + sum([len(buf) for buf in raw_buffers])
+        serialized_data = {
+            "s_data": s_data,
+            "raw_buffers": raw_buffers,
+            "buffer_count": buffer_count,
+        }
+
+        # reserve shared memory
+        reservation_data = communication.send_reserve_operation(
+            mpi_state.comm, data_id, data_size
+        )
+        service_index = reservation_data["service_index"]
+        first_index = reservation_data["first_index"]
+
+        # write into shared buffer
+        shared_info = self._write_to_shared_buffer(
+            data_id, reservation_data, serialized_data
+        )
+
+        # put service info
+        self._put_service_info(service_index, data_id, first_index)
+
+        # put shared info
+        self._put_shared_info(data_id, shared_info)
+
+        # increment ref
+        self._increment_ref_number(data_id, shared_info["service_index"])
+
+    def get(self, data_id, owner_rank, shared_info):
+        """
+        Get data from another worker using shared memory.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+        owner_rank : int
+            The rank that sent the data.
+        shared_info : dict
+            The necessary information to properly deserialize data from shared memory.
+        """
+        mpi_state = communication.MPIState.get_instance()
+        s_data_len = shared_info["s_data_len"]
+        raw_buffers_len = shared_info["raw_buffers_len"]
+        buffer_count = shared_info["buffer_count"]
+        service_index = shared_info["service_index"]
+
+        # check data in shared memory
+        if not self._check_serice_info(data_id, service_index):
+            # reserve shared memory
+            shared_data_len = s_data_len + sum([buf for buf in raw_buffers_len])
+            reservation_info = communication.send_reserve_operation(
+                mpi_state.comm, data_id, shared_data_len
+            )
+
+            service_index = reservation_info["service_index"]
+            # check if worker should sync shared buffer or it is doing by another worker
+            if reservation_info["is_first_request"]:
+                # syncronize shared buffer
+                self._sync_shared_memory_from_another_host(
+                    mpi_state.comm,
+                    data_id,
+                    owner_rank,
+                    reservation_info["first_index"],
+                    reservation_info["last_index"],
+                    service_index,
+                )
+                # put service info
+                self._put_service_info(
+                    service_index, data_id, reservation_info["first_index"]
+                )
+            else:
+                # wait while another worker syncronize shared buffer
+                while not self._check_serice_info(data_id, service_index):
+                    time.sleep(0.1)
+
+        # put shared info
+        shared_info = common.DataInfoPackage.get_shared_info(
+            data_id, s_data_len, raw_buffers_len, buffer_count, service_index
+        )
+        self._put_shared_info(data_id, shared_info)
+
+        # increment ref
+        self._increment_ref_number(data_id, shared_info["service_index"])
+
+        # read from shared buffer and deserialized
+        return self._read_from_shared_buffer(data_id, shared_info)
+
+    def finalize(self):
+        """
+        Release used resources
+
+        Notes
+        -----
+        Shared store should be finalized befor MPI.Finalize()
+        """
+        if self.win is not None:
+            self.win.Free()
+            self.win = None
+        if self.win_service is not None:
+            self.win_service.Free()
+            self.win_service = None
+        for f in self.finalizers:
+            f.detach()
