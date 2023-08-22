@@ -102,7 +102,7 @@ class FreeMemoryRange:
                     break
 
 
-class SharedMemoryMahager:
+class SharedMemoryManager:
     """
     Class that helps manage shared memory.
 

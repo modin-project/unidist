@@ -14,7 +14,7 @@ except ImportError:
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.monitor.shared_memory_manager import (
-    SharedMemoryMahager,
+    SharedMemoryManager,
 )
 from unidist.core.backends.mpi.core.shared_store import SharedStore
 
@@ -181,7 +181,7 @@ def monitor_loop():
     # Once all workers excluding ``Root`` and ``Monitor`` ranks are ready to shutdown,
     # ``Monitor` sends the shutdown signal to every worker, as well as notifies ``Root`` that
     # it can exit the program.
-    shm_manager = SharedMemoryMahager(shared_store.shared_memory_size)
+    shm_manager = SharedMemoryManager(shared_store.shared_memory_size)
 
     while True:
         # Listen receive operation from any source

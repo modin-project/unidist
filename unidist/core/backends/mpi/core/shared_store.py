@@ -241,7 +241,7 @@ class SharedStore:
         # we must to set service_index in args because the shared_info will be deleted before than this function is called
         if MPI.Is_finalized():
             return
-        if self._check_serice_info(data_id, service_index):
+        if self._check_service_info(data_id, service_index):
             with SharedSignaler(self.win_service):
                 prev_ref_number = self.service_buffer[
                     service_index + self.REFERENCES_NUMBER
@@ -275,7 +275,7 @@ class SharedStore:
             self.service_buffer[service_index + self.DATA_NUMBER_INDEX] = data_number
             self.service_buffer[service_index + self.WORKER_ID_INDEX] = worker_id
 
-    def _check_serice_info(self, data_id, service_index):
+    def _check_service_info(self, data_id, service_index):
         """
         Check if the `data_id` is in the shared memory on the current host.
 
@@ -569,7 +569,7 @@ class SharedStore:
             The number of references to this data_id
         """
         # we must to set service_index in args because this function is called from monitor which can not known the shared_info
-        if not self._check_serice_info(data_id, service_index):
+        if not self._check_service_info(data_id, service_index):
             return 0
         return self.service_buffer[service_index + self.REFERENCES_NUMBER]
 
@@ -695,7 +695,7 @@ class SharedStore:
         service_index = shared_info["service_index"]
 
         # check data in shared memory
-        if not self._check_serice_info(data_id, service_index):
+        if not self._check_service_info(data_id, service_index):
             # reserve shared memory
             shared_data_len = s_data_len + sum([buf for buf in raw_buffers_len])
             reservation_info = communication.send_reserve_operation(
@@ -720,7 +720,7 @@ class SharedStore:
                 )
             else:
                 # wait while another worker syncronize shared buffer
-                while not self._check_serice_info(data_id, service_index):
+                while not self._check_service_info(data_id, service_index):
                     time.sleep(0.1)
 
         # put shared info
