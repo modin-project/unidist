@@ -3,14 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """High-level API of MPI backend."""
+
 import os
 import sys
 import atexit
 import signal
 import asyncio
 from collections import defaultdict
-
-from unidist.core.backends.mpi.core.shared_store import SharedStore
 
 try:
     import mpi4py
@@ -19,6 +18,7 @@ except ImportError:
         "Missing dependency 'mpi4py'. Use pip or conda to install it."
     ) from None
 
+from unidist.core.backends.mpi.core.shared_store import SharedStore
 from unidist.core.backends.mpi.core.object_store import ObjectStore
 from unidist.core.backends.mpi.core.controller.garbage_collector import (
     garbage_collector,

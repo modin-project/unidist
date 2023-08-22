@@ -427,7 +427,7 @@ def materialize_data_ids(data_ids, unwrap_data_id_impl, is_pending=False):
 
 def is_used_shared_memory():
     """
-    Check if the Unidist on MPI support shared memory
+    Check if the unidist on MPI supports shared memory.
 
     Returns
     -------

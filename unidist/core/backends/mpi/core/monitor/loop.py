@@ -235,7 +235,7 @@ def monitor_loop():
                 raise ValueError("Requested DataId is None")
             reservation_info = shm_manager.get(data_id)
             if reservation_info is None:
-                raise RuntimeError(f"The monitor do not known the data id {data_id}")
+                raise RuntimeError(f"The monitor do not know the data id {data_id}")
             sh_buf = shared_store.get_shared_buffer(
                 reservation_info["first_index"], reservation_info["last_index"]
             )

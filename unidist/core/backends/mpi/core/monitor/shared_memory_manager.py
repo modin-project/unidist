@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""`SharedMemoryMahager` functionality."""
+"""`SharedMemoryManager` functionality."""
 
 from array import array
 from mpi4py import MPI
@@ -12,7 +12,7 @@ from unidist.core.backends.mpi.core.shared_store import SharedStore
 
 class FreeMemoryRange:
     """
-    Сlass that helps keep track of free space in memory.
+    Class that helps keep track of free space in memory.
 
     Parameters
     ----------

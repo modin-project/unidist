@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Common functionality related to `controller`."""
+
 import itertools
 
 from unidist.core.backends.common.data_id import is_data_id
