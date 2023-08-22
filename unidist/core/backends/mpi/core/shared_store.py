@@ -10,11 +10,21 @@ import time
 import psutil
 import weakref
 from array import array
-from mpi4py import MPI
-from unidist.config.backends.mpi.envvars import MpiSharedMemoryThreshold
 
+try:
+    import mpi4py
+except ImportError:
+    raise ImportError(
+        "Missing dependency 'mpi4py'. Use pip or conda to install it."
+    ) from None
+
+from unidist.config.backends.mpi.envvars import MpiSharedMemoryThreshold
 from unidist.core.backends.mpi.core import common, communication
 from unidist.core.backends.mpi.core.serialization import ComplexDataSerializer
+
+# TODO: Find a way to move this after all imports
+mpi4py.rc(recv_mprobe=False, initialize=False)
+from mpi4py import MPI  # noqa: E402
 
 
 class SharedSignaler:
