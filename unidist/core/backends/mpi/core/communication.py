@@ -203,7 +203,7 @@ class MPIState:
 
     def get_monitor_by_worker_rank(self, rank=None):
         """
-        Get the monitor process rank for the host that includes this rank
+        Get the monitor process rank for the host that includes this rank.
 
         Parameters
         ----------
