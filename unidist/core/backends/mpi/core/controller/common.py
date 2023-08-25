@@ -10,8 +10,8 @@ from unidist.core.backends.common.data_id import is_data_id
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
-from unidist.core.backends.mpi.core.object_store import ObjectStore
-from unidist.core.backends.mpi.core.shared_store import SharedStore
+from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
+from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
 
 logger = common.get_logger("common", "common.log")
 
@@ -24,14 +24,14 @@ class RoundRobin:
         mpi_state = communication.MPIState.get_instance()
         self.rank_to_schedule = itertools.cycle(
             (
-                rank
-                for rank in mpi_state.workers
+                global_rank
+                for global_rank in mpi_state.workers
                 # check if a rank to schedule is not equal to the rank
                 # of the current process to not get into recursive scheduling
-                if rank != mpi_state.rank
+                if global_rank != mpi_state.global_rank
             )
         )
-        logger.debug(f"RoundRobin init for {mpi_state.rank} rank")
+        logger.debug(f"RoundRobin init for {mpi_state.global_rank} rank")
 
     @classmethod
     def get_instance(cls):
@@ -85,7 +85,7 @@ class RoundRobin:
         self.reserved_ranks.append(rank)
         logger.debug(
             f"RoundRobin reserve rank {rank} for actor "
-            + f"on worker with rank {communication.MPIState.get_instance().rank}"
+            + f"on worker with rank {communication.MPIState.get_instance().global_rank}"
         )
 
     def release_rank(self, rank):
@@ -102,31 +102,45 @@ class RoundRobin:
         self.reserved_ranks.remove(rank)
         logger.debug(
             f"RoundRobin release rank {rank} reserved for actor "
-            + f"on worker with rank {communication.MPIState.get_instance().rank}"
+            + f"on worker with rank {communication.MPIState.get_instance().global_rank}"
         )
 
 
 def get_data(comm, owner_rank):
-    info_package = communication.mpi_recv_object(comm, owner_rank)
-    if info_package["package_type"] == common.DataInfoPackage.SHARED_DATA:
-        object_store = ObjectStore.get_instance()
-        shared_store = SharedStore.get_instance()
-        data_id = info_package.pop("id", None)
-        data_id = object_store.get_unique_data_id(data_id)
+    """
+    Receive data from another MPI process using shared memory or direct communiction, depending on package type.
+    The data is de-serialized from received buffers.
 
-        if object_store.contains(data_id):
+    Parameters
+    ----------
+    owner_rank : int
+        Source MPI process to receive data from.
+
+    Returns
+    -------
+    object
+        Received data object from another MPI process.
+    """
+    info_package = communication.mpi_recv_object(comm, owner_rank)
+    if info_package["package_type"] == common.MetadataPackage.SHARED_DATA:
+        local_store = LocalObjectStore.get_instance()
+        shared_store = SharedObjectStore.get_instance()
+        data_id = info_package.pop("id", None)
+        data_id = local_store.get_unique_data_id(data_id)
+
+        if local_store.contains(data_id):
             return {
                 "id": data_id,
-                "data": object_store.get(data_id),
+                "data": local_store.get(data_id),
             }
 
         data = shared_store.get(data_id, owner_rank, info_package)
-        object_store.put(data_id, data)
+        local_store.put(data_id, data)
         return {
             "id": data_id,
             "data": data,
         }
-    elif info_package["package_type"] == common.DataInfoPackage.LOCAL_DATA:
+    elif info_package["package_type"] == common.MetadataPackage.LOCAL_DATA:
         return communication.recv_complex_data(
             comm, owner_rank, info_package=info_package
         )
@@ -149,16 +163,16 @@ def request_worker_data(data_id):
         A Python object.
     """
     mpi_state = communication.MPIState.get_instance()
-    object_store = ObjectStore.get_instance()
+    local_store = LocalObjectStore.get_instance()
 
-    owner_rank = object_store.get_data_owner(data_id)
+    owner_rank = local_store.get_data_owner(data_id)
 
     logger.debug("GET {} id from {} rank".format(data_id._id, owner_rank))
 
     # Worker request
     operation_type = common.Operation.GET
     operation_data = {
-        "source": mpi_state.rank,
+        "source": mpi_state.global_rank,
         "id": data_id.base_data_id(),
         # set `is_blocking_op` to `True` to tell a worker
         # to send the data directly to the requester
@@ -181,7 +195,7 @@ def request_worker_data(data_id):
     data = complex_data["data"]
 
     # Caching the result, check the protocol correctness here
-    object_store.put(data_id, data)
+    local_store.put(data_id, data)
 
     return data
 
@@ -197,27 +211,27 @@ def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
     data_id : unidist.core.backends.mpi.core.common.MasterDataID
         An ID to data.
     is_blocking_op : bool
-        Whether the get request should be blocking or not.
+        Whether the communication should be blocking or not.
         If ``True``, the request should be processed immediatly
         even for a worker since it can get into controller mode.
     is_serialized : bool
         `data_id` is already serialized or not.
     """
-    object_store = ObjectStore.get_instance()
+    local_store = LocalObjectStore.get_instance()
 
     # Check if data was already pushed
-    if not object_store.is_already_sent(data_id, dest_rank):
+    if not local_store.is_already_sent(data_id, dest_rank):
         logger.debug("PUT LOCAL {} id to {} rank".format(data_id._id, dest_rank))
 
         mpi_state = communication.MPIState.get_instance()
         async_operations = AsyncOperations.get_instance()
         # Push the local master data to the target worker directly
         if is_serialized:
-            operation_data = object_store.get_serialized_data(data_id)
+            operation_data = local_store.get_serialized_data(data_id)
         else:
             operation_data = {
                 "id": data_id,
-                "data": object_store.get(data_id),
+                "data": local_store.get(data_id),
             }
 
         operation_type = common.Operation.PUT_DATA
@@ -239,10 +253,10 @@ def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
             async_operations.extend(h_list)
 
         if not is_serialized:
-            object_store.cache_serialized_data(data_id, serialized_data)
+            local_store.cache_serialized_data(data_id, serialized_data)
 
         #  Remember pushed id
-        object_store.cache_send_info(data_id, dest_rank)
+        local_store.cache_send_info(data_id, dest_rank)
 
 
 def _push_shared_data(dest_rank, data_id, is_blocking_op):
@@ -256,12 +270,12 @@ def _push_shared_data(dest_rank, data_id, is_blocking_op):
     data_id : unidist.core.backends.common.data_id.DataID
         An ID to data.
     is_blocking_op : bool
-        Whether the get request should be blocking or not.
+        Whether the communication should be blocking or not.
         If ``True``, the request should be processed immediatly
         even for a worker since it can get into controller mode.
     """
     mpi_state = communication.MPIState.get_instance()
-    shared_store = SharedStore.get_instance()
+    shared_store = SharedObjectStore.get_instance()
     mpi_state = communication.MPIState.get_instance()
     operation_type = common.Operation.PUT_SHARED_DATA
     async_operations = AsyncOperations.get_instance()
@@ -291,11 +305,11 @@ def _push_data_owner(dest_rank, data_id):
     value : unidist.core.backends.mpi.core.common.MasterDataID
         An ID to data.
     """
-    object_store = ObjectStore.get_instance()
+    local_store = LocalObjectStore.get_instance()
     operation_type = common.Operation.PUT_OWNER
     operation_data = {
         "id": data_id,
-        "owner": object_store.get_data_owner(data_id),
+        "owner": local_store.get_data_owner(data_id),
     }
     async_operations = AsyncOperations.get_instance()
     h_list = communication.isend_simple_operation(
@@ -321,12 +335,12 @@ def push_data(dest_rank, value, is_blocking_op=False):
     value : iterable or dict or object
         Arguments to be sent.
     is_blocking_op : bool
-        Whether the get request should be blocking or not.
+        Whether the communication should be blocking or not.
         If ``True``, the request should be processed immediatly
         even for a worker since it can get into controller mode.
     """
-    object_store = ObjectStore.get_instance()
-    shared_store = SharedStore.get_instance()
+    local_store = LocalObjectStore.get_instance()
+    shared_store = SharedObjectStore.get_instance()
 
     if isinstance(value, (list, tuple)):
         for v in value:
@@ -338,18 +352,18 @@ def push_data(dest_rank, value, is_blocking_op=False):
         data_id = value
         if shared_store.contains(data_id):
             _push_shared_data(dest_rank, data_id, is_blocking_op)
-        elif object_store.is_already_serialized(data_id):
+        elif local_store.is_already_serialized(data_id):
             _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized=True)
-        elif object_store.contains(data_id):
-            data = object_store.get(data_id)
-            if shared_store.is_should_be_shared(data):
+        elif local_store.contains(data_id):
+            data = local_store.get(data_id)
+            if shared_store.should_be_shared(data):
                 shared_store.put(data_id, data)
                 _push_shared_data(dest_rank, data_id, is_blocking_op)
             else:
                 _push_local_data(
                     dest_rank, data_id, is_blocking_op, is_serialized=False
                 )
-        elif object_store.contains_data_owner(data_id):
+        elif local_store.contains_data_owner(data_id):
             _push_data_owner(dest_rank, data_id)
         else:
             raise ValueError("Unknown DataID!")

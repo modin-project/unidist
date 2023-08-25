@@ -18,8 +18,8 @@ except ImportError:
         "Missing dependency 'mpi4py'. Use pip or conda to install it."
     ) from None
 
-from unidist.core.backends.mpi.core.shared_store import SharedStore
-from unidist.core.backends.mpi.core.object_store import ObjectStore
+from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
+from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 from unidist.core.backends.mpi.core.controller.garbage_collector import (
     garbage_collector,
 )
@@ -183,7 +183,7 @@ def init():
             host_list = hosts.split(",") if hosts is not None else ["localhost"]
             host_count = len(host_list)
 
-            if common.is_used_shared_memory():
+            if common.is_shared_memory_supported():
                 # +1 for monitor process on each host
                 nprocs_to_spawn = cpu_count + len(host_list)
             else:
@@ -191,15 +191,15 @@ def init():
                 nprocs_to_spawn = cpu_count + 1
             if host_count > 1:
                 if "Open MPI" in lib_version:
-                    future_size = nprocs_to_spawn + 1  # + the current root process
-                    workers_per_host = [
-                        int(future_size / host_count)
-                        + (1 if i < future_size % host_count else 0)
+                    slot_count = nprocs_to_spawn + 1  # + the current root process
+                    slots_per_host = [
+                        int(slot_count / host_count)
+                        + (1 if i < slot_count % host_count else 0)
                         for i in range(host_count)
                     ]
                     hosts = ",".join(
                         [
-                            f"{host_list[i]}:{workers_per_host[i]}"
+                            f"{host_list[i]}:{slots_per_host[i]}"
                             for i in range(host_count)
                         ]
                     )
@@ -230,7 +230,7 @@ def init():
         is_mpi_initialized = True
 
     # Initalize shared memory
-    SharedStore.get_instance()
+    SharedObjectStore.get_instance()
 
     if mpi_state.is_root_process():
         atexit.register(_termination_handler)
@@ -303,7 +303,7 @@ def shutdown():
         )
         if op_type != common.Operation.SHUTDOWN:
             raise ValueError(f"Got wrong operation type {op_type}.")
-        SharedStore.get_instance().finalize()
+        SharedObjectStore.get_instance().finalize()
         if not MPI.Is_finalized():
             MPI.Finalize()
 
@@ -353,11 +353,11 @@ def put(data):
     unidist.core.backends.mpi.core.common.MasterDataID
         An ID of an object in object storage.
     """
-    object_store = ObjectStore.get_instance()
-    shared_store = SharedStore.get_instance()
-    data_id = object_store.generate_data_id(garbage_collector)
-    object_store.put(data_id, data)
-    if shared_store.is_should_be_shared(data):
+    local_store = LocalObjectStore.get_instance()
+    shared_store = SharedObjectStore.get_instance()
+    data_id = local_store.generate_data_id(garbage_collector)
+    local_store.put(data_id, data)
+    if shared_store.should_be_shared(data):
         shared_store.put(data_id, data)
 
     logger.debug("PUT {} id".format(data_id._id))
@@ -379,11 +379,11 @@ def get(data_ids):
     object
         A Python object.
     """
-    object_store = ObjectStore.get_instance()
+    local_store = LocalObjectStore.get_instance()
 
     def get_impl(data_id):
-        if object_store.contains(data_id):
-            value = object_store.get(data_id)
+        if local_store.contains(data_id):
+            value = local_store.get(data_id)
         else:
             value = request_worker_data(data_id)
 
@@ -436,11 +436,11 @@ def wait(data_ids, num_returns=1):
     not_ready = data_ids
     pending_returns = num_returns
     ready = []
-    object_store = ObjectStore.get_instance()
+    local_store = LocalObjectStore.get_instance()
 
     logger.debug("WAIT {} ids".format(common.unwrapped_data_ids_list(data_ids)))
     for data_id in not_ready:
-        if object_store.contains(data_id):
+        if local_store.contains(data_id):
             ready.append(data_id)
             not_ready.remove(data_id)
             pending_returns -= 1
@@ -511,8 +511,8 @@ def submit(task, *args, num_returns=1, **kwargs):
 
     dest_rank = RoundRobin.get_instance().schedule_rank()
 
-    object_store = ObjectStore.get_instance()
-    output_ids = object_store.generate_output_data_id(
+    local_store = LocalObjectStore.get_instance()
+    output_ids = local_store.generate_output_data_id(
         dest_rank, garbage_collector, num_returns
     )
 

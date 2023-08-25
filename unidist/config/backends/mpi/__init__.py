@@ -11,6 +11,7 @@ from .envvars import (
     MpiBackoff,
     MpiLog,
     MpiSharedMemoryThreshold,
+    MpiUsingSharedMemory,
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "MpiBackoff",
     "MpiLog",
     "MpiSharedMemoryThreshold",
+    "MpiUsingSharedMemory",
 ]

@@ -16,12 +16,12 @@ except ImportError:
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
-from unidist.core.backends.mpi.core.object_store import ObjectStore
+from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 from unidist.core.backends.mpi.core.worker.request_store import RequestStore
 from unidist.core.backends.mpi.core.worker.task_store import TaskStore
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.controller.common import get_data
-from unidist.core.backends.mpi.core.shared_store import SharedStore
+from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
@@ -31,7 +31,7 @@ mpi_state = communication.MPIState.get_instance()
 # Logger configuration
 # When building documentation we do not have MPI initialized so
 # we use the condition to set "worker_0.log" in order to build it succesfully.
-logger_name = "worker_{}".format(mpi_state.rank if mpi_state is not None else 0)
+logger_name = "worker_{}".format(mpi_state.global_rank if mpi_state is not None else 0)
 log_file = "{}.log".format(logger_name)
 w_logger = common.get_logger(logger_name, log_file)
 # Actors map {handle : actor}
@@ -85,7 +85,7 @@ async def worker_loop():
     ``unidist.core.backends.mpi.core.common.Operations`` defines a set of supported operations.
     """
     task_store = TaskStore.get_instance()
-    object_store = ObjectStore.get_instance()
+    local_store = LocalObjectStore.get_instance()
     request_store = RequestStore.get_instance()
     async_operations = AsyncOperations.get_instance()
     ready_to_shutdown_posted = False
@@ -118,7 +118,7 @@ async def worker_loop():
         elif operation_type == common.Operation.GET:
             request = communication.mpi_recv_object(mpi_state.comm, source_rank)
             if request is not None and not ready_to_shutdown_posted:
-                data_id = object_store.get_unique_data_id(request["id"])
+                data_id = local_store.get_unique_data_id(request["id"])
                 request_store.process_get_request(
                     request["source"], data_id, request["is_blocking_op"]
                 )
@@ -131,8 +131,8 @@ async def worker_loop():
                         request["id"]._id, source_rank
                     )
                 )
-                request["id"] = object_store.get_unique_data_id(request["id"])
-                object_store.put(request["id"], request["data"])
+                request["id"] = local_store.get_unique_data_id(request["id"])
+                local_store.put(request["id"], request["data"])
 
                 # Discard data request to another worker, if data has become available
                 request_store.discard_data_request(request["id"])
@@ -145,8 +145,8 @@ async def worker_loop():
         elif operation_type == common.Operation.PUT_OWNER:
             request = communication.mpi_recv_object(mpi_state.comm, source_rank)
             if not ready_to_shutdown_posted:
-                request["id"] = object_store.get_unique_data_id(request["id"])
-                object_store.put_data_owner(request["id"], request["owner"])
+                request["id"] = local_store.get_unique_data_id(request["id"])
+                local_store.put_data_owner(request["id"], request["owner"])
 
                 w_logger.debug(
                     "PUT_OWNER {} id is owned by {} rank".format(
@@ -169,7 +169,7 @@ async def worker_loop():
             request = communication.mpi_recv_object(mpi_state.comm, source_rank)
             if not ready_to_shutdown_posted:
                 w_logger.debug("WAIT for {} id".format(request["id"]._id))
-                request["id"] = object_store.get_unique_data_id(request["id"])
+                request["id"] = local_store.get_unique_data_id(request["id"])
                 request_store.process_wait_request(request["id"])
 
         elif operation_type == common.Operation.ACTOR_CREATE:
@@ -202,7 +202,7 @@ async def worker_loop():
             cleanup_list = communication.recv_serialized_data(
                 mpi_state.comm, source_rank
             )
-            object_store.clear(cleanup_list)
+            local_store.clear(cleanup_list)
 
         elif operation_type == common.Operation.CANCEL:
             task_store.clear_pending_tasks()
@@ -218,7 +218,7 @@ async def worker_loop():
             ready_to_shutdown_posted = True
         elif operation_type == common.Operation.SHUTDOWN and ready_to_shutdown_posted:
             w_logger.debug("Exit worker event loop")
-            SharedStore.get_instance().finalize()
+            SharedObjectStore.get_instance().finalize()
             if not MPI.Is_finalized():
                 MPI.Finalize()
             break  # leave event loop and shutdown worker

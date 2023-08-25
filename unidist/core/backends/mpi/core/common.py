@@ -15,7 +15,7 @@ except ImportError:
     ) from None
 
 from unidist.core.backends.common.data_id import DataID, is_data_id
-from unidist.config import MpiLog, IsMpiSpawnWorkers
+from unidist.config import MpiLog, IsMpiSpawnWorkers, MpiUsingSharedMemory
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
@@ -36,24 +36,30 @@ class Operation:
         Save the data to a local storage.
     PUT_OWNER : int, default 4
         Save the data location to a local storage.
-    WAIT : int, default 5
+    PUT_SHARED_DATA : int, default 5
+        Save the data to a local storage from shared memory.
+    WAIT : int, default 6
         Return readiness signal of a local data to a requester.
-    ACTOR_CREATE : int, default 6
+    ACTOR_CREATE : int, default 7
         Create local actor instance.
-    ACTOR_EXECUTE : int, default 7
+    ACTOR_EXECUTE : int, default 8
         Execute method of a local actor instance.
-    CLEANUP : int, default 8
+    CLEANUP : int, default 9
         Cleanup local object storage for out-of-scope IDs.
-    TASK_DONE : int, default 9
+    TASK_DONE : int, default 10
         Increment global task counter.
-    GET_TASK_COUNT : int, default 10
+    GET_TASK_COUNT : int, default 11
         Return global task counter to a requester.
-    CANCEL : int, default 11
+    RESERVE_SHARED_MEMORY : int, default 12
+        Reserve and return space in shared memory for the requested data.
+    REQUEST_SHARED_DATA : int, default 13
+        Returns the area in shared memory with the requested data.
+    CANCEL : int, default 14
         Send a message to a worker to exit the event loop.
-    READY_TO_SHUTDOWN : int, default 12
+    READY_TO_SHUTDOWN : int, default 15
         Send a message to monitor from a worker,
         which is ready to shutdown.
-    SHUTDOWN : int, default 13
+    SHUTDOWN : int, default 16
         Send a message from monitor to a worker to shutdown.
     """
 
@@ -84,11 +90,11 @@ class MPITag:
 
     Attributes
     ----------
-    OPERATION : int, default: 111
+    OPERATION : int, default 111
         The tag for send/recv of an operation type.
-    OBJECT : int, default: 112
+    OBJECT : int, default 112
         The tag for send/recv of a regular Python object.
-    BUFFER : int, default: 113
+    BUFFER : int, default 113
         The tag for send/recv of a buffer-like object.
     """
 
@@ -97,38 +103,20 @@ class MPITag:
     BUFFER = 113
 
 
-class DataInfoPackage(dict):
+class MetadataPackage(dict):
     """
-    The class defines information packages for sending data.
+    The class defines metadata packages for a communication.
+
+    Attributes
+    ----------
+    LOCAL_DATA : int, default 0
+        Package type, which specifies that the data will be sent from local storage.
+    SHARED_DATA : int, default 1
+        Package type, which specifies that the data will be sent from shared memory.
     """
 
-    OWNER_DATA = 0
+    LOCAL_DATA = 0
     SHARED_DATA = 1
-    LOCAL_DATA = 2
-
-    @classmethod
-    def get_owner_info(cls, data_id, owner_rank):
-        """
-        Get information package for sending data owner.
-
-        Parameters
-        ----------
-        data_id : unidist.core.backends.common.data_id.DataID
-        owner_rank : int
-            Rank of the owner process.
-
-        Returns
-        -------
-        dict
-            The information package.
-        """
-        return DataInfoPackage(
-            {
-                "package_type": DataInfoPackage.OWNER_DATA,
-                "id": data_id,
-                "owner": owner_rank,
-            }
-        )
 
     @classmethod
     def get_local_info(cls, s_data_len, raw_buffers_len, buffer_count):
@@ -144,14 +132,15 @@ class DataInfoPackage(dict):
         buffer_count : list
             List of the number of buffers for each object
             to be serialized/deserialized using the pickle 5 protocol.
+
         Returns
         -------
         dict
             The information package.
         """
-        return DataInfoPackage(
+        return MetadataPackage(
             {
-                "package_type": DataInfoPackage.LOCAL_DATA,
+                "package_type": MetadataPackage.LOCAL_DATA,
                 "s_data_len": s_data_len,
                 "raw_buffers_len": raw_buffers_len,
                 "buffer_count": buffer_count,
@@ -177,14 +166,15 @@ class DataInfoPackage(dict):
             to be serialized/deserialized using the pickle 5 protocol.
         service_index : int
             Srevice shared memory index.
+
         Returns
         -------
         dict
             The information package.
         """
-        return DataInfoPackage(
+        return MetadataPackage(
             {
-                "package_type": DataInfoPackage.SHARED_DATA,
+                "package_type": MetadataPackage.SHARED_DATA,
                 "id": data_id,
                 "s_data_len": s_data_len,
                 "raw_buffers_len": raw_buffers_len,
@@ -435,7 +425,7 @@ def materialize_data_ids(data_ids, unwrap_data_id_impl, is_pending=False):
         return unwrapped, is_pending
 
 
-def is_used_shared_memory():
+def is_shared_memory_supported():
     """
     Check if the unidist on MPI supports shared memory.
 
@@ -448,6 +438,9 @@ def is_used_shared_memory():
     -----
     Prior to the MPI 3.0 standard there is no support for shared memory.
     """
+    if not MpiUsingSharedMemory.get():
+        return False
+
     if MPI.VERSION < 3:
         return False
 

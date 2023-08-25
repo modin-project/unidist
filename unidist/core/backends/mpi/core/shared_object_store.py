@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""`SharedStore` functionality."""
+"""`SharedObjectStore` functionality."""
 
 import os
 import sys
@@ -53,7 +53,7 @@ class SharedSignaler:
         self.win.Unlock(communication.MPIRank.MONITOR)
 
 
-class SharedStore:
+class SharedObjectStore:
     """
     Class that provides access to data in shared memory
 
@@ -92,7 +92,7 @@ class SharedStore:
         self.service_info_max_count = None
 
         # Initialize all properties above
-        if common.is_used_shared_memory():
+        if common.is_shared_memory_supported():
             self._init_shared_memory()
 
         # Logger will be initialized after `communicator.MPIState`
@@ -215,7 +215,7 @@ class SharedStore:
                 prev_ref_number + 1
             )
             self.logger.debug(
-                f"Rank {communication.MPIState.get_instance().rank}: Increment references number for {data_id} from {prev_ref_number} to {prev_ref_number + 1}"
+                f"Rank {communication.MPIState.get_instance().global_rank}: Increment references number for {data_id} from {prev_ref_number} to {prev_ref_number + 1}"
             )
         self.finalizers.append(
             weakref.finalize(
@@ -250,7 +250,7 @@ class SharedStore:
                     prev_ref_number - 1
                 )
                 self.logger.debug(
-                    f"Rank {communication.MPIState.get_instance().rank}: Decrement references number for {data_id} from {prev_ref_number} to {prev_ref_number - 1}"
+                    f"Rank {communication.MPIState.get_instance().global_rank}: Decrement references number for {data_id} from {prev_ref_number} to {prev_ref_number - 1}"
                 )
 
     def _put_service_info(self, service_index, data_id, first_index):
@@ -271,9 +271,15 @@ class SharedStore:
 
         with SharedSignaler(self.win_service):
             self.service_buffer[service_index + self.FIRST_DATA_INDEX] = first_index
-            self.service_buffer[service_index + self.REFERENCES_NUMBER] = 0
+            self.service_buffer[service_index + self.REFERENCES_NUMBER] = 1
             self.service_buffer[service_index + self.DATA_NUMBER_INDEX] = data_number
             self.service_buffer[service_index + self.WORKER_ID_INDEX] = worker_id
+
+        self.finalizers.append(
+            weakref.finalize(
+                data_id, self._decrement_ref_number, str(data_id), service_index
+            )
+        )
 
     def _check_service_info(self, data_id, service_index):
         """
@@ -360,7 +366,7 @@ class SharedStore:
         # Start unpacking
         data = deserializer.deserialize(s_data)
         self.logger.debug(
-            f"Rank {communication.MPIState.get_instance().rank}: Get {data_id} from {first_index} to {prev_last_index}. Service index: {service_index}"
+            f"Rank {communication.MPIState.get_instance().global_rank}: Get {data_id} from {first_index} to {prev_last_index}. Service index: {service_index}"
         )
         return data
 
@@ -415,10 +421,10 @@ class SharedStore:
             last_prev_index = raw_buffer_last_index
 
         self.logger.debug(
-            f"Rank {communication.MPIState.get_instance().rank}: PUT {data_id} from {first_index} to {last_prev_index}. Service index: {service_index}"
+            f"Rank {communication.MPIState.get_instance().global_rank}: PUT {data_id} from {first_index} to {last_prev_index}. Service index: {service_index}"
         )
 
-        return common.DataInfoPackage.get_shared_info(
+        return common.MetadataPackage.get_shared_info(
             data_id, s_data_len, buffer_lens, buffer_count, service_index
         )
 
@@ -458,22 +464,22 @@ class SharedStore:
             operation_data={"id": data_id},
             dest_rank=owner_monitor,
         )
-        communication.mpi_recv_byte_buffer(comm, sh_buf, owner_monitor)
+        communication.mpi_recv_buffer(comm, sh_buf, owner_monitor)
         self.logger.debug(
-            f"Rank {communication.MPIState.get_instance().rank}: Sync_copy {data_id} from {owner_rank} rank. Put data from {first_index} to {last_index}. Service index: {service_index}"
+            f"Rank {communication.MPIState.get_instance().global_rank}: Sync_copy {data_id} from {owner_rank} rank. Put data from {first_index} to {last_index}. Service index: {service_index}"
         )
 
     @classmethod
     def get_instance(cls):
         """
-        Get instance of ``SharedMemoryManager``.
+        Get instance of ``SharedObjectStore``.
 
         Returns
         -------
-        SharedMemoryManager
+        SharedObjectStore
         """
         if cls.__instance is None:
-            cls.__instance = SharedStore()
+            cls.__instance = SharedObjectStore()
         if cls.__instance.logger is None:
             logger_name = f"shared_store_{communication.MPIState.get_instance().host}"
             cls.__instance.logger = common.get_logger(
@@ -481,7 +487,7 @@ class SharedStore:
             )
         return cls.__instance
 
-    def is_should_be_shared(self, data):
+    def should_be_shared(self, data):
         """
         Check if data should be sent using shared memory.
 
@@ -545,7 +551,7 @@ class SharedStore:
         The store return a deep copy, because this information must not be changed.
         """
         shared_info = self._shared_info[data_id]
-        return common.DataInfoPackage.get_shared_info(
+        return common.MetadataPackage.get_shared_info(
             data_id,
             shared_info["s_data_len"],
             shared_info["raw_buffers_len"],
@@ -620,11 +626,11 @@ class SharedStore:
                 self.service_buffer[service_index + self.FIRST_DATA_INDEX] = -1
                 self.service_buffer[service_index + self.REFERENCES_NUMBER] = -1
                 self.logger.debug(
-                    f"Rank {communication.MPIState.get_instance().rank}: Clear {old_data_id}. Service index: {service_index} First index: {old_first_index} References number: {old_references_number}"
+                    f"Rank {communication.MPIState.get_instance().global_rank}: Clear {old_data_id}. Service index: {service_index} First index: {old_first_index} References number: {old_references_number}"
                 )
             else:
                 self.logger.debug(
-                    f"Rank {communication.MPIState.get_instance().rank}: Did not clear {old_data_id}, because there are was written another data_id: Data_ID(rank_{old_worker_id}_id_{old_data_id})"
+                    f"Rank {communication.MPIState.get_instance().global_rank}: Did not clear {old_data_id}, because there are was written another data_id: Data_ID(rank_{old_worker_id}_id_{old_data_id})"
                 )
                 self.logger.debug(
                     f"Service index: {service_index} First index: {old_first_index} References number: {old_references_number}"
@@ -633,13 +639,13 @@ class SharedStore:
 
     def put(self, data_id, data):
         """
-        Put data to shared memory
+        Put data into shared memory.
 
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
         data : object
-            The current data
+            The current data.
         """
         mpi_state = communication.MPIState.get_instance()
 
@@ -672,9 +678,6 @@ class SharedStore:
 
         # put shared info
         self._put_shared_info(data_id, shared_info)
-
-        # increment ref
-        self._increment_ref_number(data_id, shared_info["service_index"])
 
     def get(self, data_id, owner_rank, shared_info):
         """
@@ -724,7 +727,7 @@ class SharedStore:
                     time.sleep(0.1)
 
         # put shared info
-        shared_info = common.DataInfoPackage.get_shared_info(
+        shared_info = common.MetadataPackage.get_shared_info(
             data_id, s_data_len, raw_buffers_len, buffer_count, service_index
         )
         self._put_shared_info(data_id, shared_info)

@@ -16,7 +16,7 @@ import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.monitor.shared_memory_manager import (
     SharedMemoryManager,
 )
-from unidist.core.backends.mpi.core.shared_store import SharedStore
+from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
@@ -24,7 +24,7 @@ from mpi4py import MPI  # noqa: E402
 
 
 mpi_state = communication.MPIState.get_instance()
-logger_name = "monitor_{}".format(mpi_state.rank if mpi_state is not None else 0)
+logger_name = "monitor_{}".format(mpi_state.global_rank if mpi_state is not None else 0)
 log_file = "{}.log".format(logger_name)
 monitor_logger = common.get_logger(logger_name, log_file)
 
@@ -174,14 +174,14 @@ def monitor_loop():
     mpi_state = communication.MPIState.get_instance()
     wait_handler = WaitHandler.get_instance()
     data_id_tracker = DataIDTracker.get_instance()
-    shared_store = SharedStore.get_instance()
+    shared_store = SharedObjectStore.get_instance()
 
     workers_ready_to_shutdown = []
     shutdown_workers = False
     # Once all workers excluding ``Root`` and ``Monitor`` ranks are ready to shutdown,
     # ``Monitor` sends the shutdown signal to every worker, as well as notifies ``Root`` that
     # it can exit the program.
-    shm_manager = SharedMemoryManager(shared_store.shared_memory_size)
+    shm_manager = SharedMemoryManager()
 
     while True:
         # Listen receive operation from any source
@@ -239,10 +239,12 @@ def monitor_loop():
             sh_buf = shared_store.get_shared_buffer(
                 reservation_info["first_index"], reservation_info["last_index"]
             )
-            communication.mpi_send_byte_buffer(
+            communication.mpi_send_buffer(
                 mpi_state.comm,
                 sh_buf,
                 dest_rank=source_rank,
+                item_type=MPI.BYTE,
+                send_size=False,
             )
         elif operation_type == common.Operation.CLEANUP:
             cleanup_list = communication.recv_serialized_data(
@@ -251,11 +253,9 @@ def monitor_loop():
             shm_manager.clear(cleanup_list)
         elif operation_type == common.Operation.READY_TO_SHUTDOWN:
             workers_ready_to_shutdown.append(source_rank)
-            shutdown_workers = len(workers_ready_to_shutdown) == len(
-                mpi_state.workers
-            )  # "-2" to exclude ``Root`` and ``Monitor`` ranks
+            shutdown_workers = len(workers_ready_to_shutdown) == len(mpi_state.workers)
         elif operation_type == common.Operation.SHUTDOWN:
-            SharedStore.get_instance().finalize()
+            SharedObjectStore.get_instance().finalize()
             if not MPI.Is_finalized():
                 MPI.Finalize()
             break  # leave event loop and shutdown monitoring
@@ -263,8 +263,8 @@ def monitor_loop():
             raise ValueError(f"Unsupported operation: {operation_type}")
 
         if shutdown_workers:
-            for rank_id in range(communication.MPIRank.ROOT + 1, mpi_state.world_size):
-                if rank_id != mpi_state.rank:
+            for rank_id in mpi_state.workers + mpi_state.monitor_processes:
+                if rank_id != mpi_state.global_rank:
                     communication.mpi_send_operation(
                         mpi_state.comm,
                         common.Operation.SHUTDOWN,
@@ -275,7 +275,7 @@ def monitor_loop():
                 common.Operation.SHUTDOWN,
                 communication.MPIRank.ROOT,
             )
-            SharedStore.get_instance().finalize()
+            SharedObjectStore.get_instance().finalize()
             if not MPI.Is_finalized():
                 MPI.Finalize()
             break  # leave event loop and shutdown monitoring

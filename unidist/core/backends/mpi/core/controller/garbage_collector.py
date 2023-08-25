@@ -10,7 +10,7 @@ import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.serialization import SimpleDataSerializer
-from unidist.core.backends.mpi.core.object_store import ObjectStore
+from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 
 
 logger = common.get_logger("utils", "utils.log")
@@ -22,7 +22,7 @@ class GarbageCollector:
 
     Parameters
     ----------
-    object_store : unidist.core.backends.mpi.executor.ObjectStore
+    local_store : unidist.core.backends.mpi.core.local_object_store
         Reference to the local object storage.
 
     Notes
@@ -30,7 +30,7 @@ class GarbageCollector:
     Cleanup relies on internal threshold settings.
     """
 
-    def __init__(self, object_store):
+    def __init__(self, local_store):
         # Cleanup frequency settings
         self._cleanup_counter = 1
         self._cleanup_threshold = 5
@@ -40,7 +40,7 @@ class GarbageCollector:
         self._cleanup_list = []
         self._cleanup_list_threshold = 10
         # Reference to the global object store
-        self._object_store = object_store
+        self._local_store = local_store
         # Task submitted counter
         self._task_counter = 0
 
@@ -62,8 +62,11 @@ class GarbageCollector:
         # Cache serialized list of data IDs
         s_cleanup_list = SimpleDataSerializer().serialize_pickle(cleanup_list)
         async_operations = AsyncOperations.get_instance()
-        for rank_id in range(mpi_state.world_size):
-            if not mpi_state.is_root_process(rank_id) and rank_id != mpi_state.rank:
+        for rank_id in range(mpi_state.global_size):
+            if (
+                not mpi_state.is_root_process(rank_id)
+                and rank_id != mpi_state.global_rank
+            ):
                 h_list = communication.isend_serialized_operation(
                     mpi_state.comm,
                     common.Operation.CLEANUP,
@@ -142,7 +145,7 @@ class GarbageCollector:
                     if executed_task_counter == self._task_counter:
                         self._send_cleanup_request(self._cleanup_list)
                         # Clear the remaining references
-                        self._object_store.clear(self._cleanup_list)
+                        self._local_store.clear(self._cleanup_list)
                         self._cleanup_list.clear()
                         self._cleanup_counter += 1
                         self._timestamp = time.perf_counter()
@@ -150,4 +153,4 @@ class GarbageCollector:
                 self._cleanup_counter += 1
 
 
-garbage_collector = GarbageCollector(ObjectStore.get_instance())
+garbage_collector = GarbageCollector(LocalObjectStore.get_instance())

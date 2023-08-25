@@ -6,7 +6,7 @@ from collections import defaultdict
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
-from unidist.core.backends.mpi.core.object_store import ObjectStore
+from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 from unidist.core.backends.mpi.core.controller.common import push_data
 
 
@@ -14,7 +14,7 @@ mpi_state = communication.MPIState.get_instance()
 # Logger configuration
 # When building documentation we do not have MPI initialized so
 # we use the condition to set "worker_0.log" in order to build it succesfully.
-logger_name = "worker_{}".format(mpi_state.rank if mpi_state is not None else 0)
+logger_name = "worker_{}".format(mpi_state.global_rank if mpi_state is not None else 0)
 log_file = "{}.log".format(logger_name)
 logger = common.get_logger(logger_name, log_file)
 
@@ -213,7 +213,7 @@ class RequestStore:
         -----
         Only ROOT rank is supported for now, therefore no rank argument needed.
         """
-        if ObjectStore.get_instance().contains(data_id):
+        if LocalObjectStore.get_instance().contains(data_id):
             # Executor wait just for signal
             # We use a blocking send here because the receiver is waiting for the result.
             communication.mpi_send_object(
@@ -247,8 +247,8 @@ class RequestStore:
         -----
         Request is asynchronous, no wait for the data sending.
         """
-        object_store = ObjectStore.get_instance()
-        if object_store.contains(data_id):
+        local_store = LocalObjectStore.get_instance()
+        if local_store.contains(data_id):
             push_data(
                 source_rank,
                 data_id,

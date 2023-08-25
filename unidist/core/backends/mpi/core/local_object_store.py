@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""`ObjectStore` functionality."""
+"""`LocalObjectStore` functionality."""
 
 import weakref
 from collections import defaultdict
@@ -11,7 +11,7 @@ import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 
 
-class ObjectStore:
+class LocalObjectStore:
     """
     Class that stores local objects and provides access to them.
 
@@ -41,14 +41,14 @@ class ObjectStore:
     @classmethod
     def get_instance(cls):
         """
-        Get instance of ``ObjectStore``.
+        Get instance of ``LocalObjectStore``.
 
         Returns
         -------
-        ObjectStore
+        LocalObjectStore
         """
         if cls.__instance is None:
-            cls.__instance = ObjectStore()
+            cls.__instance = LocalObjectStore()
         return cls.__instance
 
     def put(self, data_id, data):
@@ -200,7 +200,7 @@ class ObjectStore:
         unidist.core.backends.mpi.core.common.MasterDataID
             Unique data ID instance.
         """
-        data_id = f"rank_{communication.MPIState.get_instance().rank}_id_{self._data_id_counter}"
+        data_id = f"rank_{communication.MPIState.get_instance().global_rank}_id_{self._data_id_counter}"
         self._data_id_counter += 1
         return common.MasterDataID(data_id, gc)
 
