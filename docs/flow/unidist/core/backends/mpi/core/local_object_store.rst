@@ -6,9 +6,11 @@
 :orphan:
 
 Local Object Store
-============
+==================
 
-MPI :py:class:`~unidist.core.backends.mpi.core.local_object_store.LocalObjectStore` stores the data either in the shared memory or in each single process in a local dict in depend on data size.
+MPI :py:class:`~unidist.core.backends.mpi.core.local_object_store.LocalObjectStore` stores data in-process memory in a local dict.
+In depend on :class:`~unidist.config.backends.mpi.envvars.MpiSharedMemoryThreshold``,
+data can be stored in :py:class:`~unidist.core.backends.mpi.core.shared_object_store.SharedObjectStore`.
 
 API
 ===

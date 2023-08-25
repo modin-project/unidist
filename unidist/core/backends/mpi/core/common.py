@@ -37,7 +37,7 @@ class Operation:
     PUT_OWNER : int, default 4
         Save the data location to a local storage.
     PUT_SHARED_DATA : int, default 5
-        Save the data to a local storage from shared memory.
+        Save the data into shared memory.
     WAIT : int, default 6
         Return readiness signal of a local data to a requester.
     ACTOR_CREATE : int, default 7
@@ -51,9 +51,9 @@ class Operation:
     GET_TASK_COUNT : int, default 11
         Return global task counter to a requester.
     RESERVE_SHARED_MEMORY : int, default 12
-        Reserve and return space in shared memory for the requested data.
+        Reserve area in shared memory for the data.
     REQUEST_SHARED_DATA : int, default 13
-        Returns the area in shared memory with the requested data.
+        Return the area in shared memory with the requested data.
     CANCEL : int, default 14
         Send a message to a worker to exit the event loop.
     READY_TO_SHUTDOWN : int, default 15
@@ -90,11 +90,11 @@ class MPITag:
 
     Attributes
     ----------
-    OPERATION : int, default 111
+    OPERATION : int, default: 111
         The tag for send/recv of an operation type.
-    OBJECT : int, default 112
+    OBJECT : int, default: 112
         The tag for send/recv of a regular Python object.
-    BUFFER : int, default 113
+    BUFFER : int, default: 113
         The tag for send/recv of a buffer-like object.
     """
 
@@ -109,10 +109,10 @@ class MetadataPackage(dict):
 
     Attributes
     ----------
-    LOCAL_DATA : int, default 0
-        Package type, which specifies that the data will be sent from local storage.
-    SHARED_DATA : int, default 1
-        Package type, which specifies that the data will be sent from shared memory.
+    LOCAL_DATA : int, default: 0
+        Package type indicating that the data will be sent from the local object store.
+    SHARED_DATA : int, default: 1
+        Package type indicating that the data will be sent from the shared object store.
     """
 
     LOCAL_DATA = 0
@@ -157,6 +157,7 @@ class MetadataPackage(dict):
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
+            An ID to data.
         s_data_len : int
             Main buffer length.
         raw_buffers_len : list
@@ -165,7 +166,7 @@ class MetadataPackage(dict):
             List of the number of buffers for each object
             to be serialized/deserialized using the pickle 5 protocol.
         service_index : int
-            Srevice shared memory index.
+            Service index in shared memory.
 
         Returns
         -------

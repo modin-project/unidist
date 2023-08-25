@@ -57,7 +57,7 @@ class MpiSharedMemoryThreshold(EnvironmentVariable, type=int):
 
 
 class MpiUsingSharedMemory(EnvironmentVariable, type=bool):
-    """Whether to enable shared memory using for MPI backend or not."""
+    """Whether to use MPI shared memory or not."""
 
     default = True
     varname = "UNIDIST_MPI_USING_SHARED_MEMORY"

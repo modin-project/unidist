@@ -93,12 +93,13 @@ class MPIState:
     global_rank : int
         Rank of a process.
     global_size : int
-        Number of processes.
+        Number of processes in the global communicator.
     host : str
         IP-address of the current host.
     topology : dict
         Dictionary, containing worker rank assignments by IP-addresses in
         the form: `{"node_ip0": [rank_2, rank_3, ...], "node_ip1": [rank_i, ...], ...}`.
+        Note that ranks start with 2 because 0 is for master and 1 is for monitor.
     monitor_processes : list
         List of ranks that are monitor processes.
     workers : list
@@ -116,15 +117,13 @@ class MPIState:
         self.host_comm = None
         if common.is_shared_memory_supported():
             self.host_comm = comm.Split_type(MPI.COMM_TYPE_SHARED)
-
-        self.host = socket.gethostbyname(socket.gethostname())
-
-        # Get topology of MPI cluster.
         host_rank = (
             self.host_comm.Get_rank()
             if self.host_comm is not None
             else self.global_rank
         )
+        self.host = socket.gethostbyname(socket.gethostname())
+        # Get topology of MPI cluster.
         cluster_info = self.comm.allgather((self.host, self.global_rank, host_rank))
 
         self.topology = defaultdict(dict)
@@ -169,12 +168,12 @@ class MPIState:
 
     def is_root_process(self, rank=None):
         """
-        Check if the rank is root process
+        Check if the rank is root process.
 
         Parameters
         ----------
-        rank : int, default: the current rank
-            The rank to be checked
+        rank : int, optional
+            The rank to be checked.
 
         Returns
         -------
@@ -187,12 +186,12 @@ class MPIState:
 
     def is_monitor_process(self, rank=None):
         """
-        Check if the rank is monitor process
+        Check if the rank is a monitor process.
 
         Parameters
         ----------
-        rank : int, default: the current rank
-            The rank to be checked
+        rank : int, optional
+            The rank to be checked.
 
         Returns
         -------
@@ -209,13 +208,13 @@ class MPIState:
 
         Parameters
         ----------
-        global_rank : int
+        global_rank : int, optional
             The global rank to search for a monitor process.
 
         Returns
         -------
         int
-            Rank of monitor process.
+            Rank of a monitor process.
         """
         if self.host_comm is None:
             return MPIRank.MONITOR
@@ -414,7 +413,7 @@ def mpi_send_buffer(
     dest_rank : int
         Target MPI process to transfer buffer.
     item_type : int
-        MPI type of sending items.
+        MPI data type for sending data.
     send_size: bool, default: True
         Send an additional message with a buffer size to prepare another process to receive.
 
@@ -953,18 +952,19 @@ def recv_serialized_data(comm, source_rank):
 
 def send_reserve_operation(comm, data_id, data_size):
     """
-    Reserve shared memory for data_id
+    Reserve shared memory for `data_id`.
 
     Parameters
     ----------
     data_id : unidist.core.backends.common.data_id.DataID
+        An ID to data.
     data_size : int
-        Length of required range in shared memory
+        Length of a required range in shared memory.
 
     Returns
     -------
     dict
-        Reservation info about the allocated range in shared memory
+        Reservation info about the allocated range in shared memory.
     """
     operation_type = common.Operation.RESERVE_SHARED_MEMORY
     mpi_state = MPIState.get_instance()
