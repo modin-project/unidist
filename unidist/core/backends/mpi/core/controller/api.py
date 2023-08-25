@@ -191,7 +191,9 @@ def init():
                 nprocs_to_spawn = cpu_count + 1
             if host_count > 1:
                 if "Open MPI" in lib_version:
-                    slot_count = nprocs_to_spawn + 1  # + the current root process
+                    # +1 to take into account the current root process
+                    # to correctly allocate slots
+                    slot_count = nprocs_to_spawn + 1
                     slots_per_host = [
                         int(slot_count / host_count)
                         + (1 if i < slot_count % host_count else 0)

@@ -175,13 +175,13 @@ def monitor_loop():
     wait_handler = WaitHandler.get_instance()
     data_id_tracker = DataIDTracker.get_instance()
     shared_store = SharedObjectStore.get_instance()
+    shm_manager = SharedMemoryManager()
 
     workers_ready_to_shutdown = []
     shutdown_workers = False
     # Once all workers excluding ``Root`` and ``Monitor`` ranks are ready to shutdown,
     # ``Monitor` sends the shutdown signal to every worker, as well as notifies ``Root`` that
     # it can exit the program.
-    shm_manager = SharedMemoryManager()
 
     while True:
         # Listen receive operation from any source
