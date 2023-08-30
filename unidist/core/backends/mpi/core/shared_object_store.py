@@ -694,7 +694,6 @@ class SharedObjectStore:
         mpi_state = communication.MPIState.get_instance()
         s_data_len = shared_info["s_data_len"]
         raw_buffers_len = shared_info["raw_buffers_len"]
-        buffer_count = shared_info["buffer_count"]
         service_index = shared_info["service_index"]
 
         # check data in shared memory
@@ -727,9 +726,9 @@ class SharedObjectStore:
                     time.sleep(0.1)
 
         # put shared info
-        shared_info = common.MetadataPackage.get_shared_info(
-            data_id, s_data_len, raw_buffers_len, buffer_count, service_index
-        )
+        # shared_info = common.MetadataPackage.get_shared_info(
+        #     data_id, s_data_len, raw_buffers_len, buffer_count, service_index
+        # )
         self._put_shared_info(data_id, shared_info)
 
         # increment ref

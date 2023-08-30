@@ -20,7 +20,7 @@ from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 from unidist.core.backends.mpi.core.worker.request_store import RequestStore
 from unidist.core.backends.mpi.core.worker.task_store import TaskStore
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
-from unidist.core.backends.mpi.core.controller.common import get_data
+from unidist.core.backends.mpi.core.controller.common import pull_data
 from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
 
 # TODO: Find a way to move this after all imports
@@ -105,7 +105,7 @@ async def worker_loop():
 
         # Proceed the request
         if operation_type == common.Operation.EXECUTE:
-            request = get_data(mpi_state.comm, source_rank)
+            request = pull_data(mpi_state.comm, source_rank)
             if not ready_to_shutdown_posted:
                 # Execute the task if possible
                 pending_request = task_store.process_task_request(request)
@@ -124,7 +124,7 @@ async def worker_loop():
                 )
 
         elif operation_type == common.Operation.PUT_DATA:
-            request = get_data(mpi_state.comm, source_rank)
+            request = pull_data(mpi_state.comm, source_rank)
             if not ready_to_shutdown_posted:
                 w_logger.debug(
                     "PUT (RECV) {} id from {} rank".format(
@@ -155,7 +155,7 @@ async def worker_loop():
                 )
 
         elif operation_type == common.Operation.PUT_SHARED_DATA:
-            result = get_data(mpi_state.comm, source_rank)
+            result = pull_data(mpi_state.comm, source_rank)
 
             # Clear cached request to another worker, if data_id became available
             request_store.discard_data_request(result["id"])
@@ -173,7 +173,7 @@ async def worker_loop():
                 request_store.process_wait_request(request["id"])
 
         elif operation_type == common.Operation.ACTOR_CREATE:
-            request = get_data(mpi_state.comm, source_rank)
+            request = pull_data(mpi_state.comm, source_rank)
             if not ready_to_shutdown_posted:
                 cls = request["class"]
                 args = request["args"]
@@ -182,7 +182,7 @@ async def worker_loop():
                 actor_map[handler] = cls(*args, **kwargs)
 
         elif operation_type == common.Operation.ACTOR_EXECUTE:
-            request = get_data(mpi_state.comm, source_rank)
+            request = pull_data(mpi_state.comm, source_rank)
             if not ready_to_shutdown_posted:
                 # Prepare the data
                 method_name = request["task"]

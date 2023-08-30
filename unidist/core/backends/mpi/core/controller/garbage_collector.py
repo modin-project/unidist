@@ -62,7 +62,7 @@ class GarbageCollector:
         # Cache serialized list of data IDs
         s_cleanup_list = SimpleDataSerializer().serialize_pickle(cleanup_list)
         async_operations = AsyncOperations.get_instance()
-        for rank_id in range(mpi_state.global_size):
+        for rank_id in mpi_state.workers + mpi_state.monitor_processes:
             if (
                 not mpi_state.is_root_process(rank_id)
                 and rank_id != mpi_state.global_rank

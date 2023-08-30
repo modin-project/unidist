@@ -230,7 +230,7 @@ def monitor_loop():
             )
         elif operation_type == common.Operation.REQUEST_SHARED_DATA:
             info_package = communication.mpi_recv_object(mpi_state.comm, source_rank)
-            data_id = info_package.pop("id", None)
+            data_id = info_package["id"]
             if data_id is None:
                 raise ValueError("Requested DataId is None")
             reservation_info = shm_manager.get(data_id)
@@ -243,7 +243,7 @@ def monitor_loop():
                 mpi_state.comm,
                 sh_buf,
                 dest_rank=source_rank,
-                item_type=MPI.BYTE,
+                data_type=MPI.BYTE,
                 send_size=False,
             )
         elif operation_type == common.Operation.CLEANUP:

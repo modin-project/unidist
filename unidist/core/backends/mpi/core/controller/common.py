@@ -106,7 +106,7 @@ class RoundRobin:
         )
 
 
-def get_data(comm, owner_rank):
+def pull_data(comm, owner_rank):
     """
     Receive data from another MPI process using shared memory or direct communiction, depending on package type.
     The data is de-serialized from received buffers.
@@ -125,8 +125,7 @@ def get_data(comm, owner_rank):
     if info_package["package_type"] == common.MetadataPackage.SHARED_DATA:
         local_store = LocalObjectStore.get_instance()
         shared_store = SharedObjectStore.get_instance()
-        data_id = info_package.pop("id", None)
-        data_id = local_store.get_unique_data_id(data_id)
+        data_id = local_store.get_unique_data_id(info_package["id"])
 
         if local_store.contains(data_id):
             return {
@@ -189,7 +188,7 @@ def request_worker_data(data_id):
     )
 
     # Blocking get
-    complex_data = get_data(mpi_state.comm, owner_rank)
+    complex_data = pull_data(mpi_state.comm, owner_rank)
     if data_id.base_data_id() != complex_data["id"]:
         raise ValueError("Unexpected data_id!")
     data = complex_data["data"]
