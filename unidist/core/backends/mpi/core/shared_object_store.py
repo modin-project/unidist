@@ -739,11 +739,11 @@ class SharedObjectStore:
 
     def finalize(self):
         """
-        Release used resources
+        Release used resources.
 
         Notes
         -----
-        Shared store should be finalized befor MPI.Finalize()
+        Shared store should be finalized before MPI.Finalize().
         """
         if self.win is not None:
             self.win.Free()
