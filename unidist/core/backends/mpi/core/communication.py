@@ -394,9 +394,7 @@ def mpi_recv_object(comm, source_rank):
     return comm.recv(source=source_rank, tag=common.MPITag.OBJECT)
 
 
-def mpi_send_buffer(
-    comm, buffer_size, buffer, dest_rank, data_type=MPI.CHAR, send_size=True
-):
+def mpi_send_buffer(comm, buffer, dest_rank, data_type=MPI.CHAR, buffer_size=None):
     """
     Send buffer object to another MPI rank in a blocking way.
 
@@ -404,16 +402,14 @@ def mpi_send_buffer(
     ----------
     comm : object
         MPI communicator object.
-    buffer_size : int
-        Buffer size in bytes.
     buffer : object
         Buffer object to send.
     dest_rank : int
         Target MPI process to transfer buffer.
     data_type : MPI.Datatype, default: MPI.CHAR
         MPI data type for sending data.
-    send_size: bool, default: True
-        Send an additional message with a buffer size to prepare another process to receive.
+    buffer_size: int, default: None
+        Buffer size in bytes. Send an additional message with a buffer size to prepare another process to receive if `buffer_size` is not None.
 
     Notes
     -----
@@ -423,7 +419,7 @@ def mpi_send_buffer(
     * The special tags are used for this communication, namely,
     ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
-    if send_size:
+    if buffer_size:
         comm.send(buffer_size, dest=dest_rank, tag=common.MPITag.OBJECT)
     comm.Send([buffer, data_type], dest=dest_rank, tag=common.MPITag.BUFFER)
 

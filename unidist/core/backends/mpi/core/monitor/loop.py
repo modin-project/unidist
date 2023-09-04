@@ -212,12 +212,6 @@ def monitor_loop():
             )
         elif operation_type == common.Operation.RESERVE_SHARED_MEMORY:
             request = communication.mpi_recv_object(mpi_state.comm, source_rank)
-            if request["id"] in shm_manager.deleted_ids:
-                communication.mpi_send_object(
-                    mpi_state.comm,
-                    data=ValueError("This data was already deleted."),
-                    dest_rank=source_rank,
-                )
             reservation_info = shm_manager.get(request["id"])
             if reservation_info is None:
                 reservation_info = shm_manager.put(request["id"], request["size"])
@@ -244,7 +238,6 @@ def monitor_loop():
                 sh_buf,
                 dest_rank=source_rank,
                 data_type=MPI.BYTE,
-                send_size=False,
             )
         elif operation_type == common.Operation.CLEANUP:
             cleanup_list = communication.recv_serialized_data(

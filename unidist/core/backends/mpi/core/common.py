@@ -15,7 +15,7 @@ except ImportError:
     ) from None
 
 from unidist.core.backends.common.data_id import DataID, is_data_id
-from unidist.config import MpiLog, IsMpiSpawnWorkers, MpiUseSharedMemory
+from unidist.config import MpiLog, MpiUseSharedMemory
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
@@ -443,11 +443,6 @@ def is_shared_memory_supported():
         return False
 
     if MPI.VERSION < 3:
-        return False
-
-    if "MPICH" in MPI.Get_library_version() and IsMpiSpawnWorkers.get():
-        # Mpich shared memory does not work with spawned processes
-        # https://github.com/pmodels/mpich/issues/6603
         return False
 
     return True

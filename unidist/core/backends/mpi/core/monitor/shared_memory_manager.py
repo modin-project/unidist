@@ -114,7 +114,6 @@ class SharedMemoryManager:
         self.free_service_indexes = FreeMemoryRange(
             self.shared_store.service_info_max_count
         )
-        self.deleted_ids = []
         self.pending_cleanup = []
 
         self.monitor_comm = None
@@ -214,7 +213,6 @@ class SharedMemoryManager:
             if referers == 0:
                 if data_id in self._reservation_info:
                     reservation_info = self._reservation_info[data_id]
-                    self.deleted_ids.append(data_id)
                     self.shared_store.delete_service_info(
                         data_id, reservation_info["service_index"]
                     )

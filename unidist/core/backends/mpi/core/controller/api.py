@@ -39,6 +39,7 @@ from unidist.config import (
     MpiPickleThreshold,
     MpiBackoff,
     MpiLog,
+    MpiUseSharedMemory,
     MpiSharedMemoryThreshold,
 )
 
@@ -159,6 +160,8 @@ def init():
                 py_str += [f"cfg.MpiBackoff.put({MpiBackoff.get()})"]
             if MpiLog.get_value_source() != ValueSource.DEFAULT:
                 py_str += [f"cfg.MpiLog.put({MpiLog.get()})"]
+            if MpiUseSharedMemory.get_value_source() != ValueSource.DEFAULT:
+                py_str += [f"cfg.MpiUseSharedMemory.put({MpiUseSharedMemory.get()})"]
             if MpiSharedMemoryThreshold.get_value_source() != ValueSource.DEFAULT:
                 py_str += [
                     f"cfg.MpiSharedMemoryThreshold.put({MpiSharedMemoryThreshold.get()})"
@@ -180,6 +183,10 @@ def init():
 
             host_list = hosts.split(",") if hosts is not None else ["localhost"]
             host_count = len(host_list)
+            if hosts is not None and host_count == 1:
+                raise ValueError(
+                    "MpiHosts cannot include only one host. If you want to run on a single node, just run the program without this option."
+                )
 
             if common.is_shared_memory_supported():
                 # +host_count to add monitor process on each host

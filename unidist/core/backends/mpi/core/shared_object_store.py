@@ -18,7 +18,7 @@ except ImportError:
         "Missing dependency 'mpi4py'. Use pip or conda to install it."
     ) from None
 
-from unidist.config.backends.mpi.envvars import MpiSharedMemoryThreshold
+from unidist.config.backends.mpi.envvars import MpiSharedMemoryThreshold, MpiBackoff
 from unidist.core.backends.mpi.core import common, communication
 from unidist.core.backends.mpi.core.serialization import ComplexDataSerializer
 
@@ -308,13 +308,12 @@ class SharedObjectStore:
         d_id = self.service_buffer[service_index + self.DATA_NUMBER_INDEX]
         return w_id == worker_id and d_id == data_number
 
-    def _put_shared_info(self, data_id, shared_info):
+    def _put_shared_info(self, shared_info):
         """
         Put required information to deserialize `data_id`.
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
         shared_info : dict
             Information required for data deserialization
 
@@ -322,6 +321,7 @@ class SharedObjectStore:
         -----
         The store keeps a deep copy, because this information must not be changed.
         """
+        data_id = shared_info["id"]
         if data_id not in self._shared_info:
             self._shared_info[data_id] = {
                 "s_data_len": shared_info["s_data_len"],
@@ -467,7 +467,7 @@ class SharedObjectStore:
             operation_data={"id": data_id},
             dest_rank=owner_monitor,
         )
-        communication.mpi_recv_buffer(comm, sh_buf, owner_monitor)
+        communication.mpi_recv_buffer(comm, owner_monitor, sh_buf)
         self.logger.debug(
             f"Rank {communication.MPIState.get_instance().global_rank}: Sync_copy {data_id} from {owner_rank} rank. Put data from {first_index} to {last_index}. Service index: {service_index}"
         )
@@ -681,7 +681,7 @@ class SharedObjectStore:
         self._put_service_info(service_index, data_id, first_index)
 
         # put shared info
-        self._put_shared_info(data_id, shared_info)
+        self._put_shared_info(shared_info)
 
     def get(self, data_id, owner_rank, shared_info):
         """
@@ -699,6 +699,7 @@ class SharedObjectStore:
         s_data_len = shared_info["s_data_len"]
         raw_buffers_len = shared_info["raw_buffers_len"]
         service_index = shared_info["service_index"]
+        buffer_count = shared_info["buffer_count"]
 
         # check data in shared memory
         if not self._check_service_info(data_id, service_index):
@@ -727,13 +728,13 @@ class SharedObjectStore:
             else:
                 # wait while another worker syncronize shared buffer
                 while not self._check_service_info(data_id, service_index):
-                    time.sleep(0.1)
+                    time.sleep(MpiBackoff.get())
 
-        # put shared info
-        # shared_info = common.MetadataPackage.get_shared_info(
-        #     data_id, s_data_len, raw_buffers_len, buffer_count, service_index
-        # )
-        self._put_shared_info(data_id, shared_info)
+        # put shared info with updated data_id and service_index
+        shared_info = common.MetadataPackage.get_shared_info(
+            data_id, s_data_len, raw_buffers_len, buffer_count, service_index
+        )
+        self._put_shared_info(shared_info)
 
         # increment ref
         self._increment_ref_number(data_id, shared_info["service_index"])
