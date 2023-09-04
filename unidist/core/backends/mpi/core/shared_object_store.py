@@ -73,22 +73,22 @@ class SharedObjectStore:
     REFERENCES_NUMBER = 3
 
     def __init__(self):
-        # The `MPI.Win` object to manage shared memory
+        # The `MPI.Win` object to manage shared memory for data
         self.win = None
-        # The `MPI.Win` object to manage service shared memory
+        # The `MPI.Win` object to manage shared memory for service purposes
         self.win_service = None
-        # `MPI.memory` object for reading/writing data to shared memory
+        # `MPI.memory` object for reading/writing data from/to shared memory
         self.shared_buffer = None
-        # `memoryview` object for reading/writing data to service shared memory
+        # `memoryview` object for reading/writing data from/to service shared memory.
         # Service buffer includes service information about written shared data.
         # The service info is set by the worker who sends the data to shared memory
         # and is removed by the monitor if the data is cleared.
         # The service info indicates that the current data is written to shared memory
         # and shows the actual location and number of references.
         self.service_buffer = None
-        # Length of shared memory buffer
+        # Length of shared memory buffer in bytes
         self.shared_memory_size = None
-        # Length of service info in service buffer
+        # Length of service shared memory buffer in bytes
         self.service_info_max_count = None
 
         # Initialize all properties above
@@ -136,8 +136,10 @@ class SharedObjectStore:
         """
         mpi_state = communication.MPIState.get_instance()
 
-        # use only 95% of available memory because the rest is needed for local storages of workers
-        # Shared memory is allocated only once by the monitor process
+        # Use only 95% of available shared memory because
+        # the rest is needed for intermediate shared buffers
+        # handled by MPI itself for communication of small messages.
+        # Shared memory is allocated only once by the monitor process.
         self.shared_memory_size = (
             int(self._get_allowed_memory_size() * 0.95)
             if mpi_state.is_monitor_process()
@@ -288,6 +290,7 @@ class SharedObjectStore:
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
+            An ID to data.
         service_index : int
             The service buffer index.
 
@@ -506,8 +509,9 @@ class SharedObjectStore:
 
         size = sys.getsizeof(data)
 
-        # The original data size of numpy.ndarray is greater than the deserialized one using the pickle protocol 5
-        # https://discuss.python.org/t/pickle-original-data-size-is-greater-than-deserialized-one-using-pickle-5-protocol/23327
+        # sys.getsizeof may return incorrect data size as
+        # it doesn't fully assume the whole structure of an object
+        # so we manually compute the data size for np.array here.
         try:
             import numpy as np
 

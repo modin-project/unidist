@@ -172,7 +172,9 @@ class TaskStore:
     def check_local_data_id(self, arg):
         """
         Inspect argument if the ID is available in the local object store.
-        If the local object store doesn't contain this data ID, request the data from another worker.
+
+        If the local object store doesn't contain this data ID,
+        request the data from another worker.
 
         Parameters
         ----------

@@ -182,8 +182,8 @@ def init():
             host_count = len(host_list)
 
             if common.is_shared_memory_supported():
-                # +1 for monitor process on each host
-                nprocs_to_spawn = cpu_count + len(host_list)
+                # +host_count to add monitor process on each host
+                nprocs_to_spawn = cpu_count + host_count
             else:
                 # +1 for just a single process monitor
                 nprocs_to_spawn = cpu_count + 1

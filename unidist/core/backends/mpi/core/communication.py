@@ -113,7 +113,6 @@ class MPIState:
         self.comm = comm
         self.global_rank = comm.Get_rank()
         self.global_size = comm.Get_size()
-
         self.host_comm = None
         if common.is_shared_memory_supported():
             self.host_comm = comm.Split_type(MPI.COMM_TYPE_SHARED)
@@ -125,7 +124,6 @@ class MPIState:
         self.host = socket.gethostbyname(socket.gethostname())
         # Get topology of MPI cluster.
         cluster_info = self.comm.allgather((self.host, self.global_rank, host_rank))
-
         self.topology = defaultdict(dict)
         self.__host_by_rank = defaultdict(None)
         for host, global_rank, host_rank in cluster_info:
@@ -412,7 +410,7 @@ def mpi_send_buffer(
         Buffer object to send.
     dest_rank : int
         Target MPI process to transfer buffer.
-    data_type : int
+    data_type : MPI.Datatype, default: MPI.CHAR
         MPI data type for sending data.
     send_size: bool, default: True
         Send an additional message with a buffer size to prepare another process to receive.
