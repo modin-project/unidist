@@ -5,8 +5,8 @@
 
 :orphan:
 
-Local Object Store
-==================
+Shared Object Store
+===================
 
 MPI :py:class:`~unidist.core.backends.mpi.core.shared_object_store.SharedObjectStore` stores data in the shared object store.
 In depend on :class:`~unidist.config.backends.mpi.envvars.MpiSharedObjectStoreThreshold``,
