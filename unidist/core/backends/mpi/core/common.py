@@ -15,7 +15,7 @@ except ImportError:
     ) from None
 
 from unidist.core.backends.common.data_id import DataID, is_data_id
-from unidist.config import MpiLog, MpiUseSharedMemory
+from unidist.config import MpiLog, MpiSharedObjectStore
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
@@ -439,7 +439,7 @@ def is_shared_memory_supported():
     -----
     Prior to the MPI 3.0 standard there is no support for shared memory.
     """
-    if not MpiUseSharedMemory.get():
+    if not MpiSharedObjectStore.get():
         return False
 
     if MPI.VERSION < 3:

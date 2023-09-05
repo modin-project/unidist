@@ -18,7 +18,11 @@ except ImportError:
         "Missing dependency 'mpi4py'. Use pip or conda to install it."
     ) from None
 
-from unidist.config.backends.mpi.envvars import MpiSharedMemoryThreshold, MpiBackoff
+from unidist.config.backends.mpi.envvars import (
+    MpiSharedObjectStoreMemory,
+    MpiSharedObjectStoreThreshold,
+    MpiBackoff,
+)
 from unidist.core.backends.mpi.core import common, communication
 from unidist.core.backends.mpi.core.serialization import ComplexDataSerializer
 
@@ -112,6 +116,10 @@ class SharedObjectStore:
         int
             The number of bytes available to allocate shared memory.
         """
+        shared_object_store_memory = MpiSharedObjectStoreMemory.get()
+        if shared_object_store_memory is not None:
+            return shared_object_store_memory
+
         virtual_memory = psutil.virtual_memory().total
         if sys.platform.startswith("linux"):
             shm_fd = os.open("/dev/shm", os.O_RDONLY)
@@ -520,7 +528,7 @@ class SharedObjectStore:
         except ImportError:
             pass
 
-        return size > MpiSharedMemoryThreshold.get()
+        return size > MpiSharedObjectStoreThreshold.get()
 
     def contains(self, data_id):
         """

@@ -19,8 +19,9 @@ from .backends.mpi import (
     MpiPickleThreshold,
     MpiBackoff,
     MpiLog,
-    MpiSharedMemoryThreshold,
-    MpiUseSharedMemory,
+    MpiSharedObjectStore,
+    MpiSharedObjectStoreMemory,
+    MpiSharedObjectStoreThreshold,
 )
 from .parameter import ValueSource
 
@@ -41,6 +42,7 @@ __all__ = [
     "MpiPickleThreshold",
     "MpiBackoff",
     "MpiLog",
-    "MpiSharedMemoryThreshold",
-    "MpiUseSharedMemory",
+    "MpiSharedObjectStore",
+    "MpiSharedObjectStoreMemory",
+    "MpiSharedObjectStoreThreshold",
 ]

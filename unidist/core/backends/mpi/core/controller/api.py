@@ -39,8 +39,9 @@ from unidist.config import (
     MpiPickleThreshold,
     MpiBackoff,
     MpiLog,
-    MpiUseSharedMemory,
-    MpiSharedMemoryThreshold,
+    MpiSharedObjectStore,
+    MpiSharedObjectStoreMemory,
+    MpiSharedObjectStoreThreshold,
 )
 
 
@@ -160,11 +161,17 @@ def init():
                 py_str += [f"cfg.MpiBackoff.put({MpiBackoff.get()})"]
             if MpiLog.get_value_source() != ValueSource.DEFAULT:
                 py_str += [f"cfg.MpiLog.put({MpiLog.get()})"]
-            if MpiUseSharedMemory.get_value_source() != ValueSource.DEFAULT:
-                py_str += [f"cfg.MpiUseSharedMemory.put({MpiUseSharedMemory.get()})"]
-            if MpiSharedMemoryThreshold.get_value_source() != ValueSource.DEFAULT:
+            if MpiSharedObjectStore.get_value_source() != ValueSource.DEFAULT:
                 py_str += [
-                    f"cfg.MpiSharedMemoryThreshold.put({MpiSharedMemoryThreshold.get()})"
+                    f"cfg.MpiSharedObjectStore.put({MpiSharedObjectStore.get()})"
+                ]
+            if MpiSharedObjectStoreMemory.get_value_source() != ValueSource.DEFAULT:
+                py_str += [
+                    f"cfg.MpiSharedObjectStoreMemory.put({MpiSharedObjectStoreMemory.get()})"
+                ]
+            if MpiSharedObjectStoreThreshold.get_value_source() != ValueSource.DEFAULT:
+                py_str += [
+                    f"cfg.MpiSharedObjectStoreThreshold.put({MpiSharedObjectStoreThreshold.get()})"
                 ]
             py_str += ["unidist.init()"]
             py_str = "; ".join(py_str)

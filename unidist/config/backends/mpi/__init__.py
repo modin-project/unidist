@@ -10,8 +10,9 @@ from .envvars import (
     MpiPickleThreshold,
     MpiBackoff,
     MpiLog,
-    MpiSharedMemoryThreshold,
-    MpiUseSharedMemory,
+    MpiSharedObjectStore,
+    MpiSharedObjectStoreMemory,
+    MpiSharedObjectStoreThreshold,
 )
 
 __all__ = [
@@ -20,6 +21,7 @@ __all__ = [
     "MpiPickleThreshold",
     "MpiBackoff",
     "MpiLog",
-    "MpiSharedMemoryThreshold",
-    "MpiUseSharedMemory",
+    "MpiSharedObjectStore",
+    "MpiSharedObjectStoreMemory",
+    "MpiSharedObjectStoreThreshold",
 ]
