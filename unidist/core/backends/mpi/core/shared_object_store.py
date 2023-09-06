@@ -11,6 +11,8 @@ import psutil
 import weakref
 from array import array
 
+from cmemory import write_to
+
 try:
     import mpi4py
 except ImportError:
@@ -424,9 +426,14 @@ class SharedObjectStore:
             if s_data_last_index > last_index:
                 raise ValueError(f"Not enough shared space for {i} raw_buffer")
 
-            self.shared_buffer[
-                raw_buffer_first_index:raw_buffer_last_index
-            ] = raw_buffer
+            write_to(
+                raw_buffer,
+                self.shared_buffer[raw_buffer_first_index:raw_buffer_last_index],
+                6
+            )
+            # self.shared_buffer[
+            #     raw_buffer_first_index:raw_buffer_last_index
+            # ] = raw_buffer
 
             buffer_lens.append(raw_buffer_len)
             last_prev_index = raw_buffer_last_index

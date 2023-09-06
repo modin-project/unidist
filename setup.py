@@ -1,5 +1,6 @@
 import pathlib
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
+from Cython.Build import cythonize
 import sys
 import versioneer
 
@@ -35,4 +36,5 @@ setup(
         "all": all_deps,
     },
     python_requires=">=3.7.1",
+    ext_modules = cythonize('unidist/ext_modules/memory/cmemory.pyx')
 )
