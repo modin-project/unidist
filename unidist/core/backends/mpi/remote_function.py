@@ -27,7 +27,7 @@ class MPIRemoteFunction(RemoteFunction):
     """
 
     def __init__(self, function, num_cpus, num_returns, resources):
-        self._remote_function = function
+        self._remote_function = mpi.put(function)
         self._num_cpus = num_cpus
         self._num_returns = 1 if num_returns is None else num_returns
         self._resources = resources

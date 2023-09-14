@@ -14,4 +14,4 @@ def write_to(const uint8_t[:] inband, uint8_t[:] data, int memcopy_threads):
                                 64,
                                 memcopy_threads)
     t1 = time.perf_counter()
-    print(f'write_to: {t1 - t0}')
+    # print(f'write_to: {t1 - t0}')

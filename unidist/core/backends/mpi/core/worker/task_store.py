@@ -280,6 +280,7 @@ class TaskStore:
         Exceptions are stored in output data IDs as value.
         """
         local_store = LocalObjectStore.get_instance()
+        shared_store = SharedObjectStore.get_instance()
         completed_data_ids = []
         if inspect.iscoroutinefunction(task):
 
@@ -327,9 +328,13 @@ class TaskStore:
                                 zip(output_data_ids, output_values)
                             ):
                                 local_store.put(output_id, value)
+                                if shared_store.should_be_shared(value):
+                                    shared_store.put(output_id, value)
                                 completed_data_ids[idx] = output_id
                         else:
                             local_store.put(output_data_ids, output_values)
+                            if shared_store.should_be_shared(output_values):
+                                shared_store.put(output_data_ids, output_values)
                             completed_data_ids = [output_data_ids]
 
                 RequestStore.get_instance().check_pending_get_requests(output_data_ids)
@@ -396,9 +401,13 @@ class TaskStore:
                             zip(output_data_ids, output_values)
                         ):
                             local_store.put(output_id, value)
+                            if shared_store.should_be_shared(value):
+                                shared_store.put(output_id, value)
                             completed_data_ids[idx] = output_id
                     else:
                         local_store.put(output_data_ids, output_values)
+                        if shared_store.should_be_shared(output_values):
+                            shared_store.put(output_data_ids, output_values)
                         completed_data_ids = [output_data_ids]
             RequestStore.get_instance().check_pending_get_requests(output_data_ids)
             # Monitor the task execution.
@@ -433,7 +442,7 @@ class TaskStore:
         # Parse request
         local_store = LocalObjectStore.get_instance()
         shared_store = SharedObjectStore.get_instance()
-        task = request["task"]
+        task = local_store.get(request["task"])
         args = request["args"]
         kwargs = request["kwargs"]
         output_ids = request["output"]

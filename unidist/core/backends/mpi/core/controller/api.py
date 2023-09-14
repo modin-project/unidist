@@ -371,8 +371,7 @@ def put(data):
     shared_store = SharedObjectStore.get_instance()
     data_id = local_store.generate_data_id(garbage_collector)
     local_store.put(data_id, data)
-    if shared_store.should_be_shared(data):
-        shared_store.put(data_id, data)
+    shared_store.put(data_id, data)
 
     logger.debug("PUT {} id".format(data_id._id))
 
@@ -545,6 +544,7 @@ def submit(task, *args, num_returns=1, **kwargs):
     unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
     unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
 
+    push_data(dest_rank, common.master_data_ids_to_base(task))
     push_data(dest_rank, unwrapped_args)
     push_data(dest_rank, unwrapped_kwargs)
 
