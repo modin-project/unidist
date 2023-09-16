@@ -18,6 +18,7 @@ except ImportError:
         "Missing dependency 'mpi4py'. Use pip or conda to install it."
     ) from None
 
+from unidist.core.backends.mpi.core.serialization import serialize_complex_data
 from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
 from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 from unidist.core.backends.mpi.core.controller.garbage_collector import (
@@ -369,10 +370,13 @@ def put(data):
     """
     local_store = LocalObjectStore.get_instance()
     shared_store = SharedObjectStore.get_instance()
+
     data_id = local_store.generate_data_id(garbage_collector)
+    serialized_data = serialize_complex_data(data)
+    local_store.cache_serialized_data(data_id, serialized_data)
     local_store.put(data_id, data)
     if shared_store.is_allocated():
-        shared_store.put(data_id, data)
+        shared_store.put(data_id, serialized_data)
 
     logger.debug("PUT {} id".format(data_id._id))
 
@@ -545,13 +549,14 @@ def submit(task, *args, num_returns=1, **kwargs):
     unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
     unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
 
-    push_data(dest_rank, common.master_data_ids_to_base(task))
+    task_base_id = common.master_data_ids_to_base(task)
+    push_data(dest_rank, task_base_id)
     push_data(dest_rank, unwrapped_args)
     push_data(dest_rank, unwrapped_kwargs)
 
     operation_type = common.Operation.EXECUTE
     operation_data = {
-        "task": task,
+        "task": task_base_id,
         "args": unwrapped_args,
         "kwargs": unwrapped_kwargs,
         "output": common.master_data_ids_to_base(output_ids),
@@ -562,6 +567,7 @@ def submit(task, *args, num_returns=1, **kwargs):
         operation_type,
         operation_data,
         dest_rank,
+        is_serialized=False,
     )
     async_operations.extend(h_list)
 

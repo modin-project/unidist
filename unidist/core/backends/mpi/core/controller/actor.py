@@ -62,6 +62,7 @@ class ActorMethod:
             operation_type,
             operation_data,
             self._actor._owner_rank,
+            is_serialized=False,
         )
         async_operations.extend(h_list)
         return output_id
@@ -126,6 +127,7 @@ class Actor:
                 operation_type,
                 operation_data,
                 self._owner_rank,
+                is_serialized=False,
             )
             async_operations.extend(h_list)
 
