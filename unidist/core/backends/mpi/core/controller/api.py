@@ -344,7 +344,7 @@ def cluster_resources():
         cluster_resources[host]["CPU"] = len(
             [
                 r
-                for r in mpi_state.topology[host]
+                for r in mpi_state.topology[host].values()
                 if not mpi_state.is_root_process(r)
                 and not mpi_state.is_monitor_process(r)
             ]

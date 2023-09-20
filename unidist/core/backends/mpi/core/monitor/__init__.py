@@ -2,4 +2,4 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""MPI backend functionality related to `monitor` concept."""
+"""MPI backend functionality related to `monitor` process."""

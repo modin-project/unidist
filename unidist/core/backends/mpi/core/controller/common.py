@@ -108,7 +108,9 @@ class RoundRobin:
 
 def pull_data(comm, owner_rank):
     """
-    Receive data from another MPI process using shared memory or direct communiction, depending on package type.
+    Receive data from another MPI process.
+
+    Data can come from shared memory or direct communication depending on the package type.
     The data is de-serialized from received buffers.
 
     Parameters
@@ -260,7 +262,7 @@ def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
 
 def _push_shared_data(dest_rank, data_id, is_blocking_op):
     """
-    catiSend data loon associated with data ID to target rank using shared memory.
+    Send the data associated with the data ID to target rank using shared memory.
 
     Parameters
     ----------
@@ -279,8 +281,7 @@ def _push_shared_data(dest_rank, data_id, is_blocking_op):
     operation_type = common.Operation.PUT_SHARED_DATA
     async_operations = AsyncOperations.get_instance()
     info_package = shared_store.get_shared_info(data_id)
-    info_package["id"] = data_id
-    operation_data = info_package
+    operation_data = dict(info_package)
     if is_blocking_op:
         communication.mpi_send_object(mpi_state.comm, operation_data, dest_rank)
     else:

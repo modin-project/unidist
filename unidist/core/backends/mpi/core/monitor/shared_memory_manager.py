@@ -6,6 +6,8 @@
 
 from array import array
 
+from unidist.core.backends.mpi.utils import ImmutableDict
+
 try:
     import mpi4py
 except ImportError:
@@ -23,7 +25,7 @@ from mpi4py import MPI  # noqa: E402
 
 class FreeMemoryRange:
     """
-    Class that helps keep track of free space in memory.
+    Class that helps keep track of free space in shared memory.
 
     Parameters
     ----------
@@ -73,7 +75,7 @@ class FreeMemoryRange:
         first_index : int
             First index in memory.
         last_index : int
-            Last index in memory. (not inclusive)
+            Last index in memory (not inclusive).
         """
         if len(self.range) == 0:
             self.range.append([first_index, last_index])
@@ -108,16 +110,17 @@ class SharedMemoryManager:
     """
 
     def __init__(self):
-        self.shared_store = SharedObjectStore.get_instance()
-        self._reservation_info = {}
-        self.free_memory = FreeMemoryRange(self.shared_store.shared_memory_size)
-        self.free_service_indexes = FreeMemoryRange(
-            self.shared_store.service_info_max_count
-        )
-        self.pending_cleanup = []
-
-        self.monitor_comm = None
+        self.shared_store = None
         if common.is_shared_memory_supported():
+            self.shared_store = SharedObjectStore.get_instance()
+            self._reservation_info = {}
+            self.free_memory = FreeMemoryRange(self.shared_store.shared_memory_size)
+            self.free_service_indexes = FreeMemoryRange(
+                self.shared_store.service_info_max_count
+            )
+            self.pending_cleanup = []
+
+            self.monitor_comm = None
             mpi_state = communication.MPIState.get_instance()
 
             monitor_group = mpi_state.comm.Get_group().Incl(mpi_state.monitor_processes)
@@ -130,6 +133,7 @@ class SharedMemoryManager:
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
+            An ID to data.
 
         Returns
         -------
@@ -140,9 +144,13 @@ class SharedMemoryManager:
         -----
         The `dict` is returned if a reservation has been specified, otherwise `False` is returned.
         """
+        if self.shared_store is None:
+            raise RuntimeError(
+                "SharedMemoryManager cannot be used if shared memory is not supported."
+            )
         if data_id not in self._reservation_info:
             return None
-        return self._reservation_info[data_id].copy()
+        return self._reservation_info[data_id]
 
     def put(self, data_id, memory_len):
         """
@@ -151,6 +159,7 @@ class SharedMemoryManager:
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
+            An ID to data.
         memory_len : int
             Required memory length.
 
@@ -159,6 +168,10 @@ class SharedMemoryManager:
         dict
             Reservation information.
         """
+        if self.shared_store is None:
+            raise RuntimeError(
+                "SharedMemoryManager cannot be used if shared memory is not supported."
+            )
         first_index, last_index = self.free_memory.occupy(memory_len)
         service_index, _ = self.free_service_indexes.occupy(
             SharedObjectStore.INFO_COUNT
@@ -168,14 +181,16 @@ class SharedMemoryManager:
         if service_index is None:
             raise MemoryError("Overflow service memory")
 
-        reservation_info = {
-            "first_index": first_index,
-            "last_index": last_index,
-            "service_index": service_index,
-        }
+        reservation_info = ImmutableDict(
+            {
+                "first_index": first_index,
+                "last_index": last_index,
+                "service_index": service_index,
+            }
+        )
 
         self._reservation_info[data_id] = reservation_info
-        return reservation_info.copy()
+        return reservation_info
 
     def clear(self, data_id_list):
         """
@@ -186,6 +201,8 @@ class SharedMemoryManager:
         data_id_list : list
             List of `DataID`.
         """
+        if self.shared_store is None:
+            return
         cleanup_list = self.pending_cleanup + data_id_list
         self.pending_cleanup = []
 

@@ -6,6 +6,10 @@
 
 import logging
 import inspect
+import weakref
+from unidist.config.backends.mpi.envvars import IsMpiSpawnWorkers
+
+from unidist.core.backends.mpi.utils import ImmutableDict
 
 try:
     import mpi4py
@@ -103,7 +107,7 @@ class MPITag:
     BUFFER = 113
 
 
-class MetadataPackage(dict):
+class MetadataPackage(ImmutableDict):
     """
     The class defines metadata packages for a communication.
 
@@ -176,10 +180,10 @@ class MetadataPackage(dict):
         return MetadataPackage(
             {
                 "package_type": MetadataPackage.SHARED_DATA,
-                "id": data_id,
+                "id": weakref.proxy(data_id),
                 "s_data_len": s_data_len,
-                "raw_buffers_len": raw_buffers_len,
-                "buffer_count": buffer_count,
+                "raw_buffers_len": tuple(raw_buffers_len),
+                "buffer_count": tuple(buffer_count),
                 "service_index": service_index,
             }
         )
@@ -443,6 +447,13 @@ def is_shared_memory_supported():
         return False
 
     if MPI.VERSION < 3:
+        return False
+
+    # This condition will be removed when the fix is released.
+    if "MPICH" in MPI.Get_library_version() and IsMpiSpawnWorkers.get():
+        MPI.Get_library_version
+        # Mpich shared memory does not work with spawned processes
+        # https://github.com/pmodels/mpich/issues/6603
         return False
 
     return True

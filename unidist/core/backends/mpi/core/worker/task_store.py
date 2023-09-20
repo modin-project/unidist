@@ -450,7 +450,7 @@ class TaskStore:
             output_ids = [
                 local_store.get_unique_data_id(data_id) for data_id in output_ids
             ]
-        elif output_ids is not None:
+        else:
             output_ids = local_store.get_unique_data_id(output_ids)
 
         w_logger.debug("REMOTE task: {}".format(task))

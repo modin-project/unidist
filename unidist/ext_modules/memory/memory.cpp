@@ -18,31 +18,11 @@ namespace unidist {
     return reinterpret_cast<uint8_t *>(value & bits);
   }
 
-  uint64_t timeSinceEpochMillisec() {
-    using namespace std::chrono;
-    return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
-  }
-
-  void my_memcpy( void* dest, const void* src, std::size_t count ) {
-    auto start = timeSinceEpochMillisec();
-
-    std::thread::id this_id = std::this_thread::get_id();
- 
-    // std::this_thread::sleep_for(500ms);
-    std::memcpy(dest, src, count);
-    auto end = timeSinceEpochMillisec();
-
-    std::ostringstream ss;
-    ss << "I am thread [" << this_id << "] from " << start << " to " << end << '\n';
-    std::cout << ss.str();
-  }
-
   void parallel_memcopy(uint8_t *dst,
                         const uint8_t *src,
                         int64_t nbytes,
                         uintptr_t block_size,
                         int num_threads) {
-    auto start = timeSinceEpochMillisec();
     std::vector<std::thread> threadpool(num_threads);
     uint8_t *left = pointer_logical_and(src + block_size - 1, ~(block_size - 1));
     uint8_t *right = pointer_logical_and(src + nbytes, ~(block_size - 1));
@@ -75,9 +55,5 @@ namespace unidist {
         t.join();
       }
     }
-    auto end = timeSinceEpochMillisec();
-    // std::ostringstream ss;
-    // ss << "I am parallel_memcopy from " << start << " to " << end << '\n';
-    // std::cout << ss.str();
   }
 }

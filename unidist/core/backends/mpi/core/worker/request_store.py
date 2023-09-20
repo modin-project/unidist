@@ -44,11 +44,11 @@ class RequestStore:
     DATA = 2
 
     def __init__(self):
-        # Non-blocking get requests {DataId : [ Set of Ranks ]}
+        # Non-blocking get requests {DataID : [ Set of Ranks ]}
         self._nonblocking_get_requests = defaultdict(set)
-        # Blocking get requests {DataId : [ Set of Ranks ]}
+        # Blocking get requests {DataID : [ Set of Ranks ]}
         self._blocking_get_requests = defaultdict(set)
-        # Blocking wait requests {DataId : Rank}
+        # Blocking wait requests {DataID : Rank}
         self._blocking_wait_requests = {}
         # Data requests
         self._data_requests = set()

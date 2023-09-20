@@ -97,9 +97,10 @@ class MPIState:
     host : str
         IP-address of the current host.
     topology : dict
-        Dictionary, containing worker rank assignments by IP-addresses in
-        the form: `{"node_ip0": [rank_2, rank_3, ...], "node_ip1": [rank_i, ...], ...}`.
-        Note that ranks start with 2 because 0 is for master and 1 is for monitor.
+        Dictionary, containing all ranks assignments by IP-addresses in
+        the form: `{"node_ip0": {"host_rank": "global_rank", ...}, ...}`.
+    host_by_rank : dict
+        Dictionary containing IP addresses by rank.
     monitor_processes : list
         List of ranks that are monitor processes.
     workers : list
@@ -125,10 +126,10 @@ class MPIState:
         # Get topology of MPI cluster.
         cluster_info = self.comm.allgather((self.host, self.global_rank, host_rank))
         self.topology = defaultdict(dict)
-        self.__host_by_rank = defaultdict(None)
+        self.host_by_rank = defaultdict(None)
         for host, global_rank, host_rank in cluster_info:
             self.topology[host][host_rank] = global_rank
-            self.__host_by_rank[global_rank] = host
+            self.host_by_rank[global_rank] = host
 
         self.monitor_processes = [
             self.topology[host][MPIRank.MONITOR] for host in self.topology
@@ -172,6 +173,7 @@ class MPIState:
         ----------
         rank : int, optional
             The rank to be checked.
+            If ``None``, the current rank is to be checked.
 
         Returns
         -------
@@ -190,6 +192,7 @@ class MPIState:
         ----------
         rank : int, optional
             The rank to be checked.
+            If ``None``, the current rank is to be checked.
 
         Returns
         -------
@@ -200,13 +203,13 @@ class MPIState:
             rank = self.global_rank
         return rank in self.monitor_processes
 
-    def get_monitor_by_worker_rank(self, global_rank=None):
+    def get_monitor_by_worker_rank(self, rank=None):
         """
         Get the monitor process rank for the host that includes this rank.
 
         Parameters
         ----------
-        global_rank : int, optional
+        rank : int, optional
             The global rank to search for a monitor process.
 
         Returns
@@ -217,9 +220,9 @@ class MPIState:
         if self.host_comm is None:
             return MPIRank.MONITOR
 
-        if global_rank is None:
-            global_rank = self.global_rank
-        host = self.__host_by_rank[global_rank]
+        if rank is None:
+            rank = self.global_rank
+        host = self.host_by_rank[rank]
         if host is None:
             raise ValueError("Unknown rank of workers")
 
@@ -549,7 +552,7 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank):
     info_package = common.MetadataPackage.get_local_info(
         len(s_data), [len(sbuf) for sbuf in raw_buffers], buffer_count
     )
-    comm.send(info_package, dest=dest_rank, tag=common.MPITag.OBJECT)
+    comm.send(dict(info_package), dest=dest_rank, tag=common.MPITag.OBJECT)
     with pkl5._bigmpi as bigmpi:
         comm.Send(bigmpi(s_data), dest=dest_rank, tag=common.MPITag.BUFFER)
         for sbuf in raw_buffers:
@@ -568,13 +571,13 @@ def send_complex_data(comm, data, dest_rank, is_serialized=False):
         Data object to send.
     dest_rank : int
         Target MPI process to transfer data.
-    is_serialized : bool
+    is_serialized : bool, default: False
         `data` is already serialized or not.
 
     Returns
     -------
     dict or None
-        Serialization data for caching purpose.
+        Serialized data for caching purpose.
 
     Notes
     -----
@@ -645,7 +648,7 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank)
     info_package = common.MetadataPackage.get_local_info(
         len(s_data), [len(sbuf) for sbuf in raw_buffers], buffer_count
     )
-    h1 = comm.isend(info_package, dest=dest_rank, tag=common.MPITag.OBJECT)
+    h1 = comm.isend(dict(info_package), dest=dest_rank, tag=common.MPITag.OBJECT)
     handlers.append((h1, None))
 
     with pkl5._bigmpi as bigmpi:
@@ -716,7 +719,7 @@ def recv_complex_data(comm, source_rank, info_package):
         MPI communicator object.
     source_rank : int
         Source MPI process to receive data from.
-    info_package : unidist.core.backends.mpi.core.common.DataInfoPackage
+    info_package : unidist.core.backends.mpi.core.common.MetadataPackage
         Required information to deserialize data.
 
     Returns
@@ -960,8 +963,8 @@ def send_reserve_operation(comm, data_id, data_size):
     dict
         Reservation info about the allocated range in shared memory.
     """
-    operation_type = common.Operation.RESERVE_SHARED_MEMORY
     mpi_state = MPIState.get_instance()
+    operation_type = common.Operation.RESERVE_SHARED_MEMORY
 
     operation_data = {
         "id": data_id,
@@ -975,4 +978,4 @@ def send_reserve_operation(comm, data_id, data_size):
         operation_data,
         mpi_state.get_monitor_by_worker_rank(),
     )
-    return mpi_busy_wait_recv(comm, mpi_state.get_monitor_by_worker_rank())
+    return mpi_recv_object(comm, mpi_state.get_monitor_by_worker_rank())

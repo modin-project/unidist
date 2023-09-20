@@ -1,5 +1,6 @@
 # for development
 cloudpickle
+Cython
 dask[complete]>=2.22.0
 distributed>=2.22.0
 mpi4py-mpich

@@ -11,7 +11,8 @@ import psutil
 import weakref
 from array import array
 
-from cmemory import write_to
+from unidist._memory import parallel_memcopy
+from unidist.core.backends.mpi.utils import ImmutableDict
 
 try:
     import mpi4py
@@ -35,16 +36,16 @@ from mpi4py import MPI  # noqa: E402
 
 class SharedSignaler:
     """
-    Class that help to synchronize write to shared memory.
+    Class that helps synchronize writes to shared memory.
 
     Parameters
     ----------
     win : MPI.win
-        The MPI window that was used to create the shared memory.
+        The MPI window that was used to allocate the shared memory.
 
     Notes
     -----
-    This class should be used with the `with` statement.
+    This class should be used as a context manager.
     """
 
     def __init__(self, win):
@@ -61,45 +62,50 @@ class SharedSignaler:
 
 class SharedObjectStore:
     """
-    Class that provides access to data in shared memory
+    Class that provides access to data in shared memory.
 
     Notes
     -----
-    This class initializes and manage shared memory.
+    This class initializes and manages shared memory.
     """
 
     __instance = None
 
     # Service constants defining the structure of the service buffer
-    SERVICE_COUNT = 20000
+    # The amount of service information for one data object in shared memory.
     INFO_COUNT = 4
+    # Index of service information for the first part of the DataID.
     WORKER_ID_INDEX = 0
+    # Index of service information for the second part of the DataID.
     DATA_NUMBER_INDEX = 1
+    # Index of service information for the first shared memory index where the data is located.
     FIRST_DATA_INDEX = 2
+    # Index of service information to count the number of data references,
+    # which shows how many processes are using this data.
     REFERENCES_NUMBER = 3
 
     def __init__(self):
         # The `MPI.Win` object to manage shared memory for data
         self.win = None
         # The `MPI.Win` object to manage shared memory for service purposes
-        self.win_service = None
+        self.service_win = None
         # `MPI.memory` object for reading/writing data from/to shared memory
         self.shared_buffer = None
         # `memoryview` object for reading/writing data from/to service shared memory.
-        # Service buffer includes service information about written shared data.
+        # Service shared buffer includes service information about written shared data.
         # The service info is set by the worker who sends the data to shared memory
         # and is removed by the monitor if the data is cleared.
         # The service info indicates that the current data is written to shared memory
         # and shows the actual location and number of references.
-        self.service_buffer = None
+        self.service_shared_buffer = None
         # Length of shared memory buffer in bytes
         self.shared_memory_size = None
-        # Length of service shared memory buffer in bytes
+        # Length of service shared memory buffer in items
         self.service_info_max_count = None
 
         # Initialize all properties above
         if common.is_shared_memory_supported():
-            self._init_shared_memory()
+            self._allocate_shared_memory()
 
         # Logger will be initialized after `communicator.MPIState`
         self.logger = None
@@ -140,9 +146,9 @@ class SharedObjectStore:
             system_memory = virtual_memory
         return system_memory
 
-    def _init_shared_memory(self):
+    def _allocate_shared_memory(self):
         """
-        Shared memory initializing
+        Allocate shared memory.
         """
         mpi_state = communication.MPIState.get_instance()
 
@@ -167,8 +173,10 @@ class SharedObjectStore:
         self.shared_buffer, _ = self.win.Shared_query(communication.MPIRank.MONITOR)
 
         # Service shared memory is allocated only once by the monitor process
-        self.service_info_max_count = self.SERVICE_COUNT
-        self.win_service = MPI.Win.Allocate_shared(
+        self.service_info_max_count = (
+            self.shared_memory_size // MpiSharedObjectStoreThreshold.get()
+        ) * self.INFO_COUNT
+        self.service_win = MPI.Win.Allocate_shared(
             self.service_info_max_count * MPI.LONG.size
             if mpi_state.is_monitor_process()
             else 0,
@@ -176,11 +184,13 @@ class SharedObjectStore:
             comm=mpi_state.host_comm,
             info=info,
         )
-        service_buffer, _ = self.win_service.Shared_query(communication.MPIRank.MONITOR)
-        self.service_buffer = memoryview(service_buffer).cast("l")
+        service_buffer, _ = self.service_win.Shared_query(communication.MPIRank.MONITOR)
+        self.service_shared_buffer = memoryview(service_buffer).cast("l")
         # Set -1 to the service buffer because 0 is a valid value and may be recognized by mistake.
         if mpi_state.is_monitor_process():
-            self.service_buffer[:] = array("l", [-1] * len(self.service_buffer))
+            self.service_shared_buffer[:] = array(
+                "l", [-1] * len(self.service_shared_buffer)
+            )
 
     def _parse_data_id(self, data_id):
         """
@@ -219,11 +229,11 @@ class SharedObjectStore:
             raise KeyError(
                 "it is not possible to increment the reference number for this data_id because it is not part of the shared data"
             )
-        with SharedSignaler(self.win_service):
-            prev_ref_number = self.service_buffer[
+        with SharedSignaler(self.service_win):
+            prev_ref_number = self.service_shared_buffer[
                 service_index + self.REFERENCES_NUMBER
             ]
-            self.service_buffer[service_index + self.REFERENCES_NUMBER] = (
+            self.service_shared_buffer[service_index + self.REFERENCES_NUMBER] = (
                 prev_ref_number + 1
             )
             self.logger.debug(
@@ -254,11 +264,11 @@ class SharedObjectStore:
         if MPI.Is_finalized():
             return
         if self._check_service_info(data_id, service_index):
-            with SharedSignaler(self.win_service):
-                prev_ref_number = self.service_buffer[
+            with SharedSignaler(self.service_win):
+                prev_ref_number = self.service_shared_buffer[
                     service_index + self.REFERENCES_NUMBER
                 ]
-                self.service_buffer[service_index + self.REFERENCES_NUMBER] = (
+                self.service_shared_buffer[service_index + self.REFERENCES_NUMBER] = (
                     prev_ref_number - 1
                 )
                 self.logger.debug(
@@ -272,8 +282,11 @@ class SharedObjectStore:
         Parameters
         ----------
         service_index : int
+            The service buffer index.
         data_id : unidist.core.backends.common.data_id.DataID
+            An ID to data.
         first_index : int
+            The first index of data in the shared buffer.
 
         Notes
         -----
@@ -281,11 +294,15 @@ class SharedObjectStore:
         """
         worker_id, data_number = self._parse_data_id(data_id)
 
-        with SharedSignaler(self.win_service):
-            self.service_buffer[service_index + self.FIRST_DATA_INDEX] = first_index
-            self.service_buffer[service_index + self.REFERENCES_NUMBER] = 1
-            self.service_buffer[service_index + self.DATA_NUMBER_INDEX] = data_number
-            self.service_buffer[service_index + self.WORKER_ID_INDEX] = worker_id
+        with SharedSignaler(self.service_win):
+            self.service_shared_buffer[
+                service_index + self.FIRST_DATA_INDEX
+            ] = first_index
+            self.service_shared_buffer[service_index + self.REFERENCES_NUMBER] = 1
+            self.service_shared_buffer[
+                service_index + self.DATA_NUMBER_INDEX
+            ] = data_number
+            self.service_shared_buffer[service_index + self.WORKER_ID_INDEX] = worker_id
 
         self.finalizers.append(
             weakref.finalize(
@@ -314,31 +331,24 @@ class SharedObjectStore:
         This check ensures that the data is physically located in shared memory.
         """
         worker_id, data_number = self._parse_data_id(data_id)
-        w_id = self.service_buffer[service_index + self.WORKER_ID_INDEX]
-        d_id = self.service_buffer[service_index + self.DATA_NUMBER_INDEX]
+        w_id = self.service_shared_buffer[service_index + self.WORKER_ID_INDEX]
+        d_id = self.service_shared_buffer[service_index + self.DATA_NUMBER_INDEX]
         return w_id == worker_id and d_id == data_number
 
-    def _put_shared_info(self, shared_info):
+    def _put_shared_info(self, data_id, shared_info):
         """
         Put required information to deserialize `data_id`.
 
         Parameters
         ----------
-        shared_info : dict
+        data_id : unidist.core.backends.common.data_id.DataID
+        shared_info : unidist.core.backends.mpi.utils.ImmutableDict
             Information required for data deserialization
-
-        Notes
-        -----
-        The store keeps a deep copy, because this information must not be changed.
         """
-        data_id = shared_info["id"]
+        if not isinstance(shared_info, ImmutableDict):
+            raise ValueError("Shared info should be immutable.")
         if data_id not in self._shared_info:
-            self._shared_info[data_id] = {
-                "s_data_len": shared_info["s_data_len"],
-                "raw_buffers_len": shared_info["raw_buffers_len"].copy(),
-                "buffer_count": shared_info["buffer_count"].copy(),
-                "service_index": shared_info["service_index"],
-            }
+            self._shared_info[data_id] = shared_info
 
     def _read_from_shared_buffer(self, data_id, shared_info):
         """
@@ -360,7 +370,7 @@ class SharedObjectStore:
         s_data_len = shared_info["s_data_len"]
         service_index = shared_info["service_index"]
 
-        first_index = self.service_buffer[service_index + self.FIRST_DATA_INDEX]
+        first_index = self.service_shared_buffer[service_index + self.FIRST_DATA_INDEX]
 
         s_data_last_index = first_index + s_data_len
         s_data = self.shared_buffer[first_index:s_data_last_index].toreadonly()
@@ -391,7 +401,7 @@ class SharedObjectStore:
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
         reservation_data : dict
-            Information about the reserved space in shared memory for the current DataId.
+            Information about the reserved space in shared memory for the current DataID.
         serialized_data : dict
             Serialized data.
 
@@ -426,7 +436,7 @@ class SharedObjectStore:
             if s_data_last_index > last_index:
                 raise ValueError(f"Not enough shared space for {i} raw_buffer")
 
-            write_to(
+            parallel_memcopy(
                 raw_buffer,
                 self.shared_buffer[raw_buffer_first_index:raw_buffer_last_index],
                 6,
@@ -564,19 +574,8 @@ class SharedObjectStore:
         -------
         dict
             Information required for data deserialization
-
-        Notes
-        -----
-        The store return a deep copy, because this information must not be changed.
         """
-        shared_info = self._shared_info[data_id]
-        return common.MetadataPackage.get_shared_info(
-            data_id,
-            shared_info["s_data_len"],
-            shared_info["raw_buffers_len"],
-            shared_info["buffer_count"],
-            shared_info["service_index"],
-        )
+        return self._shared_info[data_id]
 
     def get_ref_number(self, data_id, service_index):
         """
@@ -596,7 +595,7 @@ class SharedObjectStore:
         # we must to set service_index in args because this function is called from monitor which can not known the shared_info
         if not self._check_service_info(data_id, service_index):
             return 0
-        return self.service_buffer[service_index + self.REFERENCES_NUMBER]
+        return self.service_shared_buffer[service_index + self.REFERENCES_NUMBER]
 
     def get_shared_buffer(self, first_index, last_index):
         """
@@ -629,21 +628,27 @@ class SharedObjectStore:
         -----
         This function should be called by the monitor during the cleanup of shared data.
         """
-        with SharedSignaler(self.win_service):
+        with SharedSignaler(self.service_win):
             # Read actual value
-            old_worker_id = self.service_buffer[service_index + self.WORKER_ID_INDEX]
-            old_data_id = self.service_buffer[service_index + self.DATA_NUMBER_INDEX]
-            old_first_index = self.service_buffer[service_index + self.FIRST_DATA_INDEX]
-            old_references_number = self.service_buffer[
+            old_worker_id = self.service_shared_buffer[
+                service_index + self.WORKER_ID_INDEX
+            ]
+            old_data_id = self.service_shared_buffer[
+                service_index + self.DATA_NUMBER_INDEX
+            ]
+            old_first_index = self.service_shared_buffer[
+                service_index + self.FIRST_DATA_INDEX
+            ]
+            old_references_number = self.service_shared_buffer[
                 service_index + self.REFERENCES_NUMBER
             ]
 
             # check if data_id is correct
             if self._parse_data_id(data_id) == (old_worker_id, old_data_id):
-                self.service_buffer[service_index + self.WORKER_ID_INDEX] = -1
-                self.service_buffer[service_index + self.DATA_NUMBER_INDEX] = -1
-                self.service_buffer[service_index + self.FIRST_DATA_INDEX] = -1
-                self.service_buffer[service_index + self.REFERENCES_NUMBER] = -1
+                self.service_shared_buffer[service_index + self.WORKER_ID_INDEX] = -1
+                self.service_shared_buffer[service_index + self.DATA_NUMBER_INDEX] = -1
+                self.service_shared_buffer[service_index + self.FIRST_DATA_INDEX] = -1
+                self.service_shared_buffer[service_index + self.REFERENCES_NUMBER] = -1
                 self.logger.debug(
                     f"Rank {communication.MPIState.get_instance().global_rank}: Clear {old_data_id}. Service index: {service_index} First index: {old_first_index} References number: {old_references_number}"
                 )
@@ -696,7 +701,7 @@ class SharedObjectStore:
         self._put_service_info(service_index, data_id, first_index)
 
         # put shared info
-        self._put_shared_info(shared_info)
+        self._put_shared_info(data_id, shared_info)
 
     def get(self, data_id, owner_rank, shared_info):
         """
@@ -749,7 +754,7 @@ class SharedObjectStore:
         shared_info = common.MetadataPackage.get_shared_info(
             data_id, s_data_len, raw_buffers_len, buffer_count, service_index
         )
-        self._put_shared_info(shared_info)
+        self._put_shared_info(data_id, shared_info)
 
         # increment ref
         self._increment_ref_number(data_id, shared_info["service_index"])
@@ -768,8 +773,8 @@ class SharedObjectStore:
         if self.win is not None:
             self.win.Free()
             self.win = None
-        if self.win_service is not None:
-            self.win_service.Free()
-            self.win_service = None
+        if self.service_win is not None:
+            self.service_win.Free()
+            self.service_win = None
         for f in self.finalizers:
             f.detach()

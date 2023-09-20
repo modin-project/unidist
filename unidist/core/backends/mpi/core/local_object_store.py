@@ -17,19 +17,19 @@ class LocalObjectStore:
 
     Notes
     -----
-    Currently, the storage is local to the current worker process only.
+    The storage is local to the current worker process only.
     """
 
     __instance = None
 
     def __init__(self):
-        # Add local data {DataId : Data}
+        # Add local data {DataID : Data}
         self._data_map = weakref.WeakKeyDictionary()
-        # "strong" references to data IDs {DataId : DataId}
+        # "strong" references to data IDs {DataID : DataID}
         # we are using dict here to improve performance when getting an element from it,
         # whereas other containers would require O(n) complexity
         self._data_id_map = {}
-        # Data owner {DataId : Rank}
+        # Data owner {DataID : Rank}
         self._data_owner_map = weakref.WeakKeyDictionary()
         # Data was already sent to this ranks {DataID : [ranks]}
         self._sent_data_map = defaultdict(set)

@@ -215,21 +215,23 @@ def monitor_loop():
             reservation_info = shm_manager.get(request["id"])
             if reservation_info is None:
                 reservation_info = shm_manager.put(request["id"], request["size"])
-                reservation_info["is_first_request"] = True
+                is_first_request = True
             else:
-                reservation_info["is_first_request"] = False
+                is_first_request = False
 
             communication.mpi_send_object(
-                mpi_state.comm, data=reservation_info, dest_rank=source_rank
+                mpi_state.comm,
+                data={**reservation_info, "is_first_request": is_first_request},
+                dest_rank=source_rank,
             )
         elif operation_type == common.Operation.REQUEST_SHARED_DATA:
             info_package = communication.mpi_recv_object(mpi_state.comm, source_rank)
             data_id = info_package["id"]
             if data_id is None:
-                raise ValueError("Requested DataId is None")
+                raise ValueError("Requested DataID is None")
             reservation_info = shm_manager.get(data_id)
             if reservation_info is None:
-                raise RuntimeError(f"The monitor do not know the data id {data_id}")
+                raise RuntimeError(f"The monitor does not know the data id {data_id}")
             sh_buf = shared_store.get_shared_buffer(
                 reservation_info["first_index"], reservation_info["last_index"]
             )

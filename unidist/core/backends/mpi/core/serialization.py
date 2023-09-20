@@ -122,7 +122,7 @@ class ComplexDataSerializer:
 
     def __init__(self, buffers=None, buffer_count=None):
         self.buffers = buffers if buffers else []
-        self.buffer_count = buffer_count if buffer_count else []
+        self.buffer_count = list(buffer_count) if buffer_count else []
         self._callback_counter = 0
 
     def _buffer_callback(self, pickle_buffer):

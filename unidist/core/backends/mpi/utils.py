@@ -10,3 +10,28 @@ def initialize_mpi():
     from unidist.core.backends.mpi.core import init
 
     init()
+
+
+class ImmutableDict(dict):
+    __readonly_exception = RuntimeError("Cannot modify ReadOnlyDict")
+
+    def __setitem__(self, *args, **kwargs):
+        raise ImmutableDict.__readonly_exception
+
+    def __delitem__(self, *args, **kwargs):
+        raise ImmutableDict.__readonly_exception
+
+    def pop(self, *args, **kwargs):
+        raise ImmutableDict.__readonly_exception
+
+    def popitem(self, *args, **kwargs):
+        raise ImmutableDict.__readonly_exception
+
+    def clear(self, *args, **kwargs):
+        raise ImmutableDict.__readonly_exception
+
+    def update(self, *args, **kwargs):
+        raise ImmutableDict.__readonly_exception
+
+    def setdefault(self, *args, **kwargs):
+        raise ImmutableDict.__readonly_exception

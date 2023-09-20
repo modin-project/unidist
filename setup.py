@@ -36,5 +36,7 @@ setup(
         "all": all_deps,
     },
     python_requires=">=3.7.1",
-    ext_modules = cythonize('unidist/ext_modules/memory/cmemory.pyx')
+    ext_modules=cythonize(
+        [Extension("unidist._memory", ["unidist/ext_modules/memory/cmemory.pyx"])]
+    ),
 )
