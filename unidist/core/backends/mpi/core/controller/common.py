@@ -281,6 +281,7 @@ def _push_shared_data(dest_rank, data_id, is_blocking_op):
     operation_type = common.Operation.PUT_SHARED_DATA
     async_operations = AsyncOperations.get_instance()
     info_package = shared_store.get_shared_info(data_id)
+    # wrap to dict for sending and correct deserialization of the object by the recipient
     operation_data = dict(info_package)
     if is_blocking_op:
         communication.mpi_send_object(mpi_state.comm, operation_data, dest_rank)

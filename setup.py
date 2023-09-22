@@ -18,7 +18,7 @@ here = pathlib.Path(__file__).parent.resolve()
 long_description = (here / "README.md").read_text(encoding="utf-8")
 
 _memory = Extension(
-    "unidist._memory",
+    "unidist.core.backends.mpi.core._memory",
     ["unidist/core/backends/mpi/core/memory/_memory.pyx"],
     language="c++",
 )

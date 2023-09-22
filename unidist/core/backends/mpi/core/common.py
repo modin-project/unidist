@@ -430,6 +430,30 @@ def materialize_data_ids(data_ids, unwrap_data_id_impl, is_pending=False):
         return unwrapped, is_pending
 
 
+def check_mpich_version(target_version):
+    """
+    Check if the using MPICH version is equal to or greater than the target version.
+
+    Parameters
+    ----------
+    target_version : str
+        Required version of the MPICH library.
+
+    Returns
+    -------
+    bool
+        True ot false.
+    """
+
+    def versiontuple(v):
+        return tuple(map(int, (v.split("."))))
+
+    mpich_version = [
+        raw for raw in MPI.Get_library_version().split("\n") if "MPICH Version:" in raw
+    ][0].split(" ")[-1]
+    return versiontuple(mpich_version) >= versiontuple(target_version)
+
+
 def is_shared_memory_supported():
     """
     Check if the unidist on MPI supports shared memory.
@@ -449,9 +473,12 @@ def is_shared_memory_supported():
     if MPI.VERSION < 3:
         return False
 
-    if "MPICH" in MPI.Get_library_version() and IsMpiSpawnWorkers.get():
-        # Mpich shared memory does not work with spawned processes
-        # https://github.com/pmodels/mpich/issues/6603
+    # Mpich shared memory does not work with spawned processes prior to version 4.2.0.
+    if (
+        "MPICH" in MPI.Get_library_version()
+        and IsMpiSpawnWorkers.get()
+        and not check_mpich_version("4.2.0")
+    ):
         return False
 
     return True

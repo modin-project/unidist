@@ -11,7 +11,7 @@ import psutil
 import weakref
 from array import array
 
-from unidist._memory import parallel_memcopy
+from unidist.core.backends.mpi.core._memory import parallel_memcopy
 from unidist.core.backends.mpi.utils import ImmutableDict
 
 try:
@@ -512,6 +512,17 @@ class SharedObjectStore:
                 logger_name, f"{logger_name}.log", True
             )
         return cls.__instance
+
+    def is_allocated(self):
+        """
+        Check if the shared memory is allocated and ready to put data.x
+
+        Returns
+        -------
+        bool
+            True ot False.
+        """
+        return self.shared_buffer is not None
 
     def should_be_shared(self, data):
         """

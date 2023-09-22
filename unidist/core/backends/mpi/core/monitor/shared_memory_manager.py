@@ -191,7 +191,7 @@ class SharedMemoryManager:
 
     def clear(self, data_id_list):
         """
-        Clear shared memory for the list of `DataID` if prossible.
+        Clear shared memory for the list of `DataID` if possible.
 
         Parameters
         ----------

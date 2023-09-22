@@ -552,6 +552,7 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank):
     info_package = common.MetadataPackage.get_local_info(
         len(s_data), [len(sbuf) for sbuf in raw_buffers], buffer_count
     )
+    # wrap to dict for sending and correct deserialization of the object by the recipient
     comm.send(dict(info_package), dest=dest_rank, tag=common.MPITag.OBJECT)
     with pkl5._bigmpi as bigmpi:
         comm.Send(bigmpi(s_data), dest=dest_rank, tag=common.MPITag.BUFFER)
@@ -648,6 +649,7 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank)
     info_package = common.MetadataPackage.get_local_info(
         len(s_data), [len(sbuf) for sbuf in raw_buffers], buffer_count
     )
+    # wrap to dict for sending and correct deserialization of the object by the recipient
     h1 = comm.isend(dict(info_package), dest=dest_rank, tag=common.MPITag.OBJECT)
     handlers.append((h1, None))
 

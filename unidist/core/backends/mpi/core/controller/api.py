@@ -371,7 +371,7 @@ def put(data):
     shared_store = SharedObjectStore.get_instance()
     data_id = local_store.generate_data_id(garbage_collector)
     local_store.put(data_id, data)
-    if MpiSharedObjectStore.get():
+    if shared_store.is_allocated():
         shared_store.put(data_id, data)
 
     logger.debug("PUT {} id".format(data_id._id))
