@@ -442,7 +442,10 @@ class TaskStore:
         # Parse request
         local_store = LocalObjectStore.get_instance()
         shared_store = SharedObjectStore.get_instance()
-        task = local_store.get(request["task"])
+        if is_data_id(request["task"]):
+            task = local_store.get(request["task"])
+        else:
+            task = request["task"]
         args = request["args"]
         kwargs = request["kwargs"]
         output_ids = request["output"]
