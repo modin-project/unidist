@@ -36,7 +36,7 @@ from mpi4py import MPI  # noqa: E402
 
 class WinLock:
     """
-    Class that helps synchronize writes to shared memory.
+    Class that helps to synchronize the write to shared memory.
 
     Parameters
     ----------
@@ -175,7 +175,7 @@ class SharedObjectStore:
         # Service shared memory is allocated only once by the monitor process
         self.service_info_max_count = (
             self.shared_memory_size // MpiSharedObjectStoreThreshold.get()
-        ) * self.INFO_COUNT
+        ) * self.INFO_SIZE
         self.service_win = MPI.Win.Allocate_shared(
             self.service_info_max_count * MPI.LONG.size
             if mpi_state.is_monitor_process()
@@ -229,7 +229,7 @@ class SharedObjectStore:
             raise KeyError(
                 "it is not possible to increment the reference number for this data_id because it is not part of the shared data"
             )
-        with SharedSignaler(self.service_win):
+        with WinLock(self.service_win):
             prev_ref_number = self.service_shared_buffer[
                 service_index + self.REFERENCES_NUMBER
             ]
@@ -266,7 +266,7 @@ class SharedObjectStore:
         if MPI.Is_finalized():
             return
         if self._check_service_info(data_id, service_index):
-            with SharedSignaler(self.service_win):
+            with WinLock(self.service_win):
                 prev_ref_number = self.service_shared_buffer[
                     service_index + self.REFERENCES_NUMBER
                 ]
@@ -296,7 +296,7 @@ class SharedObjectStore:
         """
         worker_id, data_number = self._parse_data_id(data_id)
 
-        with SharedSignaler(self.service_win):
+        with WinLock(self.service_win):
             self.service_shared_buffer[
                 service_index + self.FIRST_DATA_INDEX
             ] = first_index
@@ -626,7 +626,7 @@ class SharedObjectStore:
         -----
         This function should be called by the monitor during the cleanup of shared data.
         """
-        with SharedSignaler(self.service_win):
+        with WinLock(self.service_win):
             # Read actual value
             old_worker_id = self.service_shared_buffer[
                 service_index + self.WORKER_ID_INDEX

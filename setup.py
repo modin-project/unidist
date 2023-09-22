@@ -17,6 +17,12 @@ here = pathlib.Path(__file__).parent.resolve()
 # Get the long description from the README file
 long_description = (here / "README.md").read_text(encoding="utf-8")
 
+_memory = Extension(
+    "unidist._memory",
+    ["unidist/core/backends/mpi/core/memory/_memory.pyx"],
+    language="c++",
+)
+
 setup(
     name="unidist",
     version=versioneer.get_version(),
@@ -36,7 +42,5 @@ setup(
         "all": all_deps,
     },
     python_requires=">=3.7.1",
-    ext_modules=cythonize(
-        [Extension("unidist._memory", ["unidist/ext_modules/memory/cmemory.pyx"])]
-    ),
+    ext_modules=cythonize([_memory]),
 )

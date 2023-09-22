@@ -352,17 +352,18 @@ def push_data(dest_rank, value, is_blocking_op=False):
         data_id = value
         if shared_store.contains(data_id):
             _push_shared_data(dest_rank, data_id, is_blocking_op)
-        elif local_store.is_already_serialized(data_id):
-            _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized=True)
         elif local_store.contains(data_id):
-            data = local_store.get(data_id)
-            if shared_store.should_be_shared(data):
-                shared_store.put(data_id, data)
-                _push_shared_data(dest_rank, data_id, is_blocking_op)
+            if local_store.is_already_serialized(data_id):
+                _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized=True)
             else:
-                _push_local_data(
-                    dest_rank, data_id, is_blocking_op, is_serialized=False
-                )
+                data = local_store.get(data_id)
+                if shared_store.should_be_shared(data):
+                    shared_store.put(data_id, data)
+                    _push_shared_data(dest_rank, data_id, is_blocking_op)
+                else:
+                    _push_local_data(
+                        dest_rank, data_id, is_blocking_op, is_serialized=False
+                    )
         elif local_store.contains_data_owner(data_id):
             _push_data_owner(dest_rank, data_id)
         else:

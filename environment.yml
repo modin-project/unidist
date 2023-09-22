@@ -12,6 +12,7 @@ dependencies:
   - msgpack-python>=1.0.0
   - cloudpickle
   - packaging
+  - cython
   - psutil
   - pytest
   # for downloading packages from PyPI

@@ -450,7 +450,6 @@ def is_shared_memory_supported():
         return False
 
     if "MPICH" in MPI.Get_library_version() and IsMpiSpawnWorkers.get():
-        MPI.Get_library_version
         # Mpich shared memory does not work with spawned processes
         # https://github.com/pmodels/mpich/issues/6603
         return False

@@ -6,8 +6,6 @@
 
 from array import array
 
-from unidist.core.backends.mpi.utils import ImmutableDict
-
 try:
     import mpi4py
 except ImportError:
@@ -17,6 +15,7 @@ except ImportError:
 
 from unidist.core.backends.mpi.core import communication, common
 from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
+from unidist.core.backends.mpi.utils import ImmutableDict
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
@@ -173,9 +172,7 @@ class SharedMemoryManager:
                 "`SharedMemoryManager` cannot be used if the shared object storage is not enabled."
             )
         first_index, last_index = self.free_memory.occupy(memory_len)
-        service_index, _ = self.free_service_indexes.occupy(
-            SharedObjectStore.INFO_COUNT
-        )
+        service_index, _ = self.free_service_indexes.occupy(SharedObjectStore.INFO_SIZE)
         if first_index is None:
             raise MemoryError("Overflow memory")
         if service_index is None:
@@ -194,7 +191,7 @@ class SharedMemoryManager:
 
     def clear(self, data_id_list):
         """
-        Clear shared memory for the list of `DataID`.
+        Clear shared memory for the list of `DataID` if prossible.
 
         Parameters
         ----------
@@ -235,8 +232,7 @@ class SharedMemoryManager:
                     )
                     self.free_service_indexes.release(
                         reservation_info["service_index"],
-                        reservation_info["service_index"]
-                        + SharedObjectStore.INFO_COUNT,
+                        reservation_info["service_index"] + SharedObjectStore.INFO_SIZE,
                     )
                     self.free_memory.release(
                         reservation_info["first_index"], reservation_info["last_index"]
