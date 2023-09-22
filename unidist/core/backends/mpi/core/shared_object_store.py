@@ -34,7 +34,7 @@ mpi4py.rc(recv_mprobe=False, initialize=False)
 from mpi4py import MPI  # noqa: E402
 
 
-class SharedSignaler:
+class WinLock:
     """
     Class that helps synchronize writes to shared memory.
 
@@ -73,7 +73,7 @@ class SharedObjectStore:
 
     # Service constants defining the structure of the service buffer
     # The amount of service information for one data object in shared memory.
-    INFO_COUNT = 4
+    INFO_SIZE = 4
     # Index of service information for the first part of the DataID.
     WORKER_ID_INDEX = 0
     # Index of service information for the second part of the DataID.
@@ -248,11 +248,13 @@ class SharedObjectStore:
     def _decrement_ref_number(self, data_id, service_index):
         """
         Decrement the number of references to indicate to the monitor that this data is no longer used.
+
         When references count is 0, it can be cleared.
 
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
+            An ID to data.
         service_index : int
             The service buffer index.
 
@@ -260,7 +262,7 @@ class SharedObjectStore:
         -----
         This function is called in `weakref.finalizer' after data_id collecting.
         """
-        # we must to set service_index in args because the shared_info will be deleted before than this function is called
+        # we must set service_index in args because the shared_info will be deleted before than this function is called
         if MPI.Is_finalized():
             return
         if self._check_service_info(data_id, service_index):
@@ -422,7 +424,6 @@ class SharedObjectStore:
         buffer_lens = []
         s_data_first_index = first_index
         s_data_last_index = s_data_first_index + s_data_len
-        # buffer_lens.append(s_data_len)
 
         if s_data_last_index > last_index:
             raise ValueError("Not enough shared space for data")
@@ -441,9 +442,6 @@ class SharedObjectStore:
                 self.shared_buffer[raw_buffer_first_index:raw_buffer_last_index],
                 6,
             )
-            # self.shared_buffer[
-            #     raw_buffer_first_index:raw_buffer_last_index
-            # ] = raw_buffer
 
             buffer_lens.append(raw_buffer_len)
             last_prev_index = raw_buffer_last_index
@@ -710,6 +708,7 @@ class SharedObjectStore:
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
+            An ID to data.
         owner_rank : int
             The rank that sent the data.
         shared_info : dict

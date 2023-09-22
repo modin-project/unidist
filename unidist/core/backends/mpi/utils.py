@@ -13,7 +13,7 @@ def initialize_mpi():
 
 
 class ImmutableDict(dict):
-    __readonly_exception = RuntimeError("Cannot modify ReadOnlyDict")
+    __readonly_exception = TypeError("Cannot modify `ImmutableDict`")
 
     def __setitem__(self, *args, **kwargs):
         raise ImmutableDict.__readonly_exception

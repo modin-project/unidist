@@ -146,7 +146,7 @@ class SharedMemoryManager:
         """
         if self.shared_store is None:
             raise RuntimeError(
-                "SharedMemoryManager cannot be used if shared memory is not supported."
+                "`SharedMemoryManager` cannot be used if the shared object storage is not enabled."
             )
         if data_id not in self._reservation_info:
             return None
@@ -170,7 +170,7 @@ class SharedMemoryManager:
         """
         if self.shared_store is None:
             raise RuntimeError(
-                "SharedMemoryManager cannot be used if shared memory is not supported."
+                "`SharedMemoryManager` cannot be used if the shared object storage is not enabled."
             )
         first_index, last_index = self.free_memory.occupy(memory_len)
         service_index, _ = self.free_service_indexes.occupy(

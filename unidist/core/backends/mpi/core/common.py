@@ -7,8 +7,8 @@
 import logging
 import inspect
 import weakref
-from unidist.config.backends.mpi.envvars import IsMpiSpawnWorkers
 
+from unidist.config.backends.mpi.envvars import IsMpiSpawnWorkers
 from unidist.core.backends.mpi.utils import ImmutableDict
 
 try:
@@ -449,7 +449,6 @@ def is_shared_memory_supported():
     if MPI.VERSION < 3:
         return False
 
-    # This condition will be removed when the fix is released.
     if "MPICH" in MPI.Get_library_version() and IsMpiSpawnWorkers.get():
         MPI.Get_library_version
         # Mpich shared memory does not work with spawned processes
