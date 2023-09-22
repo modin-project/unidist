@@ -4,6 +4,8 @@
 
 import unidist
 
+unidist.init()
+
 
 def materialize(object_refs):
     return (
