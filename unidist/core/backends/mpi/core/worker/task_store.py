@@ -251,14 +251,20 @@ class TaskStore:
         local_store = LocalObjectStore.get_instance()
         if isinstance(data_ids, (list, tuple)):
             for data_id in data_ids:
-                value = local_store.get(data_id)
-                if check_data_out_of_band(value):
-                    self.output_depends[data_id] = depends_id
+                # the local store may not contain the data id yet
+                # if a remote function is a coroutine
+                if local_store.contains(data_id):
+                    value = local_store.get(data_id)
+                    if check_data_out_of_band(value):
+                        self.output_depends[data_id] = depends_id
 
         else:
-            value = local_store.get(data_ids)
-            if check_data_out_of_band(value):
-                self.output_depends[data_ids] = depends_id
+            # the local store may not contain the data id yet
+            # if a remote function is a coroutine
+            if local_store.contains(data_ids):
+                value = local_store.get(data_ids)
+                if check_data_out_of_band(value):
+                    self.output_depends[data_ids] = depends_id
 
     def execute_received_task(self, output_data_ids, task, args, kwargs):
         """
