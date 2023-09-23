@@ -251,8 +251,7 @@ class MasterDataID(DataID):
     def __getstate__(self):
         """Remove a reference to garbage collector for correct `pickle` serialization."""
         attributes = self.__dict__.copy()
-        if "_gc" in attributes:
-            del attributes["_gc"]
+        del attributes["_gc"]
         return attributes
 
     def base_data_id(self):
