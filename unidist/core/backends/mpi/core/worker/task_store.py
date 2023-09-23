@@ -442,10 +442,11 @@ class TaskStore:
         # Parse request
         local_store = LocalObjectStore.get_instance()
         shared_store = SharedObjectStore.get_instance()
-        if is_data_id(request["task"]):
-            task = local_store.get(request["task"])
-        else:
-            task = request["task"]
+        task = request["task"]
+        # Remote function here is a data id so we have to retrieve it from the storage,
+        # whereas actor method is already materialized in the worker loop.
+        if is_data_id(task):
+            task = local_store.get(task)
         args = request["args"]
         kwargs = request["kwargs"]
         output_ids = request["output"]

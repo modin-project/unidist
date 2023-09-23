@@ -12,6 +12,7 @@ from unidist.core.backends.mpi.core.controller.garbage_collector import (
     garbage_collector,
 )
 from unidist.core.backends.mpi.core.controller.common import push_data, RoundRobin
+from unidist.core.backends.mpi.core.controller.api import put
 
 
 class ActorMethod:
@@ -41,6 +42,9 @@ class ActorMethod:
         unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
         unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
 
+        push_data(
+            self._actor._owner_rank, common.master_data_ids_to_base(self._method_name)
+        )
         push_data(self._actor._owner_rank, unwrapped_args)
         push_data(self._actor._owner_rank, unwrapped_kwargs)
 
@@ -181,8 +185,15 @@ class Actor:
         state = self._serialization_helper()
         return self._deserialization_helper, (state,)
 
+    # Cache for serialized actor methods {"method_name": DataID}
+    actor_methods = {}
+
     def __getattr__(self, name):
-        return ActorMethod(self, name)
+        data_id_to_method = self.actor_methods.get(name, None)
+        if data_id_to_method is None:
+            data_id_to_method = put(name)
+            self.actor_methods[name] = data_id_to_method
+        return ActorMethod(self, data_id_to_method)
 
     def __del__(self):
         """
