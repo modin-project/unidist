@@ -9,6 +9,7 @@ dependencies:
   - dask>=2.22.0
   - distributed>=2.22.0
   - mpi4py>=3.0.3
+  - openmpi
   - msgpack-python>=1.0.0
   - cloudpickle
   - packaging
