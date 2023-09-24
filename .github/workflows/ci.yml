@@ -94,19 +94,19 @@ jobs:
         if: matrix.backend != 'mpi'
       # when using a directory to run with mpiexec MPI gets hung after executing tests
       # so we run the test files one by one
-      - run: |
-          UNIDIST_MPI_SHARED_OBJECT_STORE=True mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_actor.py
-          UNIDIST_MPI_SHARED_OBJECT_STORE=False mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_actor.py
+      - run: UNIDIST_MPI_SHARED_OBJECT_STORE=True mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_actor.py
         if: matrix.backend == 'mpi'
-      - run: |
-          UNIDIST_MPI_SHARED_OBJECT_STORE=True mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_async_actor.py
-          UNIDIST_MPI_SHARED_OBJECT_STORE=False mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_async_actor.py
+      - run: UNIDIST_MPI_SHARED_OBJECT_STORE=False mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_actor.py
         if: matrix.backend == 'mpi'
-      - run: |
-          UNIDIST_MPI_SHARED_OBJECT_STORE=True mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_task.py
-          UNIDIST_MPI_SHARED_OBJECT_STORE=False mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_task.py
+      - run: UNIDIST_MPI_SHARED_OBJECT_STORE=True mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_async_actor.py
         if: matrix.backend == 'mpi'
-      - run: |
-          UNIDIST_MPI_SHARED_OBJECT_STORE=True mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_general.py
-          UNIDIST_MPI_SHARED_OBJECT_STORE=False mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_general.py
+      - run: UNIDIST_MPI_SHARED_OBJECT_STORE=False mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_async_actor.py
+        if: matrix.backend == 'mpi'
+      - run: UNIDIST_MPI_SHARED_OBJECT_STORE=True mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_task.py
+        if: matrix.backend == 'mpi'
+      - run: UNIDIST_MPI_SHARED_OBJECT_STORE=False mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_task.py
+        if: matrix.backend == 'mpi'
+      - run: UNIDIST_MPI_SHARED_OBJECT_STORE=True mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_general.py
+        if: matrix.backend == 'mpi'
+      - run: UNIDIST_MPI_SHARED_OBJECT_STORE=False mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_general.py
         if: matrix.backend == 'mpi'
