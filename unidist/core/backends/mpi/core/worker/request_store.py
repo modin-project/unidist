@@ -253,7 +253,7 @@ class RequestStore:
                 source_rank,
                 data_id,
                 is_blocking_op=source_rank == communication.MPIRank.ROOT
-                or is_blocking_op,
+                and is_blocking_op,
             )
             logger.debug(
                 "Send requested {} id to {} rank - PROCESSED".format(

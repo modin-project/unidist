@@ -369,7 +369,9 @@ def mpi_recv_operation(comm):
     source = status.source
     tag = status.tag
     op_type = comm.recv(buf=None, source=source, tag=tag, status=status)
+    logger.debug("before log_op")
     log_operation(op_type, status)
+    logger.debug("after log_op")
     return op_type, status.Get_source()
 
 
@@ -395,6 +397,29 @@ def mpi_recv_object(comm, source_rank):
     * The special tag is used for this communication, namely, ``common.MPITag.OBJECT``.
     """
     return comm.recv(source=source_rank, tag=common.MPITag.OBJECT)
+
+def mpi_irecv_object(comm, source_rank):
+    """
+    Receive an object of a standard Python data type.
+
+    Parameters
+    ----------
+    comm : object
+        MPI communicator object.
+    source_rank : int
+        Source MPI process to receive data from.
+
+    Returns
+    -------
+    object
+        Received data object from another MPI process.
+
+    Notes
+    -----
+    * De-serialization is a simple pickle.load in this case.
+    * The special tag is used for this communication, namely, ``common.MPITag.OBJECT``.
+    """
+    return comm.irecv(source=source_rank, tag=common.MPITag.OBJECT)
 
 
 def mpi_send_buffer(comm, buffer, dest_rank, data_type=MPI.CHAR, buffer_size=None):
@@ -747,6 +772,49 @@ def recv_complex_data(comm, source_rank, info_package):
 
     # Start unpacking
     return deserializer.deserialize(msgpack_buffer)
+
+
+def irecv_complex_data(comm, source_rank, info_package):
+    """
+    Receive the data that may consist of different user provided complex types, lambdas and buffers.
+
+    The data is de-serialized from received buffer.
+
+    Parameters
+    ----------
+    comm : object
+        MPI communicator object.
+    source_rank : int
+        Source MPI process to receive data from.
+    info_package : unidist.core.backends.mpi.core.common.DataInfoPackage
+        Required information to deserialize data.
+
+    Returns
+    -------
+    object
+        Received data object from another MPI process.
+
+    Notes
+    -----
+    * The special tags are used for this communication, namely,
+    ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
+    """
+    msgpack_buffer = bytearray(info_package["s_data_len"])
+    buffer_count = info_package["buffer_count"]
+    raw_buffers = list(map(bytearray, info_package["raw_buffers_len"]))
+    async_reqs = []
+    with pkl5._bigmpi as bigmpi:
+        async_reqs.append(
+            comm.Irecv(
+                bigmpi(msgpack_buffer), source=source_rank, tag=common.MPITag.BUFFER
+            )
+        )
+        for rbuf in raw_buffers:
+            async_reqs.append(
+                comm.Irecv(bigmpi(rbuf), source=source_rank, tag=common.MPITag.BUFFER)
+            )
+
+    return common.PendingRequest(msgpack_buffer, buffer_count, raw_buffers, async_reqs)
 
 
 # ---------- #

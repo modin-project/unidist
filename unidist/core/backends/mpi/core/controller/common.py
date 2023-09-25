@@ -5,6 +5,14 @@
 """Common functionality related to `controller`."""
 
 import itertools
+import time
+
+try:
+    import mpi4py
+except ImportError:
+    raise ImportError(
+        "Missing dependency 'mpi4py'. Use pip or conda to install it."
+    ) from None
 
 from unidist.core.backends.common.data_id import is_data_id
 import unidist.core.backends.mpi.core.common as common
@@ -12,6 +20,12 @@ import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
+from unidist.core.backends.mpi.core.serialization import ComplexDataSerializer
+from unidist.config import MpiBackoff
+
+# TODO: Find a way to move this after all imports
+mpi4py.rc(recv_mprobe=False, initialize=False)
+from mpi4py import MPI  # noqa: E402
 
 logger = common.get_logger("common", "common.log")
 
@@ -149,6 +163,80 @@ def pull_data(comm, owner_rank):
         raise ValueError("Unexpected package of data info!")
 
 
+def pull_data_in_parallel(comm, owner_ranks, data_ids):
+    """
+    Receive data from another MPI process using shared memory or direct communiction, depending on package type.
+    The data is de-serialized from received buffers.
+
+    Parameters
+    ----------
+    owner_rank : int
+        Source MPI process to receive data from.
+
+    Returns
+    -------
+    object
+        Received data object from another MPI process.
+    """
+    pending_requests = []
+    shared_objects = {}
+    local_objects = {}
+    logger.debug("before mpi_recv_object")
+    async_reqs = [
+        communication.mpi_irecv_object(comm, owner_rank) for owner_rank in owner_ranks
+    ]
+    info_packages = MPI.Request.waitall(async_reqs)
+    logger.debug("after mpi_recv_object")
+    for i, (owner_rank, data_id) in enumerate(zip(owner_ranks, data_ids)):
+        info_package = info_packages[i]
+        if info_package["package_type"] == common.MetadataPackage.SHARED_DATA:
+            local_store = LocalObjectStore.get_instance()
+            shared_store = SharedObjectStore.get_instance()
+
+            data = shared_store.get(data_id, owner_rank, info_package)
+            local_store.put(data_id, data)
+            shared_objects[data_id] = data
+        elif info_package["package_type"] == common.MetadataPackage.LOCAL_DATA:
+            pending_request = communication.irecv_complex_data(
+                comm, owner_rank, info_package=info_package
+            )
+            pending_requests.append(pending_request)
+            local_objects[data_id] = pending_request
+
+        else:
+            raise ValueError("Unexpected package of data info!")
+
+    logger.debug("after irecv")
+    # MPI.Request.Waitall(
+    #     [
+    #         request
+    #         for pending_request in pending_requests
+    #         for request in pending_request.requests
+    #     ]
+    # )
+    while not MPI.Request.Testall(
+        [
+            request
+            for pending_request in pending_requests
+            for request in pending_request.requests
+        ]
+    ):
+        time.sleep(MpiBackoff.get())
+    logger.debug("after waitall")
+    local_objects_copy = local_objects.copy()
+    for data_id, pending_request in local_objects_copy.items():
+        # Set the necessary metadata for unpacking
+        deserializer = ComplexDataSerializer(
+            pending_request.raw_buffers, pending_request.buffer_count
+        )
+        # Start unpacking
+        data = deserializer.deserialize(pending_request.msgpack_buffer)
+        local_objects[data_id] = data["data"]
+
+    all_objects = {**shared_objects, **local_objects}
+    return all_objects
+
+
 def request_worker_data(data_id):
     """
     Get an object(s) associated with `data_id` from the object storage.
@@ -199,6 +287,61 @@ def request_worker_data(data_id):
     local_store.put(data_id, data)
 
     return data
+
+
+def get_remote_objects(data_ids):
+    """
+    Get an object(s) associated with `data_id` from the object storage.
+
+    Parameters
+    ----------
+    data_id : unidist.core.backends.common.data_id.DataID
+        An ID(s) to object(s) to get data from.
+
+    Returns
+    -------
+    object
+        A Python object.
+    """
+    logger.debug("start get_remote_objects")
+    mpi_state = communication.MPIState.get_instance()
+    local_store = LocalObjectStore.get_instance()
+
+    owner_ranks = [local_store.get_data_owner(data_id) for data_id in data_ids]
+
+    logger.debug("before loop with send")
+    async_reqs = []
+    for data_id, owner_rank in zip(data_ids, owner_ranks):
+        # Worker request
+        operation_type = common.Operation.GET
+        operation_data = {
+            "source": mpi_state.global_rank,
+            "id": data_id.base_data_id(),
+            # set `is_blocking_op` to `True` to tell a worker
+            # to send the data directly to the requester
+            # without any delay
+            "is_blocking_op": False,
+        }
+        # We use a blocking send here because we have to wait for
+        # completion of the communication, which is necessary for the pipeline to continue.
+        reqs = communication.isend_simple_operation(
+            mpi_state.comm,
+            operation_type,
+            operation_data,
+            owner_rank,
+        )
+        async_reqs.extend([req[0] for req in reqs])
+    MPI.Request.waitall(async_reqs)
+    logger.debug("after loop with send")
+
+    logger.debug("before pull_data_in_parallel")
+    all_objects = pull_data_in_parallel(mpi_state.comm, owner_ranks, data_ids)
+    logger.debug("after pull_data_in_parallel")
+    for obj, data_id in zip(all_objects.keys(), data_ids):
+        if data_id.base_data_id() != obj:
+            raise ValueError("Unexpected data_id!")
+
+    return all_objects
 
 
 def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
@@ -343,6 +486,7 @@ def push_data(dest_rank, value, is_blocking_op=False):
     local_store = LocalObjectStore.get_instance()
     shared_store = SharedObjectStore.get_instance()
 
+    logger.debug(f"is_blocking_op is {is_blocking_op}")
     if isinstance(value, (list, tuple)):
         for v in value:
             push_data(dest_rank, v)

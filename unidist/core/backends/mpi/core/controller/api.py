@@ -24,9 +24,9 @@ from unidist.core.backends.mpi.core.controller.garbage_collector import (
     garbage_collector,
 )
 from unidist.core.backends.mpi.core.controller.common import (
-    request_worker_data,
     push_data,
     RoundRobin,
+    get_remote_objects,
 )
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
@@ -412,13 +412,36 @@ def get(data_ids):
     if not is_list:
         data_ids = [data_ids]
 
-    values = [get_impl(data_id) for data_id in data_ids]
+    local_store = LocalObjectStore.get_instance()
+    result = {data_id: 0 for data_id in data_ids}
+    remote_data_ids = []
+    for data_id in data_ids:
+        if local_store.contains(data_id):
+            value = local_store.get(data_id)
+            result[data_id] = value
+        else:
+            remote_data_ids.append(data_id)
+
+    if not remote_data_ids:
+        return_values = list(result.values()) if is_list else list(result.values())[0]
+        del result
+        return return_values
+
+    
+    logger.debug(f"before get_remote_objects rank {communication.MPIState.get_instance().global_rank}")
+    remote_objects = get_remote_objects(remote_data_ids)
+    logger.debug("after get_remote_objects")
+
+    for data_id, data in remote_objects.items():
+        result[data_id] = data
 
     # Initiate reference count based cleaup
     # if all the tasks were completed
     garbage_collector.regular_cleanup()
 
-    return values if is_list else values[0]
+    return_values = list(result.values()) if is_list else list(result.values())[0]
+    del result
+    return return_values
 
 
 def wait(data_ids, num_returns=1):

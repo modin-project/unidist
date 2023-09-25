@@ -18,12 +18,27 @@ except ImportError:
         "Missing dependency 'mpi4py'. Use pip or conda to install it."
     ) from None
 
+try:
+    import mpi4py
+except ImportError:
+    raise ImportError(
+        "Missing dependency 'mpi4py'. Use pip or conda to install it."
+    ) from None
+
 from unidist.core.backends.common.data_id import DataID, is_data_id
 from unidist.config import MpiLog, MpiSharedObjectStore
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
 from mpi4py import MPI  # noqa: E402
+
+
+class PendingRequest:
+    def __init__(self, msgpack_buffer, buffer_count, raw_buffers, requests):
+        self.msgpack_buffer = msgpack_buffer
+        self.buffer_count = buffer_count
+        self.raw_buffers = raw_buffers
+        self.requests = requests
 
 
 class Operation:

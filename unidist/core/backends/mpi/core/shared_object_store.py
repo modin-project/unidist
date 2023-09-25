@@ -248,7 +248,6 @@ class SharedObjectStore:
     def _decrement_ref_number(self, data_id, service_index):
         """
         Decrement the number of references to indicate to the monitor that this data is no longer used.
-
         When references count is 0, it can be cleared.
 
         Parameters
