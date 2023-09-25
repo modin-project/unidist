@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from libc.stdint cimport uint8_t
+
 cimport memory
 
 def parallel_memcopy(const uint8_t[:] src, uint8_t[:] dst, int memcopy_threads):

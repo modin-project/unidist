@@ -17,6 +17,6 @@ namespace unidist {
                         int64_t nbytes,
                         uintptr_t block_size,
                         int num_threads);
-}
+}  // namespace unidist
 
-#endif
+#endif  // MEMORY_H
