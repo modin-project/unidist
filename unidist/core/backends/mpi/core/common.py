@@ -18,13 +18,6 @@ except ImportError:
         "Missing dependency 'mpi4py'. Use pip or conda to install it."
     ) from None
 
-try:
-    import mpi4py
-except ImportError:
-    raise ImportError(
-        "Missing dependency 'mpi4py'. Use pip or conda to install it."
-    ) from None
-
 from unidist.core.backends.common.data_id import DataID, is_data_id
 from unidist.config import MpiLog, MpiSharedObjectStore
 

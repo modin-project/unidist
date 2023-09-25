@@ -23,7 +23,7 @@ class LocalObjectStore:
     __instance = None
 
     def __init__(self):
-        # Add local data {DataId : Data}
+        # Add local data {DataID : Data}
         self._data_map = weakref.WeakKeyDictionary()
         # "strong" references to data IDs {DataID : DataID}
         # we are using dict here to improve performance when getting an element from it,

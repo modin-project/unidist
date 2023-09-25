@@ -486,7 +486,6 @@ def push_data(dest_rank, value, is_blocking_op=False):
     local_store = LocalObjectStore.get_instance()
     shared_store = SharedObjectStore.get_instance()
 
-    logger.debug(f"is_blocking_op is {is_blocking_op}")
     if isinstance(value, (list, tuple)):
         for v in value:
             push_data(dest_rank, v)

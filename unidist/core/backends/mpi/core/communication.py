@@ -369,9 +369,7 @@ def mpi_recv_operation(comm):
     source = status.source
     tag = status.tag
     op_type = comm.recv(buf=None, source=source, tag=tag, status=status)
-    logger.debug("before log_op")
     log_operation(op_type, status)
-    logger.debug("after log_op")
     return op_type, status.Get_source()
 
 
