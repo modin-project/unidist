@@ -18,7 +18,8 @@ except ImportError:
         "Missing dependency 'mpi4py'. Use pip or conda to install it."
     ) from None
 
-from unidist.core.backends.mpi.core.controller.object_store import object_store
+from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
+from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 from unidist.core.backends.mpi.core.controller.garbage_collector import (
     garbage_collector,
 )
@@ -38,6 +39,9 @@ from unidist.config import (
     MpiPickleThreshold,
     MpiBackoff,
     MpiLog,
+    MpiSharedObjectStore,
+    MpiSharedObjectStoreMemory,
+    MpiSharedObjectStoreThreshold,
 )
 
 
@@ -48,8 +52,6 @@ from mpi4py import MPI  # noqa: E402
 
 logger = common.get_logger("api", "api.log")
 
-# The topology of MPI cluster gets available when MPI initialization in `init`
-topology = dict()
 # The global variable is responsible for if MPI backend has already been initialized
 is_mpi_initialized = False
 # The global variable is responsible for if MPI backend has already been shutdown
@@ -140,7 +142,6 @@ def init():
     # path to dynamically spawn MPI processes
     if rank == 0 and parent_comm == MPI.COMM_NULL:
         if IsMpiSpawnWorkers.get():
-            nprocs_to_spawn = CpuCount.get() + 1  # +1 for monitor process
             args = _get_py_flags()
             args += ["-c"]
             py_str = [
@@ -160,10 +161,23 @@ def init():
                 py_str += [f"cfg.MpiBackoff.put({MpiBackoff.get()})"]
             if MpiLog.get_value_source() != ValueSource.DEFAULT:
                 py_str += [f"cfg.MpiLog.put({MpiLog.get()})"]
+            if MpiSharedObjectStore.get_value_source() != ValueSource.DEFAULT:
+                py_str += [
+                    f"cfg.MpiSharedObjectStore.put({MpiSharedObjectStore.get()})"
+                ]
+            if MpiSharedObjectStoreMemory.get_value_source() != ValueSource.DEFAULT:
+                py_str += [
+                    f"cfg.MpiSharedObjectStoreMemory.put({MpiSharedObjectStoreMemory.get()})"
+                ]
+            if MpiSharedObjectStoreThreshold.get_value_source() != ValueSource.DEFAULT:
+                py_str += [
+                    f"cfg.MpiSharedObjectStoreThreshold.put({MpiSharedObjectStoreThreshold.get()})"
+                ]
             py_str += ["unidist.init()"]
             py_str = "; ".join(py_str)
             args += [py_str]
 
+            cpu_count = CpuCount.get()
             hosts = MpiHosts.get()
             info = MPI.Info.Create()
             lib_version = MPI.Get_library_version()
@@ -174,18 +188,33 @@ def init():
                 # https://www.intel.com/content/www/us/en/docs/mpi-library/developer-reference-linux/2021-8/other-environment-variables.html.
                 os.environ["I_MPI_SPAWN"] = "1"
 
-            if hosts:
+            host_list = hosts.split(",") if hosts is not None else ["localhost"]
+            host_count = len(host_list)
+            if hosts is not None and host_count == 1:
+                raise ValueError(
+                    "MpiHosts cannot include only one host. If you want to run on a single node, just run the program without this option."
+                )
+
+            if common.is_shared_memory_supported():
+                # +host_count to add monitor process on each host
+                nprocs_to_spawn = cpu_count + host_count
+            else:
+                # +1 for just a single process monitor
+                nprocs_to_spawn = cpu_count + 1
+            if host_count > 1:
                 if "Open MPI" in lib_version:
-                    host_list = str(hosts).split(",")
-                    workers_per_host = [
-                        int(nprocs_to_spawn / len(host_list))
-                        + (1 if i < nprocs_to_spawn % len(host_list) else 0)
-                        for i in range(len(host_list))
+                    # +1 to take into account the current root process
+                    # to correctly allocate slots
+                    slot_count = nprocs_to_spawn + 1
+                    slots_per_host = [
+                        int(slot_count / host_count)
+                        + (1 if i < slot_count % host_count else 0)
+                        for i in range(host_count)
                     ]
                     hosts = ",".join(
                         [
-                            f"{host}:{workers_per_host[i]}"
-                            for i, host in enumerate(host_list)
+                            f"{host_list[i]}:{slots_per_host[i]}"
+                            for i in range(host_count)
                         ]
                     )
                     info.Set("add-host", hosts)
@@ -208,26 +237,22 @@ def init():
     if parent_comm != MPI.COMM_NULL:
         comm = parent_comm.Merge(high=True)
 
-    mpi_state = communication.MPIState.get_instance(
-        comm, comm.Get_rank(), comm.Get_size()
-    )
-
-    global topology
-    if not topology:
-        topology = communication.get_topology()
+    mpi_state = communication.MPIState.get_instance(comm)
 
     global is_mpi_initialized
     if not is_mpi_initialized:
         is_mpi_initialized = True
 
-    if mpi_state.rank == communication.MPIRank.ROOT:
+    # Initalize shared memory
+    SharedObjectStore.get_instance()
+
+    if mpi_state.is_root_process():
         atexit.register(_termination_handler)
         signal.signal(signal.SIGTERM, _termination_handler)
         signal.signal(signal.SIGINT, _termination_handler)
         return
-
-    if mpi_state.rank == communication.MPIRank.MONITOR:
-        from unidist.core.backends.mpi.core.monitor import monitor_loop
+    elif mpi_state.is_monitor_process():
+        from unidist.core.backends.mpi.core.monitor.loop import monitor_loop
 
         monitor_loop()
         # If the user executes a program in SPMD mode,
@@ -236,11 +261,7 @@ def init():
         if not IsMpiSpawnWorkers.get():
             sys.exit()
         return
-
-    if mpi_state.rank not in (
-        communication.MPIRank.ROOT,
-        communication.MPIRank.MONITOR,
-    ):
+    else:
         from unidist.core.backends.mpi.core.worker.loop import worker_loop
 
         asyncio.run(worker_loop())
@@ -280,7 +301,7 @@ def shutdown():
         async_operations.finish()
         mpi_state = communication.MPIState.get_instance()
         # Send shutdown commands to all ranks
-        for rank_id in range(communication.MPIRank.FIRST_WORKER, mpi_state.world_size):
+        for rank_id in mpi_state.workers:
             # We use a blocking send here because we have to wait for
             # completion of the communication, which is necessary for the pipeline to continue.
             communication.mpi_send_operation(
@@ -296,8 +317,10 @@ def shutdown():
         )
         if op_type != common.Operation.SHUTDOWN:
             raise ValueError(f"Got wrong operation type {op_type}.")
+        SharedObjectStore.get_instance().finalize()
         if not MPI.Is_finalized():
             MPI.Finalize()
+
         logger.debug("Shutdown root")
         is_mpi_shutdown = True
 
@@ -312,13 +335,20 @@ def cluster_resources():
         Dictionary with cluster nodes info in the form
         `{"node_ip0": {"CPU": x0}, "node_ip1": {"CPU": x1}, ...}`.
     """
-    global topology
-    if not topology:
+    mpi_state = communication.MPIState.get_instance()
+    if mpi_state is None:
         raise RuntimeError("'unidist.init()' has not been called yet")
 
     cluster_resources = defaultdict(dict)
-    for host, ranks_list in topology.items():
-        cluster_resources[host]["CPU"] = len(ranks_list)
+    for host in mpi_state.topology:
+        cluster_resources[host]["CPU"] = len(
+            [
+                r
+                for r in mpi_state.topology[host].values()
+                if not mpi_state.is_root_process(r)
+                and not mpi_state.is_monitor_process(r)
+            ]
+        )
 
     return dict(cluster_resources)
 
@@ -337,8 +367,12 @@ def put(data):
     unidist.core.backends.mpi.core.common.MasterDataID
         An ID of an object in object storage.
     """
-    data_id = object_store.generate_data_id(garbage_collector)
-    object_store.put(data_id, data)
+    local_store = LocalObjectStore.get_instance()
+    shared_store = SharedObjectStore.get_instance()
+    data_id = local_store.generate_data_id(garbage_collector)
+    local_store.put(data_id, data)
+    if shared_store.is_allocated():
+        shared_store.put(data_id, data)
 
     logger.debug("PUT {} id".format(data_id._id))
 
@@ -359,10 +393,11 @@ def get(data_ids):
     object
         A Python object.
     """
+    local_store = LocalObjectStore.get_instance()
 
     def get_impl(data_id):
-        if object_store.contains(data_id):
-            value = object_store.get(data_id)
+        if local_store.contains(data_id):
+            value = local_store.get(data_id)
         else:
             value = request_worker_data(data_id)
 
@@ -415,10 +450,11 @@ def wait(data_ids, num_returns=1):
     not_ready = data_ids
     pending_returns = num_returns
     ready = []
+    local_store = LocalObjectStore.get_instance()
 
     logger.debug("WAIT {} ids".format(common.unwrapped_data_ids_list(data_ids)))
     for data_id in not_ready:
-        if object_store.contains(data_id):
+        if local_store.contains(data_id):
             ready.append(data_id)
             not_ready.remove(data_id)
             pending_returns -= 1
@@ -432,17 +468,18 @@ def wait(data_ids, num_returns=1):
         "num_returns": pending_returns,
     }
     mpi_state = communication.MPIState.get_instance()
+    root_monitor = mpi_state.get_monitor_by_worker_rank(communication.MPIRank.ROOT)
     # We use a blocking send and recv here because we have to wait for
     # completion of the communication, which is necessary for the pipeline to continue.
     communication.send_simple_operation(
         mpi_state.comm,
         operation_type,
         operation_data,
-        communication.MPIRank.MONITOR,
+        root_monitor,
     )
     data = communication.mpi_recv_object(
         mpi_state.comm,
-        communication.MPIRank.MONITOR,
+        root_monitor,
     )
     ready.extend(data["ready"])
     not_ready = data["not_ready"]
@@ -488,7 +525,8 @@ def submit(task, *args, num_returns=1, **kwargs):
 
     dest_rank = RoundRobin.get_instance().schedule_rank()
 
-    output_ids = object_store.generate_output_data_id(
+    local_store = LocalObjectStore.get_instance()
+    output_ids = local_store.generate_output_data_id(
         dest_rank, garbage_collector, num_returns
     )
 
@@ -507,6 +545,7 @@ def submit(task, *args, num_returns=1, **kwargs):
     unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
     unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
 
+    push_data(dest_rank, common.master_data_ids_to_base(task))
     push_data(dest_rank, unwrapped_args)
     push_data(dest_rank, unwrapped_kwargs)
 

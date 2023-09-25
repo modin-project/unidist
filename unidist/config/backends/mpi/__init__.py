@@ -4,7 +4,16 @@
 
 """Config entities specific for MPI backend which can be used for unidist behavior tuning."""
 
-from .envvars import IsMpiSpawnWorkers, MpiHosts, MpiPickleThreshold, MpiBackoff, MpiLog
+from .envvars import (
+    IsMpiSpawnWorkers,
+    MpiHosts,
+    MpiPickleThreshold,
+    MpiBackoff,
+    MpiLog,
+    MpiSharedObjectStore,
+    MpiSharedObjectStoreMemory,
+    MpiSharedObjectStoreThreshold,
+)
 
 __all__ = [
     "IsMpiSpawnWorkers",
@@ -12,4 +21,7 @@ __all__ = [
     "MpiPickleThreshold",
     "MpiBackoff",
     "MpiLog",
+    "MpiSharedObjectStore",
+    "MpiSharedObjectStoreMemory",
+    "MpiSharedObjectStoreThreshold",
 ]

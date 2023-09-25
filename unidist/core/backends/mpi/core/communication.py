@@ -46,12 +46,12 @@ def log_operation(op_type, status):
     """
     global is_logger_header_printed
     logger_op_name_len = 15
-    logger_worker_count = MPIState.get_instance().world_size
+    logger_worker_count = MPIState.get_instance().global_size
 
     # write header on first worker
     if (
         not is_logger_header_printed
-        and MPIState.get_instance().rank == MPIRank.FIRST_WORKER
+        and MPIState.get_instance().global_rank == MPIRank.FIRST_WORKER
     ):
         worker_ids_str = "".join([f"{i}\t" for i in range(logger_worker_count)])
         logger.debug(f'#{" "*logger_op_name_len}{worker_ids_str}')
@@ -59,7 +59,7 @@ def log_operation(op_type, status):
 
     # Write operation to log
     source_rank = status.Get_source()
-    dest_rank = MPIState.get_instance().rank
+    dest_rank = MPIState.get_instance().global_rank
     op_name = common.get_op_name(op_type)
     space_after_op_name = " " * (logger_op_name_len - len(op_name))
     space_before_arrow = ".   " * (min(source_rank, dest_rank))
@@ -83,19 +83,68 @@ class MPIState:
     ----------
     comm : mpi4py.MPI.Comm
         MPI communicator.
-    rank : int
+
+    Attributes
+    ----------
+    comm : mpi4py.MPI.Comm
+        Global MPI communicator.
+    host_comm : mpi4py.MPI.Comm
+        MPI subcommunicator for the current host.
+    global_rank : int
         Rank of a process.
-    world_sise : int
-        Number of processes.
+    global_size : int
+        Number of processes in the global communicator.
+    host : str
+        IP-address of the current host.
+    topology : dict
+        Dictionary, containing all ranks assignments by IP-addresses in
+        the form: `{"node_ip0": {"host_rank": "global_rank", ...}, ...}`.
+    host_by_rank : dict
+        Dictionary containing IP addresses by rank.
+    monitor_processes : list
+        List of ranks that are monitor processes.
+    workers : list
+        List of ranks that are worker processes.
     """
 
     __instance = None
 
-    def __init__(self, comm, rank, world_sise):
+    def __init__(self, comm):
         # attributes get actual values when MPI is initialized in `init` function
         self.comm = comm
-        self.rank = rank
-        self.world_size = world_sise
+        self.global_rank = comm.Get_rank()
+        self.global_size = comm.Get_size()
+        self.host_comm = None
+        if common.is_shared_memory_supported():
+            self.host_comm = comm.Split_type(MPI.COMM_TYPE_SHARED)
+        host_rank = (
+            self.host_comm.Get_rank()
+            if self.host_comm is not None
+            else self.global_rank
+        )
+        self.host = socket.gethostbyname(socket.gethostname())
+        # Get topology of MPI cluster.
+        cluster_info = self.comm.allgather((self.host, self.global_rank, host_rank))
+        self.topology = defaultdict(dict)
+        self.host_by_rank = defaultdict(None)
+        for host, global_rank, host_rank in cluster_info:
+            self.topology[host][host_rank] = global_rank
+            self.host_by_rank[global_rank] = host
+
+        self.monitor_processes = [
+            self.topology[host][MPIRank.MONITOR] for host in self.topology
+        ]
+
+        self.workers = []
+        for host in self.topology:
+            self.workers.extend(
+                [
+                    rank
+                    for rank in self.topology[host].values()
+                    if not self.is_root_process(rank)
+                    and not self.is_monitor_process(rank)
+                ]
+            )
 
     @classmethod
     def get_instance(cls, *args):
@@ -116,39 +165,76 @@ class MPIState:
             cls.__instance = MPIState(*args)
         return cls.__instance
 
+    def is_root_process(self, rank=None):
+        """
+        Check if the rank is root process.
+
+        Parameters
+        ----------
+        rank : int, optional
+            The rank to be checked.
+            If ``None``, the current rank is to be checked.
+
+        Returns
+        -------
+        bool
+            True or False.
+        """
+        if rank is None:
+            rank = self.global_rank
+        return rank == MPIRank.ROOT
+
+    def is_monitor_process(self, rank=None):
+        """
+        Check if the rank is a monitor process.
+
+        Parameters
+        ----------
+        rank : int, optional
+            The rank to be checked.
+            If ``None``, the current rank is to be checked.
+
+        Returns
+        -------
+        bool
+            True or False.
+        """
+        if rank is None:
+            rank = self.global_rank
+        return rank in self.monitor_processes
+
+    def get_monitor_by_worker_rank(self, rank=None):
+        """
+        Get the monitor process rank for the host that includes this rank.
+
+        Parameters
+        ----------
+        rank : int, optional
+            The global rank to search for a monitor process.
+
+        Returns
+        -------
+        int
+            Rank of a monitor process.
+        """
+        if self.host_comm is None:
+            return MPIRank.MONITOR
+
+        if rank is None:
+            rank = self.global_rank
+        host = self.host_by_rank[rank]
+        if host is None:
+            raise ValueError("Unknown rank of workers")
+
+        return self.topology[host][MPIRank.MONITOR]
+
 
 class MPIRank:
-    """Class that describes ranks assignment."""
+    """Class that describes rank assignment."""
 
     ROOT = 0
     MONITOR = 1
     FIRST_WORKER = 2
-
-
-def get_topology():
-    """
-    Get topology of MPI cluster.
-
-    Returns
-    -------
-    dict
-        Dictionary, containing workers ranks assignments by IP-addresses in
-        the form: `{"node_ip0": [rank_2, rank_3, ...], "node_ip1": [rank_i, ...], ...}`.
-    """
-    mpi_state = MPIState.get_instance()
-    comm = mpi_state.comm
-    rank = mpi_state.rank
-
-    hostname = socket.gethostname()
-    host = socket.gethostbyname(hostname)
-    cluster_info = comm.allgather((host, rank))
-    topology = defaultdict(list)
-
-    for host, rank in cluster_info:
-        if rank not in [MPIRank.ROOT, MPIRank.MONITOR]:
-            topology[host].append(rank)
-
-    return dict(topology)
 
 
 # ---------------------------- #
@@ -311,7 +397,7 @@ def mpi_recv_object(comm, source_rank):
     return comm.recv(source=source_rank, tag=common.MPITag.OBJECT)
 
 
-def mpi_send_buffer(comm, buffer_size, buffer, dest_rank):
+def mpi_send_buffer(comm, buffer, dest_rank, data_type=MPI.CHAR, buffer_size=None):
     """
     Send buffer object to another MPI rank in a blocking way.
 
@@ -319,12 +405,14 @@ def mpi_send_buffer(comm, buffer_size, buffer, dest_rank):
     ----------
     comm : object
         MPI communicator object.
-    buffer_size : int
-        Buffer size in bytes.
     buffer : object
         Buffer object to send.
     dest_rank : int
         Target MPI process to transfer buffer.
+    data_type : MPI.Datatype, default: MPI.CHAR
+        MPI data type for sending data.
+    buffer_size: int, default: None
+        Buffer size in bytes. Send an additional message with a buffer size to prepare another process to receive if `buffer_size` is not None.
 
     Notes
     -----
@@ -334,8 +422,9 @@ def mpi_send_buffer(comm, buffer_size, buffer, dest_rank):
     * The special tags are used for this communication, namely,
     ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
-    comm.send(buffer_size, dest=dest_rank, tag=common.MPITag.OBJECT)
-    comm.Send([buffer, MPI.CHAR], dest=dest_rank, tag=common.MPITag.BUFFER)
+    if buffer_size:
+        comm.send(buffer_size, dest=dest_rank, tag=common.MPITag.OBJECT)
+    comm.Send([buffer, data_type], dest=dest_rank, tag=common.MPITag.BUFFER)
 
 
 def mpi_isend_buffer(comm, buffer_size, buffer, dest_rank):
@@ -371,7 +460,7 @@ def mpi_isend_buffer(comm, buffer_size, buffer, dest_rank):
     return requests
 
 
-def mpi_recv_buffer(comm, source_rank):
+def mpi_recv_buffer(comm, source_rank, result_buffer=None):
     """
     Receive data buffer.
 
@@ -381,6 +470,8 @@ def mpi_recv_buffer(comm, source_rank):
         MPI communicator object.
     source_rank : int
         Communication event source rank.
+    result_buffer : object, default: None
+        The array to be filled. If `result_buffer` is None, the buffer size will be requested and the necessary buffer created.
 
     Returns
     -------
@@ -392,10 +483,11 @@ def mpi_recv_buffer(comm, source_rank):
     * The special tags are used for this communication, namely,
     ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
-    buf_size = comm.recv(source=source_rank, tag=common.MPITag.OBJECT)
-    s_buffer = bytearray(buf_size)
-    comm.Recv([s_buffer, MPI.CHAR], source=source_rank, tag=common.MPITag.BUFFER)
-    return s_buffer
+    if result_buffer is None:
+        buf_size = comm.recv(source=source_rank, tag=common.MPITag.OBJECT)
+        result_buffer = bytearray(buf_size)
+    comm.Recv(result_buffer, source=source_rank, tag=common.MPITag.BUFFER)
+    return result_buffer
 
 
 def mpi_busy_wait_recv(comm, source_rank):
@@ -457,20 +549,18 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank):
     The special tags are used for this communication, namely,
     ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
-    info = {
-        "s_data_len": len(s_data),
-        "buffer_count": buffer_count,
-        "raw_buffers_len": [len(sbuf) for sbuf in raw_buffers],
-    }
-
-    comm.send(info, dest=dest_rank, tag=common.MPITag.OBJECT)
+    info_package = common.MetadataPackage.get_local_info(
+        len(s_data), [len(sbuf) for sbuf in raw_buffers], buffer_count
+    )
+    # wrap to dict for sending and correct deserialization of the object by the recipient
+    comm.send(dict(info_package), dest=dest_rank, tag=common.MPITag.OBJECT)
     with pkl5._bigmpi as bigmpi:
         comm.Send(bigmpi(s_data), dest=dest_rank, tag=common.MPITag.BUFFER)
         for sbuf in raw_buffers:
             comm.Send(bigmpi(sbuf), dest=dest_rank, tag=common.MPITag.BUFFER)
 
 
-def send_complex_data(comm, data, dest_rank):
+def send_complex_data(comm, data, dest_rank, is_serialized=False):
     """
     Send the data that consists of different user provided complex types, lambdas and buffers in a blocking way.
 
@@ -482,36 +572,46 @@ def send_complex_data(comm, data, dest_rank):
         Data object to send.
     dest_rank : int
         Target MPI process to transfer data.
+    is_serialized : bool, default: False
+        `data` is already serialized or not.
 
     Returns
     -------
-    object
-        A serialized msgpack data.
-    list
-        A list of pickle buffers.
-    list
-        A list of buffers amount for each object.
+    dict or None
+        Serialized data for caching purpose.
 
     Notes
     -----
+    * ``None`` is returned if `data` is already serialized,
+    otherwise ``dict`` containing data serialized in this function.
     * This blocking send is used when we have to wait for completion of the communication,
     which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
     Otherwise, use non-blocking ``isend_complex_data``.
-    * The special tags are used for this communication, namely,
-    ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
-    serializer = ComplexDataSerializer()
-    # Main job
-    s_data = serializer.serialize(data)
-    # Retrive the metadata
-    raw_buffers = serializer.buffers
-    buffer_count = serializer.buffer_count
+    serialized_data = None
+    if is_serialized:
+        s_data = data["s_data"]
+        raw_buffers = data["raw_buffers"]
+        buffer_count = data["buffer_count"]
+    else:
+        serializer = ComplexDataSerializer()
+        # Main job
+        s_data = serializer.serialize(data)
+        # Retrive the metadata
+        raw_buffers = serializer.buffers
+        buffer_count = serializer.buffer_count
+
+        serialized_data = {
+            "s_data": s_data,
+            "raw_buffers": raw_buffers,
+            "buffer_count": buffer_count,
+        }
 
     # MPI communication
     _send_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank)
 
     # For caching purpose
-    return s_data, raw_buffers, buffer_count
+    return serialized_data
 
 
 def _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank):
@@ -546,13 +646,11 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank)
     ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     handlers = []
-    info = {
-        "s_data_len": len(s_data),
-        "buffer_count": buffer_count,
-        "raw_buffers_len": [len(sbuf) for sbuf in raw_buffers],
-    }
-
-    h1 = comm.isend(info, dest=dest_rank, tag=common.MPITag.OBJECT)
+    info_package = common.MetadataPackage.get_local_info(
+        len(s_data), [len(sbuf) for sbuf in raw_buffers], buffer_count
+    )
+    # wrap to dict for sending and correct deserialization of the object by the recipient
+    h1 = comm.isend(dict(info_package), dest=dest_rank, tag=common.MPITag.OBJECT)
     handlers.append((h1, None))
 
     with pkl5._bigmpi as bigmpi:
@@ -596,8 +694,6 @@ def isend_complex_data(comm, data, dest_rank):
     * The special tags are used for this communication, namely,
     ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
-    handlers = []
-
     serializer = ComplexDataSerializer()
     # Main job
     s_data = serializer.serialize(data)
@@ -606,14 +702,14 @@ def isend_complex_data(comm, data, dest_rank):
     buffer_count = serializer.buffer_count
 
     # Send message pack bytestring
-    handlers.extend(
-        _isend_complex_data_impl(comm, s_data, raw_buffers, buffer_count, dest_rank)
+    handlers = _isend_complex_data_impl(
+        comm, s_data, raw_buffers, buffer_count, dest_rank
     )
 
     return handlers, s_data, raw_buffers, buffer_count
 
 
-def recv_complex_data(comm, source_rank):
+def recv_complex_data(comm, source_rank, info_package):
     """
     Receive the data that may consist of different user provided complex types, lambdas and buffers.
 
@@ -625,6 +721,8 @@ def recv_complex_data(comm, source_rank):
         MPI communicator object.
     source_rank : int
         Source MPI process to receive data from.
+    info_package : unidist.core.backends.mpi.core.common.MetadataPackage
+        Required information to deserialize data.
 
     Returns
     -------
@@ -636,10 +734,9 @@ def recv_complex_data(comm, source_rank):
     * The special tags are used for this communication, namely,
     ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
-    info = comm.recv(source=source_rank, tag=common.MPITag.OBJECT)
-    msgpack_buffer = bytearray(info["s_data_len"])
-    buffer_count = info["buffer_count"]
-    raw_buffers = list(map(bytearray, info["raw_buffers_len"]))
+    msgpack_buffer = bytearray(info_package["s_data_len"])
+    buffer_count = info_package["buffer_count"]
+    raw_buffers = list(map(bytearray, info_package["raw_buffers_len"]))
     with pkl5._bigmpi as bigmpi:
         comm.Recv(bigmpi(msgpack_buffer), source=source_rank, tag=common.MPITag.BUFFER)
         for rbuf in raw_buffers:
@@ -850,3 +947,37 @@ def recv_serialized_data(comm, source_rank):
     """
     s_buffer = mpi_recv_buffer(comm, source_rank)
     return SimpleDataSerializer().deserialize_pickle(s_buffer)
+
+
+def send_reserve_operation(comm, data_id, data_size):
+    """
+    Reserve shared memory for `data_id`.
+
+    Parameters
+    ----------
+    data_id : unidist.core.backends.common.data_id.DataID
+        An ID to data.
+    data_size : int
+        Length of a required range in shared memory.
+
+    Returns
+    -------
+    dict
+        Reservation info about the allocated range in shared memory.
+    """
+    mpi_state = MPIState.get_instance()
+    operation_type = common.Operation.RESERVE_SHARED_MEMORY
+
+    operation_data = {
+        "id": data_id,
+        "size": data_size,
+    }
+    # We use a blocking send here because we have to wait for
+    # completion of the communication, which is necessary for the pipeline to continue.
+    send_simple_operation(
+        comm,
+        operation_type,
+        operation_data,
+        mpi_state.get_monitor_by_worker_rank(),
+    )
+    return mpi_recv_object(comm, mpi_state.get_monitor_by_worker_rank())

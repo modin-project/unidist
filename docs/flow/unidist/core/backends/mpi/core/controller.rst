@@ -48,14 +48,11 @@ just returns the next rank number in a loop.
 
 .. autofunction:: unidist.core.backends.mpi.core.controller.common.RoundRobin.schedule_rank
 
-Local Object Storage
-====================
+GarbageCollector
+================
 
-MPI :py:class:`~unidist.core.backends.mpi.core.controller.object_store.ObjectStore` stores the data for master process in a local dict.
 :py:class:`~unidist.core.backends.mpi.core.controller.garbage_collector.GarbageCollector` controls memory footprint and sends cleanup requests for all workers,
 if certain amount of data IDs is out-of-scope.
 
-.. autoclass:: unidist.core.backends.mpi.core.controller.object_store.ObjectStore
-  :members:
 .. autoclass:: unidist.core.backends.mpi.core.controller.garbage_collector.GarbageCollector
   :members:

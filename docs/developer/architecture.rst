@@ -62,10 +62,13 @@ details just pick module you are interested in.
            |   │   └─── :doc:`remote_function </flow/unidist/core/backends/dask/remote_function>`
            |   ├───mpi
            |   |   ├───core
+           |   │   │    ├─── :doc:`async_operations </flow/unidist/core/backends/mpi/core/async_operations>`
            |   │   │    ├─── :doc:`common </flow/unidist/core/backends/mpi/core/common>`
            |   │   │    ├─── :doc:`communication </flow/unidist/core/backends/mpi/core/communication>`
            |   │   │    ├─── :doc:`controller </flow/unidist/core/backends/mpi/core/controller>`
            |   │   │    ├─── :doc:`monitor </flow/unidist/core/backends/mpi/core/monitor>`
+           |   │   │    ├─── :doc:`local_object_store </flow/unidist/core/backends/mpi/core/local_object_store>`
+           |   │   │    ├─── :doc:`shared_object_store </flow/unidist/core/backends/mpi/core/shared_object_store>`
            |   │   │    ├─── :doc:`serialization </flow/unidist/core/backends/mpi/core/serialization>`
            |   │   │    └─── :doc:`worker </flow/unidist/core/backends/mpi/core/worker>`
            |   │   ├─── :doc:`actor </flow/unidist/core/backends/mpi/actor>`

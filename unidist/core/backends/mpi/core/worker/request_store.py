@@ -6,15 +6,15 @@ from collections import defaultdict
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
-from unidist.core.backends.mpi.core.async_operations import AsyncOperations
-from unidist.core.backends.mpi.core.worker.object_store import ObjectStore
+from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
+from unidist.core.backends.mpi.core.controller.common import push_data
 
 
 mpi_state = communication.MPIState.get_instance()
 # Logger configuration
 # When building documentation we do not have MPI initialized so
 # we use the condition to set "worker_0.log" in order to build it succesfully.
-logger_name = "worker_{}".format(mpi_state.rank if mpi_state is not None else 0)
+logger_name = "worker_{}".format(mpi_state.global_rank if mpi_state is not None else 0)
 log_file = "{}.log".format(logger_name)
 logger = common.get_logger(logger_name, log_file)
 
@@ -44,11 +44,11 @@ class RequestStore:
     DATA = 2
 
     def __init__(self):
-        # Non-blocking get requests {DataId : [ Set of Ranks ]}
+        # Non-blocking get requests {DataID : [ Set of Ranks ]}
         self._nonblocking_get_requests = defaultdict(set)
-        # Blocking get requests {DataId : [ Set of Ranks ]}
+        # Blocking get requests {DataID : [ Set of Ranks ]}
         self._blocking_get_requests = defaultdict(set)
-        # Blocking wait requests {DataId : Rank}
+        # Blocking wait requests {DataID : Rank}
         self._blocking_wait_requests = {}
         # Data requests
         self._data_requests = set()
@@ -213,7 +213,7 @@ class RequestStore:
         -----
         Only ROOT rank is supported for now, therefore no rank argument needed.
         """
-        if ObjectStore.get_instance().contains(data_id):
+        if LocalObjectStore.get_instance().contains(data_id):
             # Executor wait just for signal
             # We use a blocking send here because the receiver is waiting for the result.
             communication.mpi_send_object(
@@ -247,48 +247,14 @@ class RequestStore:
         -----
         Request is asynchronous, no wait for the data sending.
         """
-        object_store = ObjectStore.get_instance()
-        async_operations = AsyncOperations.get_instance()
-        if object_store.contains(data_id):
-            if source_rank == communication.MPIRank.ROOT or is_blocking_op:
-                # The controller or a requesting worker is blocked by the request
-                # which should be processed immediatly
-                operation_data = object_store.get(data_id)
-                # We use a blocking send here because the receiver is waiting for the result.
-                communication.send_complex_data(
-                    mpi_state.comm,
-                    operation_data,
-                    source_rank,
-                )
-            else:
-                operation_type = common.Operation.PUT_DATA
-                if object_store.is_already_serialized(data_id):
-                    operation_data = object_store.get_serialized_data(data_id)
-                    # Async send to avoid possible dead-lock between workers
-                    h_list, _ = communication.isend_complex_operation(
-                        mpi_state.comm,
-                        operation_type,
-                        operation_data,
-                        source_rank,
-                        is_serialized=True,
-                    )
-                    async_operations.extend(h_list)
-                else:
-                    operation_data = {
-                        "id": data_id,
-                        "data": object_store.get(data_id),
-                    }
-                    # Async send to avoid possible dead-lock between workers
-                    h_list, serialized_data = communication.isend_complex_operation(
-                        mpi_state.comm,
-                        operation_type,
-                        operation_data,
-                        source_rank,
-                        is_serialized=False,
-                    )
-                    async_operations.extend(h_list)
-                    object_store.cache_serialized_data(data_id, serialized_data)
-
+        local_store = LocalObjectStore.get_instance()
+        if local_store.contains(data_id):
+            push_data(
+                source_rank,
+                data_id,
+                is_blocking_op=source_rank == communication.MPIRank.ROOT
+                or is_blocking_op,
+            )
             logger.debug(
                 "Send requested {} id to {} rank - PROCESSED".format(
                     data_id._id, source_rank

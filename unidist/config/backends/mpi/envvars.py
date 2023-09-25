@@ -47,3 +47,23 @@ class MpiLog(EnvironmentVariable, type=bool):
 
     default = False
     varname = "UNIDIST_MPI_LOG"
+
+
+class MpiSharedObjectStore(EnvironmentVariable, type=bool):
+    """Whether to enable shared object store or not."""
+
+    default = False
+    varname = "UNIDIST_MPI_SHARED_OBJECT_STORE"
+
+
+class MpiSharedObjectStoreMemory(EnvironmentVariable, type=int):
+    """How many bytes of memory to start the shared object store with."""
+
+    varname = "UNIDIST_MPI_SHARED_OBJECT_STORE_MEMORY"
+
+
+class MpiSharedObjectStoreThreshold(EnvironmentVariable, type=int):
+    """Minimum size of data to put into the shared object store."""
+
+    default = 1024**2  # 1 MiB
+    varname = "UNIDIST_MPI_SHARED_OBJECT_STORE_THRESHOLD"

@@ -7,11 +7,12 @@
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
-from unidist.core.backends.mpi.core.controller.object_store import object_store
+from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 from unidist.core.backends.mpi.core.controller.garbage_collector import (
     garbage_collector,
 )
 from unidist.core.backends.mpi.core.controller.common import push_data, RoundRobin
+from unidist.core.backends.mpi.core.controller.api import put
 
 
 class ActorMethod:
@@ -33,13 +34,17 @@ class ActorMethod:
         self._method_name = method_name
 
     def __call__(self, *args, num_returns=1, **kwargs):
-        output_id = object_store.generate_output_data_id(
+        local_store = LocalObjectStore.get_instance()
+        output_id = local_store.generate_output_data_id(
             self._actor._owner_rank, garbage_collector, num_returns
         )
 
         unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
         unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
 
+        push_data(
+            self._actor._owner_rank, common.master_data_ids_to_base(self._method_name)
+        )
         push_data(self._actor._owner_rank, unwrapped_args)
         push_data(self._actor._owner_rank, unwrapped_kwargs)
 
@@ -95,12 +100,13 @@ class Actor:
             if owner_rank is None
             else owner_rank
         )
+        local_store = LocalObjectStore.get_instance()
         self._handler_id = (
-            object_store.generate_data_id(garbage_collector)
+            local_store.generate_data_id(garbage_collector)
             if handler_id is None
             else handler_id
         )
-        object_store.put_data_owner(self._handler_id, self._owner_rank)
+        local_store.put_data_owner(self._handler_id, self._owner_rank)
 
         # reserve a rank for actor execution only
         RoundRobin.get_instance().reserve_rank(self._owner_rank)
@@ -179,8 +185,15 @@ class Actor:
         state = self._serialization_helper()
         return self._deserialization_helper, (state,)
 
+    # Cache for serialized actor methods {"method_name": DataID}
+    actor_methods = {}
+
     def __getattr__(self, name):
-        return ActorMethod(self, name)
+        data_id_to_method = self.actor_methods.get(name, None)
+        if data_id_to_method is None:
+            data_id_to_method = put(name)
+            self.actor_methods[name] = data_id_to_method
+        return ActorMethod(self, data_id_to_method)
 
     def __del__(self):
         """

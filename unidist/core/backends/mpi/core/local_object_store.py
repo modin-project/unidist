@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""`ObjectStore` functionality."""
+"""`LocalObjectStore` functionality."""
 
 import weakref
 from collections import defaultdict
@@ -11,13 +11,13 @@ import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 
 
-class ObjectStore:
+class LocalObjectStore:
     """
-    Class that stores objects and provides access to these from master process.
+    Class that stores local objects and provides access to them.
 
     Notes
     -----
-    Currently, the storage is local to the current process only.
+    The storage is local to the current worker process only.
     """
 
     __instance = None
@@ -25,6 +25,10 @@ class ObjectStore:
     def __init__(self):
         # Add local data {DataID : Data}
         self._data_map = weakref.WeakKeyDictionary()
+        # "strong" references to data IDs {DataID : DataID}
+        # we are using dict here to improve performance when getting an element from it,
+        # whereas other containers would require O(n) complexity
+        self._data_id_map = {}
         # Data owner {DataID : Rank}
         self._data_owner_map = weakref.WeakKeyDictionary()
         # Data was already sent to this ranks {DataID : [ranks]}
@@ -32,28 +36,28 @@ class ObjectStore:
         # Data id generator
         self._data_id_counter = 0
         # Data serialized cache
-        self._serialization_cache = {}
+        self._serialization_cache = weakref.WeakKeyDictionary()
 
     @classmethod
     def get_instance(cls):
         """
-        Get instance of ``ObjectStore``.
+        Get instance of ``LocalObjectStore``.
 
         Returns
         -------
-        ObjectStore
+        LocalObjectStore
         """
         if cls.__instance is None:
-            cls.__instance = ObjectStore()
+            cls.__instance = LocalObjectStore()
         return cls.__instance
 
     def put(self, data_id, data):
         """
-        Put data to internal dictionary.
+        Put `data` to internal dictionary.
 
         Parameters
         ----------
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
+        data_id : unidist.core.backends.common.data_id.DataID
             An ID to data.
         data : object
             Data to be put.
@@ -66,7 +70,7 @@ class ObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
+        data_id : unidist.core.backends.common.data_id.DataID
             An ID to data.
         rank : int
             Rank number where the data resides.
@@ -79,7 +83,7 @@ class ObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
+        data_id : unidist.core.backends.common.data_id.DataID
             An ID to data.
 
         Returns
@@ -95,7 +99,7 @@ class ObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
+        data_id : unidist.core.backends.common.data_id.DataID
             An ID to data.
 
         Returns
@@ -111,7 +115,7 @@ class ObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
+        data_id : unidist.core.backends.common.data_id.DataID
             An ID to data.
 
         Returns
@@ -127,32 +131,60 @@ class ObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
+        data_id : unidist.core.backends.common.data_id.DataID
             An ID to data.
 
         Returns
         -------
         bool
-            Return the status if an object location is known.
+            Return the ``True`` status if an object location is known.
         """
         return data_id in self._data_owner_map
 
+    def get_unique_data_id(self, data_id):
+        """
+        Get the "strong" reference to the data ID if it is already stored locally.
+
+        If the passed data ID is not stored locally yet, save and return it.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+            An ID to data.
+
+        Returns
+        -------
+        unidist.core.backends.common.data_id.DataID
+            The unique ID to data.
+
+        Notes
+        -----
+        We need to use a unique data ID reference for the garbage colleactor to work correctly.
+        """
+        if communication.MPIState.get_instance().is_root_process():
+            # Root process must not have a strong references and user always have actual data_id
+            return data_id
+        if data_id not in self._data_id_map:
+            self._data_id_map[data_id] = data_id
+        return self._data_id_map[data_id]
+
     def clear(self, cleanup_list):
         """
-        Clear all local dictionary data ID instances from `cleanup_list`.
+        Clear "strong" references to data IDs from `cleanup_list`.
 
         Parameters
         ----------
         cleanup_list : list
-            List of ``DataID``-s.
+            List of data IDs.
 
         Notes
         -----
-        Only cache of sent data can be cleared - the rest are weakreferenced.
+        The actual data will be collected later when there is no weak or
+        strong reference to data in the current worker.
         """
         for data_id in cleanup_list:
+            self._data_id_map.pop(data_id, None)
             self._sent_data_map.pop(data_id, None)
-        self._serialization_cache.clear()
 
     def generate_data_id(self, gc):
         """
@@ -168,7 +200,7 @@ class ObjectStore:
         unidist.core.backends.mpi.core.common.MasterDataID
             Unique data ID instance.
         """
-        data_id = f"rank_{communication.MPIState.get_instance().rank}_id_{self._data_id_counter}"
+        data_id = f"rank_{communication.MPIState.get_instance().global_rank}_id_{self._data_id_counter}"
         self._data_id_counter += 1
         return common.MasterDataID(data_id, gc)
 
@@ -238,11 +270,11 @@ class ObjectStore:
 
     def cache_serialized_data(self, data_id, data):
         """
-        Save communication event for this `data_id` and `data`.
+        Save serialized object for this `data_id`.
 
         Parameters
         ----------
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
+        data_id : unidist.core.backends.common.data_id.DataID
             An ID to data.
         data : object
             Serialized data to cache.
@@ -280,6 +312,3 @@ class ObjectStore:
             Cached serialized data associated with `data_id`.
         """
         return self._serialization_cache[data_id]
-
-
-object_store = ObjectStore.get_instance()

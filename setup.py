@@ -1,5 +1,6 @@
 import pathlib
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
+from Cython.Build import cythonize
 import sys
 import versioneer
 
@@ -15,6 +16,12 @@ here = pathlib.Path(__file__).parent.resolve()
 
 # Get the long description from the README file
 long_description = (here / "README.md").read_text(encoding="utf-8")
+
+_memory = Extension(
+    "unidist.core.backends.mpi.core._memory",
+    ["unidist/core/backends/mpi/core/memory/_memory.pyx"],
+    language="c++",
+)
 
 setup(
     name="unidist",
@@ -35,4 +42,5 @@ setup(
         "all": all_deps,
     },
     python_requires=">=3.7.1",
+    ext_modules=cythonize([_memory]),
 )
