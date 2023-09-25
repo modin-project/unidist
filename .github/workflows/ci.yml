@@ -73,10 +73,9 @@ jobs:
           # we set use-only-tar-bz2 to false in order for conda to properly find new packages to be installed
           # for more info see https://github.com/conda-incubator/setup-miniconda/issues/264
           use-only-tar-bz2: false
+      # Build unidist to make C++ extensions available
       - name: Build unidist
-        run: |
-          python setup.py build_ext --inplace
-          pip install -e .
+        run: pip install -e .
       - name: Conda environment
         run: |
           conda info
