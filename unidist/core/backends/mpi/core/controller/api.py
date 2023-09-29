@@ -383,11 +383,13 @@ def put(data):
 
     data_id = local_store.generate_data_id(garbage_collector)
     serialized_data = serialize_complex_data(data)
-    local_store.put(data_id, data)
+    # master id haven't to send to another proccess
+    base_data_id = local_store.get_unique_data_id(data_id.base_data_id())
+    local_store.put(base_data_id, data)
     if shared_store.is_allocated():
-        shared_store.put(data_id, serialized_data)
+        shared_store.put(base_data_id, serialized_data)
     else:
-        local_store.cache_serialized_data(data_id, serialized_data)
+        local_store.cache_serialized_data(base_data_id, serialized_data)
 
     logger.debug("PUT {} id".format(data_id._id))
 
@@ -408,32 +410,34 @@ def get(data_ids):
     object
         A Python object.
     """
+    is_list = isinstance(data_ids, list)
     local_store = LocalObjectStore.get_instance()
 
-    def get_impl(data_id):
-        if local_store.contains(data_id):
-            value = local_store.get(data_id)
-        else:
-            value = request_worker_data(data_id)
+    if is_list:
+        remote_data_ids = [
+            data_id for data_id in data_ids if not local_store.contains(data_id)
+        ]
+    elif local_store.contains(data_ids):
+        remote_data_ids = []
+    else:
+        remote_data_ids = [data_ids]
 
-        if isinstance(value, Exception):
-            raise value
-
-        return value
+    if remote_data_ids:
+        request_worker_data(remote_data_ids)
 
     logger.debug("GET {} ids".format(common.unwrapped_data_ids_list(data_ids)))
 
-    is_list = isinstance(data_ids, list)
-    if not is_list:
-        data_ids = [data_ids]
-
-    values = [get_impl(data_id) for data_id in data_ids]
+    return_value = None
+    if is_list:
+        return_value = [local_store.get(data_id) for data_id in data_ids]
+    else:
+        return_value = local_store.get(data_ids)
 
     # Initiate reference count based cleaup
     # if all the tasks were completed
     garbage_collector.regular_cleanup()
 
-    return values if is_list else values[0]
+    return return_value
 
 
 def wait(data_ids, num_returns=1):

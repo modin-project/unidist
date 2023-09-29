@@ -154,6 +154,8 @@ async def worker_loop():
         elif operation_type == common.Operation.PUT_SHARED_DATA:
             result = pull_data(mpi_state.comm, source_rank)
 
+            local_store.put(result["id"], result["data"])
+
             # Clear cached request to another worker, if data_id became available
             request_store.discard_data_request(result["id"])
 

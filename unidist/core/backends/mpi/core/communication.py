@@ -374,6 +374,18 @@ def mpi_recv_operation(comm):
     return op_type, status.Get_source()
 
 
+def mpi_iprobe_object(comm):
+    backoff = MpiBackoff.get()
+    status = MPI.Status()
+    source = MPI.ANY_SOURCE
+    tag = common.MPITag.OBJECT
+    while not comm.iprobe(source=source, tag=tag, status=status):
+        time.sleep(backoff)
+    source = status.source
+    data = comm.recv(source=source, tag=tag, status=status)
+    return data, source
+
+
 def mpi_recv_object(comm, source_rank):
     """
     Receive an object of a standard Python data type.

@@ -14,6 +14,7 @@ from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
 from unidist.core.backends.mpi.core.serialization import serialize_complex_data
 
+
 logger = common.get_logger("common", "common.log")
 
 
@@ -107,7 +108,7 @@ class RoundRobin:
         )
 
 
-def pull_data(comm, owner_rank):
+def pull_data(comm, owner_rank=None):
     """
     Receive data from another MPI process.
 
@@ -124,7 +125,11 @@ def pull_data(comm, owner_rank):
     object
         Received data object from another MPI process.
     """
-    info_package = communication.mpi_recv_object(comm, owner_rank)
+    if owner_rank is None:
+        info_package, source = communication.mpi_iprobe_object(comm)
+        owner_rank = source
+    else:
+        info_package = communication.mpi_recv_object(comm, owner_rank)
     if info_package["package_type"] == common.MetadataPackage.SHARED_DATA:
         local_store = LocalObjectStore.get_instance()
         shared_store = SharedObjectStore.get_instance()
@@ -137,7 +142,6 @@ def pull_data(comm, owner_rank):
             }
 
         data = shared_store.get(data_id, owner_rank, info_package)
-        local_store.put(data_id, data)
         return {
             "id": data_id,
             "data": data,
@@ -159,7 +163,7 @@ def pull_data(comm, owner_rank):
         raise ValueError("Unexpected package of data info!")
 
 
-def request_worker_data(data_id):
+def request_worker_data(data_ids):
     """
     Get an object(s) associated with `data_id` from the object storage.
 
@@ -175,39 +179,44 @@ def request_worker_data(data_id):
     """
     mpi_state = communication.MPIState.get_instance()
     local_store = LocalObjectStore.get_instance()
+    async_operations = AsyncOperations.get_instance()
 
-    owner_rank = local_store.get_data_owner(data_id)
+    for data_id in data_ids:
+        owner_rank = local_store.get_data_owner(data_id)
 
-    logger.debug("GET {} id from {} rank".format(data_id._id, owner_rank))
+        logger.debug("GET {} id from {} rank".format(data_id._id, owner_rank))
 
-    # Worker request
-    operation_type = common.Operation.GET
-    operation_data = {
-        "source": mpi_state.global_rank,
-        "id": data_id,
-        # set `is_blocking_op` to `True` to tell a worker
-        # to send the data directly to the requester
-        # without any delay
-        "is_blocking_op": True,
-    }
-    # We use a blocking send here because we have to wait for
-    # completion of the communication, which is necessary for the pipeline to continue.
-    communication.send_simple_operation(
-        mpi_state.comm,
-        operation_type,
-        operation_data,
-        owner_rank,
-    )
+        # Worker request
+        operation_type = common.Operation.GET
+        operation_data = {
+            "source": mpi_state.global_rank,
+            "id": data_id.base_data_id(),
+            # set `is_blocking_op` to `True` to tell a worker
+            # to send the data directly to the requester
+            # without any delay
+            "is_blocking_op": True,
+        }
+        # We use a blocking send here because we have to wait for
+        # completion of the communication, which is necessary for the pipeline to continue.
+        h_list = communication.isend_simple_operation(
+            mpi_state.comm,
+            operation_type,
+            operation_data,
+            owner_rank,
+        )
+        async_operations.extend(h_list)
 
-    # Blocking get
-    complex_data = pull_data(mpi_state.comm, owner_rank)
-    if data_id != complex_data["id"]:
-        raise ValueError("Unexpected data_id!")
-    data = complex_data["data"]
-
-    # Caching the result, check the protocol correctness here
-    local_store.put(data_id, data)
-    return data
+    received_data = 0
+    while received_data < len(data_ids):
+        # Blocking get
+        complex_data = pull_data(mpi_state.comm)
+        data_id = complex_data["id"]
+        if data_id in data_ids:
+            received_data += 1
+            data_id = [d_id for d_id in data_ids if d_id == data_id][0]
+        data = complex_data["data"]
+        # Caching the result, check the protocol correctness here
+        local_store.put(data_id, data)
 
 
 def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
