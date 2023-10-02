@@ -279,7 +279,10 @@ class TaskStore:
                                     output_id, serialized_data
                                 )
                                 local_store.put(output_id, value)
-                                if shared_store.is_allocated() and shared_store.should_be_shared(serialized_data):
+                                if (
+                                    shared_store.is_allocated()
+                                    and shared_store.should_be_shared(serialized_data)
+                                ):
                                     shared_store.put(output_id, serialized_data)
                                 completed_data_ids[idx] = output_id
                         else:
@@ -288,7 +291,10 @@ class TaskStore:
                                 output_data_ids, serialized_data
                             )
                             local_store.put(output_data_ids, output_values)
-                            if shared_store.is_allocated() and shared_store.should_be_shared(serialized_data):
+                            if (
+                                shared_store.is_allocated()
+                                and shared_store.should_be_shared(serialized_data)
+                            ):
                                 shared_store.put(output_data_ids, serialized_data)
                             completed_data_ids = [output_data_ids]
 
@@ -360,7 +366,10 @@ class TaskStore:
                                 output_id, serialized_data
                             )
                             local_store.put(output_id, value)
-                            if shared_store.is_allocated() and shared_store.should_be_shared(serialized_data):
+                            if (
+                                shared_store.is_allocated()
+                                and shared_store.should_be_shared(serialized_data)
+                            ):
                                 shared_store.put(output_id, serialized_data)
                             completed_data_ids[idx] = output_id
                     else:
@@ -369,7 +378,10 @@ class TaskStore:
                             output_data_ids, serialized_data
                         )
                         local_store.put(output_data_ids, output_values)
-                        if shared_store.is_allocated() and shared_store.should_be_shared(serialized_data):
+                        if (
+                            shared_store.is_allocated()
+                            and shared_store.should_be_shared(serialized_data)
+                        ):
                             shared_store.put(output_data_ids, serialized_data)
                         completed_data_ids = [output_data_ids]
             RequestStore.get_instance().check_pending_get_requests(output_data_ids)
@@ -404,7 +416,6 @@ class TaskStore:
         """
         # Parse request
         local_store = LocalObjectStore.get_instance()
-        shared_store = SharedObjectStore.get_instance()
         task = request["task"]
         # Remote function here is a data id so we have to retrieve it from the storage,
         # whereas actor method is already materialized in the worker loop.

@@ -93,5 +93,5 @@ class MpiSharedObjectStoreMemory(EnvironmentVariable, type=int):
 class MpiSharedObjectStoreThreshold(EnvironmentVariable, type=int):
     """Minimum size of data to put into the shared object store."""
 
-    default = 10 ** 5  # 100 KB
+    default = 10**5  # 100 KB
     varname = "UNIDIST_MPI_SHARED_OBJECT_STORE_THRESHOLD"

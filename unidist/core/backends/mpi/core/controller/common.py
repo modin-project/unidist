@@ -367,7 +367,9 @@ def push_data(dest_rank, value, is_blocking_op=False):
             else:
                 data = local_store.get(data_id)
                 serialized_data = serialize_complex_data(data)
-                if shared_store.is_allocated() and shared_store.should_be_shared(serialized_data):
+                if shared_store.is_allocated() and shared_store.should_be_shared(
+                    serialized_data
+                ):
                     shared_store.put(data_id, serialized_data)
                     _push_shared_data(dest_rank, data_id, is_blocking_op)
                 else:
