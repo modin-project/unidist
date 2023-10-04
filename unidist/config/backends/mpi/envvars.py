@@ -51,7 +51,7 @@ class MpiPickleThreshold(EnvironmentVariable, type=int):
         int
         """
         if MpiSharedObjectStore.get():
-            # We use a protected field here to avoid `RecursionError` when calling cls.cls.get_value_source().
+            # We use a protected field here to avoid `RecursionError` when calling `cls.get_value_source()`.
             # In all other places the method should be used.
             if (
                 cls._value_source is not None
