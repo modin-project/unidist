@@ -12,6 +12,7 @@ import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
+from unidist.core.backends.mpi.core.serialization import serialize_complex_data
 
 logger = common.get_logger("common", "common.log")
 
@@ -142,9 +143,15 @@ def pull_data(comm, owner_rank):
             "data": data,
         }
     elif info_package["package_type"] == common.MetadataPackage.LOCAL_DATA:
-        return communication.recv_complex_data(
+        local_store = LocalObjectStore.get_instance()
+        data_id = local_store.get_unique_data_id(info_package["id"])
+        data = communication.recv_complex_data(
             comm, owner_rank, info_package=info_package
         )
+        return {
+            "id": data_id,
+            "data": data,
+        }
     else:
         raise ValueError("Unexpected package of data info!")
 
@@ -197,7 +204,6 @@ def request_worker_data(data_id):
 
     # Caching the result, check the protocol correctness here
     local_store.put(data_id, data)
-
     return data
 
 
@@ -229,6 +235,8 @@ def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
         # Push the local master data to the target worker directly
         if is_serialized:
             operation_data = local_store.get_serialized_data(data_id)
+            # Insert `data_id` to get full metadata package further
+            operation_data["id"] = data_id
         else:
             operation_data = {
                 "id": data_id,
@@ -241,7 +249,7 @@ def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
                 mpi_state.comm,
                 operation_data,
                 dest_rank,
-                is_serialized,
+                is_serialized=is_serialized,
             )
         else:
             h_list, serialized_data = communication.isend_complex_operation(
@@ -249,11 +257,11 @@ def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
                 operation_type,
                 operation_data,
                 dest_rank,
-                is_serialized,
+                is_serialized=is_serialized,
             )
             async_operations.extend(h_list)
 
-        if not is_serialized:
+        if not is_serialized or not local_store.is_already_serialized(data_id):
             local_store.cache_serialized_data(data_id, serialized_data)
 
         #  Remember pushed id
@@ -358,12 +366,16 @@ def push_data(dest_rank, value, is_blocking_op=False):
                 _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized=True)
             else:
                 data = local_store.get(data_id)
-                if shared_store.should_be_shared(data):
-                    shared_store.put(data_id, data)
+                serialized_data = serialize_complex_data(data)
+                if shared_store.is_allocated() and shared_store.should_be_shared(
+                    serialized_data
+                ):
+                    shared_store.put(data_id, serialized_data)
                     _push_shared_data(dest_rank, data_id, is_blocking_op)
                 else:
+                    local_store.cache_serialized_data(data_id, serialized_data)
                     _push_local_data(
-                        dest_rank, data_id, is_blocking_op, is_serialized=False
+                        dest_rank, data_id, is_blocking_op, is_serialized=True
                     )
         elif local_store.contains_data_owner(data_id):
             _push_data_owner(dest_rank, data_id)

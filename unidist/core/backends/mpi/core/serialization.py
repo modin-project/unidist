@@ -219,6 +219,11 @@ class ComplexDataSerializer:
         data : object
             Data to serialize.
 
+        Returns
+        -------
+        bytes
+            Serialized data.
+
         Notes
         -----
         Uses msgpack, cloudpickle and pickle libraries.
@@ -242,7 +247,11 @@ class ComplexDataSerializer:
             return pkl.loads(obj["as_bytes"])
         elif "__pickle5_custom__" in obj:
             frame = pkl.loads(obj["as_bytes"], buffers=self.buffers)
-            del self.buffers[: self.buffer_count.pop(0)]
+            # check if there are out-of-band buffers
+            # TODO: look at this condition and get rid of it because
+            # `buffer_count` should always be a list with length greater 0.
+            if self.buffer_count:
+                del self.buffers[: self.buffer_count.pop(0)]
             return frame
         else:
             return obj
@@ -255,6 +264,11 @@ class ComplexDataSerializer:
         ----------
         s_data : bytearray
             Data to de-serialize.
+
+        Returns
+        -------
+        object
+            Deserialized data.
 
         Notes
         -----
@@ -340,3 +354,57 @@ class SimpleDataSerializer:
             Original reconstructed object.
         """
         return pkl.loads(data)
+
+
+def serialize_complex_data(data):
+    """
+    Serialize data to a bytearray.
+
+    Parameters
+    ----------
+    data : object
+        Data to serialize.
+
+    Returns
+    -------
+    bytes
+        Serialized data.
+
+    Notes
+    -----
+    Uses msgpack, cloudpickle and pickle libraries.
+    """
+    serializer = ComplexDataSerializer()
+    s_data = serializer.serialize(data)
+    serialized_data = {
+        "s_data": s_data,
+        "raw_buffers": serializer.buffers,
+        "buffer_count": serializer.buffer_count,
+    }
+    return serialized_data
+
+
+def deserialize_complex_data(s_data, raw_buffers, buffer_count):
+    """
+    Deserialize data based on passed in information.
+
+    Parameters
+    ----------
+    s_data : bytearray
+        Serialized msgpack data.
+    raw_buffers : list
+        A list of ``PickleBuffer`` objects for data decoding.
+    buffer_count : list
+        List of the number of buffers for each object
+        to be deserialized using the pickle 5 protocol.
+
+    Returns
+    -------
+    object
+        Deserialized data.
+    Notes
+    -----
+    Uses msgpack, cloudpickle and pickle libraries.
+    """
+    deserializer = ComplexDataSerializer(raw_buffers, buffer_count)
+    return deserializer.deserialize(s_data)

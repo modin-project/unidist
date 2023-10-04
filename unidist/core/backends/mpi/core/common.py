@@ -123,12 +123,16 @@ class MetadataPackage(ImmutableDict):
     SHARED_DATA = 1
 
     @classmethod
-    def get_local_info(cls, s_data_len, raw_buffers_len, buffer_count):
+    def get_local_info(cls, data_id, s_data_len, raw_buffers_len, buffer_count):
         """
         Get information package for sending local data.
 
         Parameters
         ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+            An ID to data.
+            Can be ``None`` to indicate a fake `data_id` to get full metadata package.
+            It is usually used when submitting a task or an actor for not yet serialized data.
         s_data_len : int
             Main buffer length.
         raw_buffers_len : list
@@ -145,6 +149,7 @@ class MetadataPackage(ImmutableDict):
         return MetadataPackage(
             {
                 "package_type": MetadataPackage.LOCAL_DATA,
+                "id": data_id,
                 "s_data_len": s_data_len,
                 "raw_buffers_len": raw_buffers_len,
                 "buffer_count": buffer_count,

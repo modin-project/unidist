@@ -27,7 +27,9 @@ from unidist.config.backends.mpi.envvars import (
     MpiBackoff,
 )
 from unidist.core.backends.mpi.core import common, communication
-from unidist.core.backends.mpi.core.serialization import ComplexDataSerializer
+from unidist.core.backends.mpi.core.serialization import (
+    deserialize_complex_data,
+)
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
@@ -385,11 +387,7 @@ class SharedObjectStore:
             )
             prev_last_index = raw_last_index
 
-        # Set the necessary metadata for unpacking
-        deserializer = ComplexDataSerializer(raw_buffers, buffer_count)
-
-        # Start unpacking
-        data = deserializer.deserialize(s_data)
+        data = deserialize_complex_data(s_data, raw_buffers, buffer_count)
         self.logger.debug(
             f"Rank {communication.MPIState.get_instance().global_rank}: Get {data_id} from {first_index} to {prev_last_index}. Service index: {service_index}"
         )
@@ -530,31 +528,16 @@ class SharedObjectStore:
 
         Parameters
         ----------
-        data : object
-            Any data needed to be sent to another process.
+        data : dict
+            Serialized data to check its size.
 
         Returns
         -------
         bool
             Return the ``True`` status if data should be sent using shared memory.
         """
-        if self.shared_buffer is None:
-            return False
-
-        size = sys.getsizeof(data)
-
-        # sys.getsizeof may return incorrect data size as
-        # it doesn't fully assume the whole structure of an object
-        # so we manually compute the data size for np.array here.
-        try:
-            import numpy as np
-
-            if isinstance(data, np.ndarray):
-                size = data.size * data.dtype.itemsize
-        except ImportError:
-            pass
-
-        return size > MpiSharedObjectStoreThreshold.get()
+        data_size = len(data["s_data"]) + sum([len(buf) for buf in data["raw_buffers"]])
+        return data_size > MpiSharedObjectStoreThreshold.get()
 
     def contains(self, data_id):
         """
@@ -670,30 +653,21 @@ class SharedObjectStore:
                 )
                 raise RuntimeError("Unexpected data_id for cleanup shared memory")
 
-    def put(self, data_id, data):
+    def put(self, data_id, serialized_data):
         """
         Put data into shared memory.
 
         Parameters
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
-        data : object
-            The current data.
+        serialized_data : dict
+            Serialized data to put into the storage.
         """
         mpi_state = communication.MPIState.get_instance()
 
-        # serialize data
-        serializer = ComplexDataSerializer()
-        s_data = serializer.serialize(data)
-        raw_buffers = serializer.buffers
-        buffer_count = serializer.buffer_count
-        data_size = len(s_data) + sum([len(buf) for buf in raw_buffers])
-        serialized_data = {
-            "s_data": s_data,
-            "raw_buffers": raw_buffers,
-            "buffer_count": buffer_count,
-        }
-
+        data_size = len(serialized_data["s_data"]) + sum(
+            [len(buf) for buf in serialized_data["raw_buffers"]]
+        )
         # reserve shared memory
         reservation_data = communication.send_reserve_operation(
             mpi_state.comm, data_id, data_size

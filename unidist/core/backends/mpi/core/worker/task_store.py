@@ -6,7 +6,6 @@ import asyncio
 import functools
 import inspect
 import time
-import weakref
 
 from unidist.core.backends.common.data_id import is_data_id
 import unidist.core.backends.mpi.core.common as common
@@ -14,6 +13,7 @@ import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
+from unidist.core.backends.mpi.core.serialization import serialize_complex_data
 from unidist.core.backends.mpi.core.worker.request_store import RequestStore
 
 mpi_state = communication.MPIState.get_instance()
@@ -39,11 +39,6 @@ class TaskStore:
         self.event_loop = asyncio.get_event_loop()
         # Started async tasks
         self.background_tasks = set()
-        # In some cases output of tasks can take up the memory of task arguments.
-        # If these arguments are placed in shared memory, this location should not be overwritten
-        # while output is being used, otherwise the output value may be corrupted.
-        # {output weak ref: list of argument strong ref}
-        self.output_depends = weakref.WeakKeyDictionary()
 
     @classmethod
     def get_instance(cls):
@@ -169,44 +164,6 @@ class TaskStore:
         # Save request in order to prevent massive communication during pending task checks
         RequestStore.get_instance().put(data_id, dest_rank, RequestStore.DATA)
 
-    def check_local_data_id(self, arg):
-        """
-        Inspect argument if the ID is available in the local object store.
-
-        If the local object store doesn't contain this data ID,
-        request the data from another worker.
-
-        Parameters
-        ----------
-        arg : object or unidist.core.backends.common.data_id.DataID
-            Data ID or object to inspect.
-
-        Returns
-        -------
-        tuple
-            Same value and special flag.
-
-        Notes
-        -----
-        If the data ID could not be resolved, the function returns ``True``.
-        """
-        if is_data_id(arg):
-            local_store = LocalObjectStore.get_instance()
-            arg = local_store.get_unique_data_id(arg)
-            if local_store.contains(arg):
-                return arg, False
-            elif local_store.contains_data_owner(arg):
-                if not RequestStore.get_instance().is_data_already_requested(arg):
-                    # Request the data from an owner worker
-                    owner_rank = local_store.get_data_owner(arg)
-                    if owner_rank != communication.MPIState.get_instance().global_rank:
-                        self.request_worker_data(owner_rank, arg)
-                return arg, True
-            else:
-                raise ValueError("DataID is missing!")
-        else:
-            return arg, False
-
     def unwrap_local_data_id(self, arg):
         """
         Inspect argument and get the ID associated data from the local object store if available.
@@ -247,25 +204,6 @@ class TaskStore:
         else:
             return arg, False
 
-    def check_output_depends(self, data_ids, depends_id):
-        local_store = LocalObjectStore.get_instance()
-        if isinstance(data_ids, (list, tuple)):
-            for data_id in data_ids:
-                # the local store may not contain the data id yet
-                # if a remote function is a coroutine
-                if local_store.contains(data_id):
-                    value = local_store.get(data_id)
-                    if check_data_out_of_band(value):
-                        self.output_depends[data_id] = depends_id
-
-        else:
-            # the local store may not contain the data id yet
-            # if a remote function is a coroutine
-            if local_store.contains(data_ids):
-                value = local_store.get(data_ids)
-                if check_data_out_of_band(value):
-                    self.output_depends[data_ids] = depends_id
-
     def execute_received_task(self, output_data_ids, task, args, kwargs):
         """
         Execute a task/actor-task and handle results.
@@ -288,6 +226,9 @@ class TaskStore:
         local_store = LocalObjectStore.get_instance()
         shared_store = SharedObjectStore.get_instance()
         completed_data_ids = []
+        # Note that if a task is coroutine,
+        # the local store or the shared store will contain output data
+        # only once the task is complete.
         if inspect.iscoroutinefunction(task):
 
             async def execute():
@@ -333,14 +274,30 @@ class TaskStore:
                             for idx, (output_id, value) in enumerate(
                                 zip(output_data_ids, output_values)
                             ):
+                                serialized_data = serialize_complex_data(value)
                                 local_store.put(output_id, value)
-                                if shared_store.should_be_shared(value):
-                                    shared_store.put(output_id, value)
+                                if (
+                                    shared_store.is_allocated()
+                                    and shared_store.should_be_shared(serialized_data)
+                                ):
+                                    shared_store.put(output_id, serialized_data)
+                                else:
+                                    local_store.cache_serialized_data(
+                                        output_id, serialized_data
+                                    )
                                 completed_data_ids[idx] = output_id
                         else:
+                            serialized_data = serialize_complex_data(output_values)
                             local_store.put(output_data_ids, output_values)
-                            if shared_store.should_be_shared(output_values):
-                                shared_store.put(output_data_ids, output_values)
+                            if (
+                                shared_store.is_allocated()
+                                and shared_store.should_be_shared(serialized_data)
+                            ):
+                                shared_store.put(output_data_ids, serialized_data)
+                            else:
+                                local_store.cache_serialized_data(
+                                    output_data_ids, serialized_data
+                                )
                             completed_data_ids = [output_data_ids]
 
                 RequestStore.get_instance().check_pending_get_requests(output_data_ids)
@@ -406,14 +363,30 @@ class TaskStore:
                         for idx, (output_id, value) in enumerate(
                             zip(output_data_ids, output_values)
                         ):
+                            serialized_data = serialize_complex_data(value)
                             local_store.put(output_id, value)
-                            if shared_store.should_be_shared(value):
-                                shared_store.put(output_id, value)
+                            if (
+                                shared_store.is_allocated()
+                                and shared_store.should_be_shared(serialized_data)
+                            ):
+                                shared_store.put(output_id, serialized_data)
+                            else:
+                                local_store.cache_serialized_data(
+                                    output_id, serialized_data
+                                )
                             completed_data_ids[idx] = output_id
                     else:
+                        serialized_data = serialize_complex_data(output_values)
                         local_store.put(output_data_ids, output_values)
-                        if shared_store.should_be_shared(output_values):
-                            shared_store.put(output_data_ids, output_values)
+                        if (
+                            shared_store.is_allocated()
+                            and shared_store.should_be_shared(serialized_data)
+                        ):
+                            shared_store.put(output_data_ids, serialized_data)
+                        else:
+                            local_store.cache_serialized_data(
+                                output_data_ids, serialized_data
+                            )
                         completed_data_ids = [output_data_ids]
             RequestStore.get_instance().check_pending_get_requests(output_data_ids)
             # Monitor the task execution.
@@ -447,7 +420,6 @@ class TaskStore:
         """
         # Parse request
         local_store = LocalObjectStore.get_instance()
-        shared_store = SharedObjectStore.get_instance()
         task = request["task"]
         # Remote function here is a data id so we have to retrieve it from the storage,
         # whereas actor method is already materialized in the worker loop.
@@ -473,9 +445,9 @@ class TaskStore:
         )
 
         # DataID -> real data
-        args, is_pending = common.materialize_data_ids(args, self.check_local_data_id)
+        args, is_pending = common.materialize_data_ids(args, self.unwrap_local_data_id)
         kwargs, is_kw_pending = common.materialize_data_ids(
-            kwargs, self.check_local_data_id
+            kwargs, self.unwrap_local_data_id
         )
 
         w_logger.debug("Is pending - {}".format(is_pending))
@@ -485,22 +457,7 @@ class TaskStore:
             request["kwargs"] = kwargs
             return request
         else:
-            args, is_pending = common.materialize_data_ids(
-                args, self.unwrap_local_data_id
-            )
-            kwargs, is_kw_pending = common.materialize_data_ids(
-                kwargs, self.unwrap_local_data_id
-            )
-
             self.execute_received_task(output_ids, task, args, kwargs)
-
-            shared_depends = [
-                arg
-                for arg in request["args"]
-                if is_data_id(arg) and shared_store.contains(arg)
-            ]
-            if shared_depends:
-                self.check_output_depends(output_ids, shared_depends)
             if output_ids is not None:
                 RequestStore.get_instance().check_pending_get_requests(output_ids)
                 RequestStore.get_instance().check_pending_wait_requests(output_ids)
@@ -508,90 +465,3 @@ class TaskStore:
 
     def __del__(self):
         self.event_loop.close()
-
-
-#################################################
-# Check if the data owns the memory it is using #
-#################################################
-
-
-def check_ndarray(ndarray):
-    """
-    Check if the `np.ndarray` doesn't owns the memory it is using.
-
-    Returns
-    -------
-    bool
-        ``True`` if the `np.ndarray` doesn't own the memory it is using, ``False`` otherwise.
-    """
-    return not ndarray.flags.owndata
-
-
-def check_pandas_index(df_index):
-    """
-    Check if the `pd.Index` doesn't owns the memory it is using.
-
-    Returns
-    -------
-    bool
-        ``True`` if the `pd.Index` doesn't own the memory it is using, ``False`` otherwise.
-    """
-    if df_index._is_multi:
-        if any(
-            check_ndarray(df_index.get_level_values(i)._data)
-            for i in range(df_index.nlevels)
-        ):
-            return True
-    else:
-        if check_ndarray(df_index._data):
-            return True
-    return False
-
-
-def check_data_out_of_band(value):
-    """
-    Check if the data doesn't owns the memory it is using.
-
-    Returns
-    -------
-    bool
-        ``True`` if the data doesn't own the memory it is using, ``False`` otherwise.
-
-    Notes
-    -----
-    Only validation for `np.ndarray`, `pd.Dataframe` and `pd.Series` is currently supported.
-    """
-    # check numpy
-    try:
-        import numpy as np
-
-        if isinstance(value, np.ndarray):
-            if check_ndarray(value):
-                return True
-            return False
-    except ImportError:
-        pass
-
-    # check pandas
-    try:
-        import pandas as pd
-
-        if isinstance(value, pd.DataFrame):
-            if any(block.is_view for block in value._mgr.blocks) or any(
-                check_pandas_index(df_index)
-                for df_index in [value.index, value.columns]
-            ):
-                return True
-            return False
-
-        if isinstance(value, pd.Series):
-            if any(block.is_view for block in value._mgr.blocks) or check_pandas_index(
-                value.index
-            ):
-                return True
-            return False
-
-        # TODO: Add like blocks for other pandas classes
-    except ImportError:
-        pass
-    return False
