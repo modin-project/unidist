@@ -248,6 +248,8 @@ class ComplexDataSerializer:
         elif "__pickle5_custom__" in obj:
             frame = pkl.loads(obj["as_bytes"], buffers=self.buffers)
             # check if there are out-of-band buffers
+            # TODO: look at this condition and get rid of it because
+            # `buffer_count` should always be a list with length greater 0.
             if self.buffer_count:
                 del self.buffers[: self.buffer_count.pop(0)]
             return frame

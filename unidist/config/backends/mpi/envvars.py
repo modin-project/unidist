@@ -4,7 +4,9 @@
 
 """Config entities specific for MPI backend which can be used for unidist behavior tuning."""
 
-from unidist.config.parameter import EnvironmentVariable, ExactStr
+import warnings
+
+from unidist.config.parameter import EnvironmentVariable, ExactStr, ValueSource
 
 
 class IsMpiSpawnWorkers(EnvironmentVariable, type=bool):
@@ -49,6 +51,16 @@ class MpiPickleThreshold(EnvironmentVariable, type=int):
         int
         """
         if MpiSharedObjectStore.get():
+            # We use a protected field here to avoid `RecursionError` when calling cls.cls.get_value_source().
+            # In all other places the method should be used.
+            if (
+                cls._value_source is not None
+                and cls._value_source != ValueSource.DEFAULT
+            ):
+                warnings.warn(
+                    "The MPI shared object store is enabled so"
+                    "`MpiSharedObjectStoreThreshold` takes precedence on `MpiPickleThreshold`."
+                )
             mpi_pickle_threshold = MpiSharedObjectStoreThreshold.get()
         else:
             mpi_pickle_threshold = super().get()

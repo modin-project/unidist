@@ -275,27 +275,29 @@ class TaskStore:
                                 zip(output_data_ids, output_values)
                             ):
                                 serialized_data = serialize_complex_data(value)
-                                local_store.cache_serialized_data(
-                                    output_id, serialized_data
-                                )
                                 local_store.put(output_id, value)
                                 if (
                                     shared_store.is_allocated()
                                     and shared_store.should_be_shared(serialized_data)
                                 ):
                                     shared_store.put(output_id, serialized_data)
+                                else:
+                                    local_store.cache_serialized_data(
+                                        output_id, serialized_data
+                                    )
                                 completed_data_ids[idx] = output_id
                         else:
                             serialized_data = serialize_complex_data(output_values)
-                            local_store.cache_serialized_data(
-                                output_data_ids, serialized_data
-                            )
                             local_store.put(output_data_ids, output_values)
                             if (
                                 shared_store.is_allocated()
                                 and shared_store.should_be_shared(serialized_data)
                             ):
                                 shared_store.put(output_data_ids, serialized_data)
+                            else:
+                                local_store.cache_serialized_data(
+                                    output_data_ids, serialized_data
+                                )
                             completed_data_ids = [output_data_ids]
 
                 RequestStore.get_instance().check_pending_get_requests(output_data_ids)
@@ -362,27 +364,29 @@ class TaskStore:
                             zip(output_data_ids, output_values)
                         ):
                             serialized_data = serialize_complex_data(value)
-                            local_store.cache_serialized_data(
-                                output_id, serialized_data
-                            )
                             local_store.put(output_id, value)
                             if (
                                 shared_store.is_allocated()
                                 and shared_store.should_be_shared(serialized_data)
                             ):
                                 shared_store.put(output_id, serialized_data)
+                            else:
+                                local_store.cache_serialized_data(
+                                    output_id, serialized_data
+                                )
                             completed_data_ids[idx] = output_id
                     else:
                         serialized_data = serialize_complex_data(output_values)
-                        local_store.cache_serialized_data(
-                            output_data_ids, serialized_data
-                        )
                         local_store.put(output_data_ids, output_values)
                         if (
                             shared_store.is_allocated()
                             and shared_store.should_be_shared(serialized_data)
                         ):
                             shared_store.put(output_data_ids, serialized_data)
+                        else:
+                            local_store.cache_serialized_data(
+                                output_data_ids, serialized_data
+                            )
                         completed_data_ids = [output_data_ids]
             RequestStore.get_instance().check_pending_get_requests(output_data_ids)
             # Monitor the task execution.
