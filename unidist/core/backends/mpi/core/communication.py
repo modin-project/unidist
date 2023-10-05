@@ -688,19 +688,18 @@ def isend_complex_data(comm, data, dest_rank, is_serialized=False):
         buffer_count = data["buffer_count"]
         # pop `data_id` out of the dict because it will be send as part of metadata package
         data_id = data.pop("id")
+        info_package = common.MetadataPackage.get_local_info(
+            data_id, len(s_data), [len(sbuf) for sbuf in raw_buffers], buffer_count
+        )
     else:
         serialized_data = serialize_complex_data(data)
         s_data = serialized_data["s_data"]
         raw_buffers = serialized_data["raw_buffers"]
         buffer_count = serialized_data["buffer_count"]
-        # Set fake `data_id` to get full metadata package below.
-        # This branch is usually used when submitting a task or an actor
-        # for not yet serialized data.
-        data_id = None
+        info_package = common.MetadataPackage.get_task_info(
+            len(s_data), [len(sbuf) for sbuf in raw_buffers], buffer_count
+        )
 
-    info_package = common.MetadataPackage.get_local_info(
-        data_id, len(s_data), [len(sbuf) for sbuf in raw_buffers], buffer_count
-    )
     # MPI communication
     handlers = _isend_complex_data_impl(
         comm, s_data, raw_buffers, dest_rank, info_package
@@ -838,6 +837,10 @@ def isend_complex_operation(
         Target MPI process to transfer data.
     is_serialized : bool
         `operation_data` is already serialized or not.
+        - `operation_data` is always serialized for data
+        that has already been saved into the object store.
+        - `operation_data` is always not serialized
+        for sending a task or an actor (actor method).
 
     Returns
     -------
