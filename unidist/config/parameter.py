@@ -177,6 +177,18 @@ class Parameter(object):
         return cls._value_source
 
     @classmethod
+    def put_value_source(cls, value):
+        """
+        Put value source of the config.
+
+        Parameters
+        ----------
+        value : ValueSource
+            Value source to put.
+        """
+        cls._value_source = value
+
+    @classmethod
     def get(cls):
         """
         Get config value.
