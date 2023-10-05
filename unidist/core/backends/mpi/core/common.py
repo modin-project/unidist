@@ -117,10 +117,13 @@ class MetadataPackage(ImmutableDict):
         Package type indicating that the data will be sent from the local object store.
     SHARED_DATA : int, default: 1
         Package type indicating that the data will be sent from the shared object store.
+    TASK_DATA : int, default: 2
+        Package type indicating a task or an actor (actor method) to be sent.
     """
 
     LOCAL_DATA = 0
     SHARED_DATA = 1
+    TASK_DATA = 2
 
     @classmethod
     def get_local_info(cls, data_id, s_data_len, raw_buffers_len, buffer_count):
@@ -131,8 +134,6 @@ class MetadataPackage(ImmutableDict):
         ----------
         data_id : unidist.core.backends.common.data_id.DataID
             An ID to data.
-            Can be ``None`` to indicate a fake `data_id` to get full metadata package.
-            It is usually used when submitting a task or an actor for not yet serialized data.
         s_data_len : int
             Main buffer length.
         raw_buffers_len : list
@@ -190,6 +191,35 @@ class MetadataPackage(ImmutableDict):
                 "raw_buffers_len": tuple(raw_buffers_len),
                 "buffer_count": tuple(buffer_count),
                 "service_index": service_index,
+            }
+        )
+
+    @classmethod
+    def get_task_info(cls, s_data_len, raw_buffers_len, buffer_count):
+        """
+        Get information package for sending a task or an actor (actor method).
+
+        Parameters
+        ----------
+        s_data_len : int
+            Main buffer length.
+        raw_buffers_len : list
+            A list of ``PickleBuffer`` lengths.
+        buffer_count : list
+            List of the number of buffers for each object
+            to be serialized/deserialized using the pickle 5 protocol.
+
+        Returns
+        -------
+        dict
+            The information package.
+        """
+        return MetadataPackage(
+            {
+                "package_type": MetadataPackage.TASK_DATA,
+                "s_data_len": s_data_len,
+                "raw_buffers_len": raw_buffers_len,
+                "buffer_count": buffer_count,
             }
         )
 

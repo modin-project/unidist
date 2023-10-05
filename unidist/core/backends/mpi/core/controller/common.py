@@ -152,6 +152,10 @@ def pull_data(comm, owner_rank):
             "id": data_id,
             "data": data,
         }
+    elif info_package["package_type"] == common.MetadataPackage.TASK_DATA:
+        return communication.recv_complex_data(
+            comm, owner_rank, info_package=info_package
+        )
     else:
         raise ValueError("Unexpected package of data info!")
 

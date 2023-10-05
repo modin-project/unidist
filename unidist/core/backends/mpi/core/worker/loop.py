@@ -105,7 +105,7 @@ async def worker_loop():
 
         # Proceed the request
         if operation_type == common.Operation.EXECUTE:
-            request = pull_data(mpi_state.comm, source_rank)["data"]
+            request = pull_data(mpi_state.comm, source_rank)
             if not ready_to_shutdown_posted:
                 # Execute the task if possible
                 pending_request = task_store.process_task_request(request)
@@ -173,7 +173,7 @@ async def worker_loop():
                 request_store.process_wait_request(request["id"])
 
         elif operation_type == common.Operation.ACTOR_CREATE:
-            request = pull_data(mpi_state.comm, source_rank)["data"]
+            request = pull_data(mpi_state.comm, source_rank)
             if not ready_to_shutdown_posted:
                 cls = request["class"]
                 args = request["args"]
@@ -182,7 +182,7 @@ async def worker_loop():
                 actor_map[handler] = cls(*args, **kwargs)
 
         elif operation_type == common.Operation.ACTOR_EXECUTE:
-            request = pull_data(mpi_state.comm, source_rank)["data"]
+            request = pull_data(mpi_state.comm, source_rank)
             if not ready_to_shutdown_posted:
                 # Prepare the data
                 # Actor method here is a data id so we have to retrieve it from the storage
