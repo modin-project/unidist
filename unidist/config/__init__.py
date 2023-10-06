@@ -22,6 +22,7 @@ from .backends.mpi import (
     MpiSharedObjectStore,
     MpiSharedObjectStoreMemory,
     MpiSharedObjectStoreThreshold,
+    MpiRuntimeEnv,
 )
 from .parameter import ValueSource
 
@@ -45,4 +46,5 @@ __all__ = [
     "MpiSharedObjectStore",
     "MpiSharedObjectStoreMemory",
     "MpiSharedObjectStoreThreshold",
+    "MpiRuntimeEnv",
 ]
