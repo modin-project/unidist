@@ -96,3 +96,47 @@ class MpiSharedObjectStoreThreshold(EnvironmentVariable, type=int):
 
     default = 10**5  # 100 KB
     varname = "UNIDIST_MPI_SHARED_OBJECT_STORE_THRESHOLD"
+
+
+class MpiRuntimeEnv:
+    """
+    Runtime environment for MPI worker processes.
+
+    Notes
+    -----
+    This config doesn't have a respective environment variable as
+    it is much more convenient to set a config value using the config API
+    but not through the environment variable.
+    """
+
+    # Possible options for a runtime environment to set
+    env_vars = "env_vars"
+    # Config value
+    _value = {}
+
+    @classmethod
+    def put(cls, value):
+        """
+        Set config value.
+
+        Parameters
+        ----------
+        value : dict
+            Config value to set.
+        """
+        if any([True for option in value if option != cls.env_vars]):
+            raise NotImplementedError(
+                "Any option other than environment variables is not supported yet."
+            )
+        cls._value = value
+
+    @classmethod
+    def get(cls):
+        """
+        Get config value.
+
+        Returns
+        -------
+        dict
+        """
+        return cls._value

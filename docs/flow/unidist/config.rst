@@ -64,6 +64,8 @@ Unidist Configuration Settings List
 +-------------------------------+-------------------------------------------+--------------------------------------------------------------------------+
 | MpiSharedObjectStoreThreshold | UNIDIST_MPI_SHARED_OBJECT_STORE_THRESHOLD | Minimum size of data to put into the shared object store                 |
 +-------------------------------+-------------------------------------------+--------------------------------------------------------------------------+
+| MpiRuntimeEnv                 | Only the config API is available          | Runtime environment for MPI worker processes                             |
++-------------------------------+-------------------------------------------+--------------------------------------------------------------------------+
 
 Usage Guide
 '''''''''''

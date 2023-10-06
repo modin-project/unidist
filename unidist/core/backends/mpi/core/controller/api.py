@@ -43,6 +43,7 @@ from unidist.config import (
     MpiSharedObjectStore,
     MpiSharedObjectStoreMemory,
     MpiSharedObjectStoreThreshold,
+    MpiRuntimeEnv,
 )
 
 
@@ -135,9 +136,10 @@ def init():
                 "Please use a thread-safe MPI implementation"
             )
 
+    runtime_env = MpiRuntimeEnv.get()
+
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
-
     parent_comm = MPI.Comm.Get_parent()
 
     # Path to dynamically spawn MPI processes.
@@ -172,6 +174,16 @@ def init():
             py_str += [
                 f"cfg.MpiSharedObjectStoreThreshold.put({MpiSharedObjectStoreThreshold.get()})"
             ]
+        if runtime_env:
+            py_str += [f"cfg.MpiRuntimeEnv.put({runtime_env})"]
+            env_vars = ["import os"]
+            for option, value in runtime_env.items():
+                if option == MpiRuntimeEnv.env_vars:
+                    for env_var_name, env_var_value in value.items():
+                        env_vars += [
+                            f"os.environ['{env_var_name}'] = '{env_var_value}'"
+                        ]
+            py_str += env_vars
         py_str += ["unidist.init()"]
         py_str = "; ".join(py_str)
         args += [py_str]
@@ -225,6 +237,12 @@ def init():
             root=rank,
         )
         comm = intercomm.Merge(high=False)
+    else:
+        if runtime_env and rank != 0:
+            for option, value in runtime_env.items():
+                if option == MpiRuntimeEnv.env_vars:
+                    for env_var_name, env_var_value in value.items():
+                        os.environ[env_var_name] = str(env_var_value)
 
     # path for spawned MPI processes to be merged with the parent communicator
     if parent_comm != MPI.COMM_NULL:
