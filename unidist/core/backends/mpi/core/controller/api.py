@@ -140,99 +140,91 @@ def init():
 
     parent_comm = MPI.Comm.Get_parent()
 
-    # path to dynamically spawn MPI processes
-    if rank == 0 and parent_comm == MPI.COMM_NULL:
-        if IsMpiSpawnWorkers.get():
-            args = _get_py_flags()
-            args += ["-c"]
-            py_str = [
-                "import unidist",
-                "import unidist.config as cfg",
-                "cfg.Backend.put('mpi')",
+    # Path to dynamically spawn MPI processes.
+    # If a requirement is not met, processes have been started with mpiexec -n <N>, where N > 1.
+    if rank == 0 and parent_comm == MPI.COMM_NULL and IsMpiSpawnWorkers.get():
+        args = _get_py_flags()
+        args += ["-c"]
+        py_str = [
+            "import unidist",
+            "import unidist.config as cfg",
+            "cfg.Backend.put('mpi')",
+        ]
+        if IsMpiSpawnWorkers.get_value_source() != ValueSource.DEFAULT:
+            py_str += [f"cfg.IsMpiSpawnWorkers.put({IsMpiSpawnWorkers.get()})"]
+        if MpiHosts.get_value_source() != ValueSource.DEFAULT:
+            py_str += [f"cfg.MpiHosts.put('{MpiHosts.get()}')"]
+        if CpuCount.get_value_source() != ValueSource.DEFAULT:
+            py_str += [f"cfg.CpuCount.put({CpuCount.get()})"]
+        if MpiPickleThreshold.get_value_source() != ValueSource.DEFAULT:
+            py_str += [f"cfg.MpiPickleThreshold.put({MpiPickleThreshold.get()})"]
+        if MpiBackoff.get_value_source() != ValueSource.DEFAULT:
+            py_str += [f"cfg.MpiBackoff.put({MpiBackoff.get()})"]
+        if MpiLog.get_value_source() != ValueSource.DEFAULT:
+            py_str += [f"cfg.MpiLog.put({MpiLog.get()})"]
+        if MpiSharedObjectStore.get_value_source() != ValueSource.DEFAULT:
+            py_str += [f"cfg.MpiSharedObjectStore.put({MpiSharedObjectStore.get()})"]
+        if MpiSharedObjectStoreMemory.get_value_source() != ValueSource.DEFAULT:
+            py_str += [
+                f"cfg.MpiSharedObjectStoreMemory.put({MpiSharedObjectStoreMemory.get()})"
             ]
-            if IsMpiSpawnWorkers.get_value_source() != ValueSource.DEFAULT:
-                py_str += [f"cfg.IsMpiSpawnWorkers.put({IsMpiSpawnWorkers.get()})"]
-            if MpiHosts.get_value_source() != ValueSource.DEFAULT:
-                py_str += [f"cfg.MpiHosts.put('{MpiHosts.get()}')"]
-            if CpuCount.get_value_source() != ValueSource.DEFAULT:
-                py_str += [f"cfg.CpuCount.put({CpuCount.get()})"]
-            if MpiPickleThreshold.get_value_source() != ValueSource.DEFAULT:
-                py_str += [f"cfg.MpiPickleThreshold.put({MpiPickleThreshold.get()})"]
-            if MpiBackoff.get_value_source() != ValueSource.DEFAULT:
-                py_str += [f"cfg.MpiBackoff.put({MpiBackoff.get()})"]
-            if MpiLog.get_value_source() != ValueSource.DEFAULT:
-                py_str += [f"cfg.MpiLog.put({MpiLog.get()})"]
-            if MpiSharedObjectStore.get_value_source() != ValueSource.DEFAULT:
-                py_str += [
-                    f"cfg.MpiSharedObjectStore.put({MpiSharedObjectStore.get()})"
-                ]
-            if MpiSharedObjectStoreMemory.get_value_source() != ValueSource.DEFAULT:
-                py_str += [
-                    f"cfg.MpiSharedObjectStoreMemory.put({MpiSharedObjectStoreMemory.get()})"
-                ]
-            if MpiSharedObjectStoreThreshold.get_value_source() != ValueSource.DEFAULT:
-                py_str += [
-                    f"cfg.MpiSharedObjectStoreThreshold.put({MpiSharedObjectStoreThreshold.get()})"
-                ]
-            py_str += ["unidist.init()"]
-            py_str = "; ".join(py_str)
-            args += [py_str]
+        if MpiSharedObjectStoreThreshold.get_value_source() != ValueSource.DEFAULT:
+            py_str += [
+                f"cfg.MpiSharedObjectStoreThreshold.put({MpiSharedObjectStoreThreshold.get()})"
+            ]
+        py_str += ["unidist.init()"]
+        py_str = "; ".join(py_str)
+        args += [py_str]
 
-            cpu_count = CpuCount.get()
-            hosts = MpiHosts.get()
-            info = MPI.Info.Create()
-            lib_version = MPI.Get_library_version()
-            if "Intel" in lib_version:
-                # To make dynamic spawn of MPI processes work properly
-                # we should set this environment variable.
-                # See more about Intel MPI environment variables in
-                # https://www.intel.com/content/www/us/en/docs/mpi-library/developer-reference-linux/2021-8/other-environment-variables.html.
-                os.environ["I_MPI_SPAWN"] = "1"
+        cpu_count = CpuCount.get()
+        hosts = MpiHosts.get()
+        info = MPI.Info.Create()
+        lib_version = MPI.Get_library_version()
+        if "Intel" in lib_version:
+            # To make dynamic spawn of MPI processes work properly
+            # we should set this environment variable.
+            # See more about Intel MPI environment variables in
+            # https://www.intel.com/content/www/us/en/docs/mpi-library/developer-reference-linux/2021-8/other-environment-variables.html.
+            os.environ["I_MPI_SPAWN"] = "1"
 
-            host_list = hosts.split(",") if hosts is not None else ["localhost"]
-            host_count = len(host_list)
-            if hosts is not None and host_count == 1:
-                raise ValueError(
-                    "MpiHosts cannot include only one host. If you want to run on a single node, just run the program without this option."
-                )
-
-            if common.is_shared_memory_supported():
-                # +host_count to add monitor process on each host
-                nprocs_to_spawn = cpu_count + host_count
-            else:
-                # +1 for just a single process monitor
-                nprocs_to_spawn = cpu_count + 1
-            if host_count > 1:
-                if "Open MPI" in lib_version:
-                    # +1 to take into account the current root process
-                    # to correctly allocate slots
-                    slot_count = nprocs_to_spawn + 1
-                    slots_per_host = [
-                        int(slot_count / host_count)
-                        + (1 if i < slot_count % host_count else 0)
-                        for i in range(host_count)
-                    ]
-                    hosts = ",".join(
-                        [
-                            f"{host_list[i]}:{slots_per_host[i]}"
-                            for i in range(host_count)
-                        ]
-                    )
-                    info.Set("add-host", hosts)
-                else:
-                    info.Set("hosts", hosts)
-
-            intercomm = MPI.COMM_SELF.Spawn(
-                sys.executable,
-                args,
-                maxprocs=nprocs_to_spawn,
-                info=info,
-                root=rank,
+        host_list = hosts.split(",") if hosts is not None else ["localhost"]
+        host_count = len(host_list)
+        if hosts is not None and host_count == 1:
+            raise ValueError(
+                "MpiHosts cannot include only one host. If you want to run on a single node, just run the program without this option."
             )
-            comm = intercomm.Merge(high=False)
-        # path for processes to be started by mpiexec -n <N>, where N > 1
+
+        if common.is_shared_memory_supported():
+            # +host_count to add monitor process on each host
+            nprocs_to_spawn = cpu_count + host_count
         else:
-            comm = MPI.COMM_WORLD
+            # +1 for just a single process monitor
+            nprocs_to_spawn = cpu_count + 1
+        if host_count > 1:
+            if "Open MPI" in lib_version:
+                # +1 to take into account the current root process
+                # to correctly allocate slots
+                slot_count = nprocs_to_spawn + 1
+                slots_per_host = [
+                    int(slot_count / host_count)
+                    + (1 if i < slot_count % host_count else 0)
+                    for i in range(host_count)
+                ]
+                hosts = ",".join(
+                    [f"{host_list[i]}:{slots_per_host[i]}" for i in range(host_count)]
+                )
+                info.Set("add-host", hosts)
+            else:
+                info.Set("hosts", hosts)
+
+        intercomm = MPI.COMM_SELF.Spawn(
+            sys.executable,
+            args,
+            maxprocs=nprocs_to_spawn,
+            info=info,
+            root=rank,
+        )
+        comm = intercomm.Merge(high=False)
 
     # path for spawned MPI processes to be merged with the parent communicator
     if parent_comm != MPI.COMM_NULL:
