@@ -54,6 +54,15 @@ def test_wait():
     assert_equal(len(ready), 2)
     assert_equal(len(not_ready), 0)
 
+    # test for https://github.com/modin-project/unidist/issues/354
+    object_refs = [unidist.put(1), unidist.put(2)]
+    ready, not_ready = unidist.wait(object_refs, num_returns=1)
+    assert_equal(len(ready), 1)
+    assert_equal(len(not_ready), 1)
+    ready, not_ready = unidist.wait(object_refs, num_returns=2)
+    assert_equal(len(ready), 2)
+    assert_equal(len(not_ready), 0)
+
 
 def test_get_ip():
     import socket

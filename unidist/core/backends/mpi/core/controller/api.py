@@ -468,7 +468,7 @@ def wait(data_ids, num_returns=1):
     local_store = LocalObjectStore.get_instance()
 
     logger.debug("WAIT {} ids".format(common.unwrapped_data_ids_list(data_ids)))
-    for data_id in not_ready:
+    for data_id in not_ready.copy():
         if local_store.contains(data_id):
             ready.append(data_id)
             not_ready.remove(data_id)
