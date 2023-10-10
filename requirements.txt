@@ -3,7 +3,7 @@ cloudpickle
 Cython
 dask[complete]>=2.22.0
 distributed>=2.22.0
-mpi4py-mpich
+mpi4py>=3.0.3
 msgpack>=1.0.0
 # https://github.com/modin-project/unidist/issues/324
 pydantic<2
