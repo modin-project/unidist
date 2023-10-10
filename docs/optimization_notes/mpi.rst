@@ -18,7 +18,7 @@ Building MPI from source
 In `Building MPI from source`_ section of ``mpi4py`` documentation you can find executive instructions
 for building some of the open-source MPI implementations out there with support for shared/dynamic libraries on POSIX environments.
 
-After you install a working MPI implementation, you will have to first adapt your ``PATH`` environment variable
+Once you have a working MPI implementation, you will have to adapt your ``PATH`` environment variable
 to use the installed MPI version.
 
 .. code-block:: bash

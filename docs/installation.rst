@@ -41,7 +41,7 @@ scheduling computation!
 .. note::
     There are different MPI implementations, each of which can be used as a backend in unidist.
     Mapping ``unidist[mpi]`` installs ``mpi4py`` package, which is just a Python wrapper for MPI.
-    To enable unidist on MPI execution you need to have a working MPI implementation and certain software installed.
+    To enable unidist on MPI execution you need to have a working MPI implementation and certain software installed beforehand.
     Refer to installation_ page of the `mpi4py` documentation for details.
     Also, you can find some instructions on :doc:`MPI backend </optimization_notes/mpi>` page.
 

@@ -47,7 +47,7 @@ unidist automatically detects which execution backends are installed and uses th
 
 **Note:** There are different MPI implementations, each of which can be used as a backend in unidist.
 Mapping `unidist[mpi]` installs `mpi4py` package, which is just a Python wrapper for MPI.
-To enable unidist on MPI execution you need to have a working MPI implementation and certain software installed.
+To enable unidist on MPI execution you need to have a working MPI implementation and certain software installed beforehand.
 Refer to [Installation](https://mpi4py.readthedocs.io/en/latest/install.html) page of the `mpi4py` documentation for details.
 Also, you can find some instructions on [MPI backend](https://unidist.readthedocs.io/en/latest/optimization_notes/mpi.html) page.
 

@@ -7,6 +7,7 @@ version: 2
 build:
   os: ubuntu-20.04
   tools:
+    # We use mambaforge to install packages from conda-forge below
     python: "mambaforge-22.9"
 
 sphinx:
@@ -18,6 +19,8 @@ formats:
   - epub
   - pdf
 
-# we use dependencies from conda-forge to have a ready-to-use MPI implementation
+# We use dependencies from conda-forge to have a ready-to-use MPI implementation.
+# If we tried to install mpi4py from PyPI, installation would fail because
+# mpi4py requires a working MPI implementation installed.
 conda:
   environment: environment.yml
