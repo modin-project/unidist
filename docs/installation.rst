@@ -38,12 +38,12 @@ If you don't have MPI_, Dask_ or Ray_ installed, you will need to install unidis
 unidist automatically detects which execution backends are installed and uses that for
 scheduling computation!
 
-.. note:: 
+.. note::
     There are different MPI implementations, each of which can be used as a backend in unidist.
-    By default, mapping ``unidist[mpi]`` installs MPICH on Linux and MacOS and MSMPI on Windows. If you want to use
-    a specific version of MPI, you can install the core dependencies of unidist as ``pip install unidist`` and then
-    install the specific version of MPI using pip as shown in the installation_
-    section of mpi4py documentation.
+    Mapping ``unidist[mpi]`` installs ``mpi4py`` package, which is just a Python wrapper for MPI.
+    To enable unidist on MPI execution you need to have a working MPI implementation and certain software installed beforehand.
+    Refer to installation_ page of the `mpi4py` documentation for details.
+    Also, you can find some instructions on :doc:`MPI backend </optimization_notes/mpi>` page.
 
 Release candidates
 """"""""""""""""""
@@ -103,11 +103,11 @@ or explicitly:
 
 .. note:: 
     There are different MPI implementations, each of which can be used as a backend in unidist.
-    By default, mapping ``unidist-mpi`` installs MPICH on Linux and MacOS and MSMPI on Windows. If you want to use
-    a specific version of MPI, you can install the core dependencies of unidist as ``conda install unidist`` and then
-    install the specific version of MPI using conda as shown in the installation_
-    section of mpi4py documentation. That said, it is highly encouraged to use your own MPI binaries as stated in the
-    `Using External MPI Libraries`_ section of the conda-forge documentation in order to get ultimate performance.
+    By default, mapping ``unidist-mpi`` installs a default MPI implementation, which comes with ``mpi4py`` package and is ready to use.
+    The conda dependency solver decides on which MPI implementation is to be installed. If you want to use a specific version of MPI,
+    you can install the core dependencies for MPI backend and the specific version of MPI as ``conda install unidist-mpi <mpi>``
+    as shown in the installation_ page of ``mpi4py`` documentation. That said, it is highly encouraged to use your own MPI binaries
+    as stated in the `Using External MPI Libraries`_ section of the conda-forge documentation in order to get ultimate performance.
 
 Using intel channel
 """""""""""""""""""

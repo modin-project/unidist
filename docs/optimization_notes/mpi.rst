@@ -9,155 +9,35 @@ MPI backend
 We highly encourage to use external (either custom-built or system-provided) MPI installations
 in production scenarious to get ultimate performance.
 
-Open MPI
---------
+Open Source MPI implementaions
+------------------------------
 
-From source
-"""""""""""
+Building MPI from source
+""""""""""""""""""""""""
 
-The following instructions will help you install Open MPI from source to use it as the unidist's backend.
+In `Building MPI from source`_ section of ``mpi4py`` documentation you can find executive instructions
+for building some of the open-source MPI implementations out there with support for shared/dynamic libraries on POSIX environments.
 
-1. Create a directory for compiling Open MPI and go into it. You can do this in a terminal by typing
-
-.. code-block:: bash
-
-  mkdir local
-  cd local
-
-2. Download ``openmpi-4.1.5.tar.bz2`` from http://www.open-mpi.org, e.g., using ``curl`` command
+Once you have a working MPI implementation, you will have to adapt your ``PATH`` environment variable
+to use the installed MPI version.
 
 .. code-block:: bash
 
-  curl -O https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.5.tar.bz2
-
-Note that we use the specific version of Open MPI as an example. You can install any version you want.
-
-3. Extract the package using
-
-.. code-block:: bash
-
-  tar -jxf openmpi-4.1.5.tar.bz2
-
-4. Go into the source directory
-
-.. code-block:: bash
-
-  cd openmpi-4.1.5
-
-5. Configure, compile and install by executing the following commands
-
-.. code-block:: bash
-
-  ./configure --prefix=path/to/local/<openmpi>
-  make all
-  make install
-
-This will install Open MPI in ``local/openmpi`` directory. You can speed up
-the compilation by replacing the ``make all`` command with ``make -j4 all``
-(this will compile using 4 cores).
-
-6. Install ``unidist`` and the required dependencies for the MPI backend
-
-To use the installed Open MPI you will have to first adapt your ``PATH`` environment variable.
-
-.. code-block:: bash
-
-  export PATH=path/to/local/openmpi/bin:$PATH
+  export PATH=path/to/mpi/bin:$PATH
 
 Then, you can install ``unidist`` and the required dependencies for the MPI backend.
 
 .. code-block:: bash
 
-  pip install mpi4py
-  pip install msgpack
-  pip install unidist
+  pip install unidist[mpi]
 
-Now you can use unidist on MPI backend using Open MPI implementaion.
+Now you can use unidist on MPI backend using the installed MPI implementaion.
 
-7. Remove the temporary directories (optional):
+Proprietary MPI implementations
+-------------------------------
 
-.. code-block:: bash
-
-  rm path/to/local/openmpi-4.1.5.tar.bz2
-  rm -rf path/to/local/openmpi-4.1.5
-
-MPICH
------
-
-From source
-"""""""""""
-
-The following instructions will help you install MPICH from source to use it as the unidist's backend.
-
-1. Create a directory for compiling MPICH and go into it. You can do this in a terminal by typing
-
-.. code-block:: bash
-
-  mkdir local
-  cd local
-
-2. Download ``mpich-4.1.1.tar.gz`` from https://www.mpich.org, e.g., using ``curl`` command
-
-.. code-block:: bash
-
-  curl -O https://www.mpich.org/static/downloads/4.1.1/mpich-4.1.1.tar.gz
-
-Note that we use the specific version of MPICH as an example. You can install any version you want.
-
-3. Extract the package using
-
-.. code-block:: bash
-
-  tar -xzvf mpich-4.1.1.tar.gz
-
-4. Go into the source directory
-
-.. code-block:: bash
-
-  cd mpich-4.1.1
-
-5. Configure, compile and install by executing the following commands
-
-.. code-block:: bash
-
-  ./configure --prefix=path/to/local/<mpich>
-  make all
-  make install
-
-This will install Open MPI in ``local/mpich`` directory. You can speed up
-the compilation by replacing the ``make all`` command with ``make -j4 all``
-(this will compile using 4 cores).
-
-6. Install ``unidist`` and the required dependencies for the MPI backend
-
-To use the installed MPICH you will have to first adapt your ``PATH`` environment variable.
-
-.. code-block:: bash
-
-  export PATH=path/to/local/mpich/bin:$PATH
-
-Then, you can install ``unidist`` and the required dependencies for the MPI backend.
-
-.. code-block:: bash
-
-  pip install mpi4py
-  pip install msgpack
-  pip install unidist
-
-Now you can use unidist on MPI backend using MPICH implementaion.
-
-7. Remove the temporary directories (optional):
-
-.. code-block:: bash
-
-  rm path/to/local/mpich-4.1.1.tar.gz
-  rm -rf path/to/local/mpich-4.1.1
-
-Intel MPI
----------
-
-From Intel oneAPI HPC Toolkit
-"""""""""""""""""""""""""""""
+Intel MPI From Intel oneAPI HPC Toolkit
+"""""""""""""""""""""""""""""""""""""""
 
 The following instructions will help you install Intel MPI from `Intel oneAPI HPC Toolkit`_ to use it as the unidist's backend.
 We will use an offline installer an an example but you are free to use other installation options.
@@ -197,9 +77,7 @@ During installation process you can choose a directory in which the toolkit shou
 
 .. code-block:: bash
 
-  pip install mpi4py
-  pip install msgpack
-  pip install unidist
+  pip install unidist[mpi]
 
 Now you can use unidist on MPI backend using Intel MPI implementaion.
 
@@ -210,3 +88,4 @@ Now you can use unidist on MPI backend using Intel MPI implementaion.
   rm l_HPCKit_p_2023.1.0.46346_offline.sh
 
 .. _`Intel oneAPI HPC Toolkit`: https://www.intel.com/content/www/us/en/developer/tools/oneapi/hpc-toolkit-download.html
+.. _`Building MPI from source`: https://mpi4py.readthedocs.io/en/latest/appendix.html#building-mpi-from-sources
