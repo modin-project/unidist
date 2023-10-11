@@ -118,9 +118,8 @@ async def worker_loop():
         elif operation_type == common.Operation.GET:
             request = communication.mpi_recv_object(mpi_state.comm, source_rank)
             if request is not None and not ready_to_shutdown_posted:
-                data_id = local_store.get_unique_data_id(request["id"])
                 request_store.process_get_request(
-                    request["source"], data_id, request["is_blocking_op"]
+                    request["source"], request["id"], request["is_blocking_op"]
                 )
 
         elif operation_type == common.Operation.PUT_DATA:
@@ -131,7 +130,6 @@ async def worker_loop():
                         request["id"]._id, source_rank
                     )
                 )
-                request["id"] = local_store.get_unique_data_id(request["id"])
                 local_store.put(request["id"], request["data"])
 
                 # Discard data request to another worker, if data has become available
@@ -145,7 +143,6 @@ async def worker_loop():
         elif operation_type == common.Operation.PUT_OWNER:
             request = communication.mpi_recv_object(mpi_state.comm, source_rank)
             if not ready_to_shutdown_posted:
-                request["id"] = local_store.get_unique_data_id(request["id"])
                 local_store.put_data_owner(request["id"], request["owner"])
 
                 w_logger.debug(
@@ -169,7 +166,6 @@ async def worker_loop():
             request = communication.mpi_recv_object(mpi_state.comm, source_rank)
             if not ready_to_shutdown_posted:
                 w_logger.debug("WAIT for {} id".format(request["id"]._id))
-                request["id"] = local_store.get_unique_data_id(request["id"])
                 request_store.process_wait_request(request["id"])
 
         elif operation_type == common.Operation.ACTOR_CREATE:
@@ -203,6 +199,7 @@ async def worker_loop():
             cleanup_list = communication.recv_serialized_data(
                 mpi_state.comm, source_rank
             )
+            cleanup_list = [common.MpiDataID(*tpl) for tpl in cleanup_list]
             local_store.clear(cleanup_list)
 
         elif operation_type == common.Operation.CANCEL:

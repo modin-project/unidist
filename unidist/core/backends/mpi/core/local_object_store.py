@@ -51,6 +51,26 @@ class LocalObjectStore:
             cls.__instance = LocalObjectStore()
         return cls.__instance
 
+    def update_data_id_storage(self, data_id):
+        """
+        Add a strong reference to the data_id if necessary.
+
+        Parameters
+        ----------
+        data_id : unidist.core.backends.common.data_id.DataID
+            An ID to data.
+
+        Notes
+        -----
+        The worker must have a strong reference to the external data_id until the owner process
+        send the `unidist.core.backends.common.Operation.CLEANUP` operation with this data_id.
+        """
+        if (
+            data_id.proccess_owner != communication.MPIState.get_instance().global_rank
+            and data_id not in self._data_id_map
+        ):
+            self._data_id_map[data_id] = data_id
+
     def put(self, data_id, data):
         """
         Put `data` to internal dictionary.
@@ -63,6 +83,7 @@ class LocalObjectStore:
             Data to be put.
         """
         self._data_map[data_id] = data
+        self.update_data_id_storage(data_id)
 
     def put_data_owner(self, data_id, rank):
         """
@@ -76,6 +97,7 @@ class LocalObjectStore:
             Rank number where the data resides.
         """
         self._data_owner_map[data_id] = rank
+        self.update_data_id_storage(data_id)
 
     def get(self, data_id):
         """
@@ -141,33 +163,6 @@ class LocalObjectStore:
         """
         return data_id in self._data_owner_map
 
-    def get_unique_data_id(self, data_id):
-        """
-        Get the "strong" reference to the data ID if it is already stored locally.
-
-        If the passed data ID is not stored locally yet, save and return it.
-
-        Parameters
-        ----------
-        data_id : unidist.core.backends.common.data_id.DataID
-            An ID to data.
-
-        Returns
-        -------
-        unidist.core.backends.common.data_id.DataID
-            The unique ID to data.
-
-        Notes
-        -----
-        We need to use a unique data ID reference for the garbage colleactor to work correctly.
-        """
-        if communication.MPIState.get_instance().is_root_process():
-            # Root process must not have a strong references and user always have actual data_id
-            return data_id
-        if data_id not in self._data_id_map:
-            self._data_id_map[data_id] = data_id
-        return self._data_id_map[data_id]
-
     def clear(self, cleanup_list):
         """
         Clear "strong" references to data IDs from `cleanup_list`.
@@ -188,7 +183,7 @@ class LocalObjectStore:
 
     def generate_data_id(self, gc):
         """
-        Generate unique ``MasterDataID`` instance.
+        Generate unique ``MpiDataID`` instance.
 
         Parameters
         ----------
@@ -197,16 +192,18 @@ class LocalObjectStore:
 
         Returns
         -------
-        unidist.core.backends.mpi.core.common.MasterDataID
+        unidist.core.backends.mpi.core.common.MpiDataID
             Unique data ID instance.
         """
-        data_id = f"rank_{communication.MPIState.get_instance().global_rank}_id_{self._data_id_counter}"
+        new_data_id = common.MpiDataID(
+            communication.MPIState.get_instance().global_rank, self._data_id_counter, gc
+        )
         self._data_id_counter += 1
-        return common.MasterDataID(data_id, gc)
+        return new_data_id
 
     def generate_output_data_id(self, dest_rank, gc, num_returns=1):
         """
-        Generate unique list of ``unidist.core.backends.mpi.core.common.MasterDataID`` instance.
+        Generate unique list of ``unidist.core.backends.mpi.core.common.MpiDataID`` instance.
 
         Parameters
         ----------
@@ -220,7 +217,7 @@ class LocalObjectStore:
         Returns
         -------
         list
-            A list of unique ``MasterDataID`` instances.
+            A list of unique ``MpiDataID`` instances.
         """
         if num_returns == 1:
             output_ids = self.generate_data_id(gc)
@@ -241,7 +238,7 @@ class LocalObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ``ID`` to data.
         rank : int
             Rank number where the data was sent.
@@ -254,7 +251,7 @@ class LocalObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data
         rank : int
             Rank number to check.
@@ -280,6 +277,7 @@ class LocalObjectStore:
             Serialized data to cache.
         """
         self._serialization_cache[data_id] = data
+        self.update_data_id_storage(data_id)
 
     def is_already_serialized(self, data_id):
         """

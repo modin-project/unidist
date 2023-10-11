@@ -39,22 +39,18 @@ class ActorMethod:
             self._actor._owner_rank, garbage_collector, num_returns
         )
 
-        unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
-        unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
-
-        push_data(
-            self._actor._owner_rank, common.master_data_ids_to_base(self._method_name)
-        )
-        push_data(self._actor._owner_rank, unwrapped_args)
-        push_data(self._actor._owner_rank, unwrapped_kwargs)
+        push_data(self._actor._owner_rank, self._method_name)
+        push_data(self._actor._owner_rank, args)
+        push_data(self._actor._owner_rank, kwargs)
 
         operation_type = common.Operation.ACTOR_EXECUTE
         operation_data = {
             "task": self._method_name,
-            "args": unwrapped_args,
-            "kwargs": unwrapped_kwargs,
-            "output": common.master_data_ids_to_base(output_id),
-            "handler": self._actor._handler_id.base_data_id(),
+            # tuple cannot be serialized iteratively and it will fail if some internal data cannot be serialized using Pickle
+            "args": list(args),
+            "kwargs": kwargs,
+            "output": output_id,
+            "handler": self._actor._handler_id,
         }
         async_operations = AsyncOperations.get_instance()
         h_list, _ = communication.isend_complex_operation(
@@ -81,7 +77,7 @@ class Actor:
     owner_rank : None or int
         MPI rank which an actor class should be created on.
         Used for proper serialization/deserialization via `__reduce__`.
-    handler_id : None or unidist.core.backends.mpi.core.common.MasterDataID
+    handler_id : None or unidist.core.backends.mpi.core.common.MpiDataID
         An ID to the actor class.
         Used for proper serialization/deserialization via `__reduce__`.
     **kwargs : dict
@@ -119,7 +115,7 @@ class Actor:
                 "class": cls,
                 "args": args,
                 "kwargs": kwargs,
-                "handler": self._handler_id.base_data_id(),
+                "handler": self._handler_id,
             }
             async_operations = AsyncOperations.get_instance()
             h_list, _ = communication.isend_complex_operation(

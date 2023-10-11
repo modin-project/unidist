@@ -128,7 +128,7 @@ def pull_data(comm, owner_rank):
     if info_package["package_type"] == common.MetadataPackage.SHARED_DATA:
         local_store = LocalObjectStore.get_instance()
         shared_store = SharedObjectStore.get_instance()
-        data_id = local_store.get_unique_data_id(info_package["id"])
+        data_id = info_package["id"]
 
         if local_store.contains(data_id):
             return {
@@ -144,12 +144,11 @@ def pull_data(comm, owner_rank):
         }
     elif info_package["package_type"] == common.MetadataPackage.LOCAL_DATA:
         local_store = LocalObjectStore.get_instance()
-        data_id = local_store.get_unique_data_id(info_package["id"])
         data = communication.recv_complex_data(
             comm, owner_rank, info_package=info_package
         )
         return {
-            "id": data_id,
+            "id": info_package["id"],
             "data": data,
         }
     elif info_package["package_type"] == common.MetadataPackage.TASK_DATA:
@@ -185,7 +184,7 @@ def request_worker_data(data_id):
     operation_type = common.Operation.GET
     operation_data = {
         "source": mpi_state.global_rank,
-        "id": data_id.base_data_id(),
+        "id": data_id,
         # set `is_blocking_op` to `True` to tell a worker
         # to send the data directly to the requester
         # without any delay
@@ -219,7 +218,7 @@ def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
     ----------
     dest_rank : int
         Target rank.
-    data_id : unidist.core.backends.mpi.core.common.MasterDataID
+    data_id : unidist.core.backends.mpi.core.common.MpiDataID
         An ID to data.
     is_blocking_op : bool
         Whether the communication should be blocking or not.
@@ -315,7 +314,7 @@ def _push_data_owner(dest_rank, data_id):
     ----------
     dest_rank : int
         Target rank.
-    value : unidist.core.backends.mpi.core.common.MasterDataID
+    data_id : unidist.core.backends.mpi.core.common.MpiDataID
         An ID to data.
     """
     local_store = LocalObjectStore.get_instance()

@@ -36,7 +36,7 @@ class GarbageCollector:
         self._cleanup_threshold = 5
         self._time_threshold = 1  # seconds
         self._timestamp = 0  # seconds
-        # Cleanup list of DataIDs
+        # Cleanup list of tuple(int, int) which will be converted to DataId on workers
         self._cleanup_list = []
         self._cleanup_list_threshold = 10
         # Reference to the global object store
@@ -53,11 +53,7 @@ class GarbageCollector:
         cleanup_list : list
             List of data IDs.
         """
-        logger.debug(
-            "Send cleanup list - {}".format(
-                common.unwrapped_data_ids_list(cleanup_list)
-            )
-        )
+        logger.debug(f"Send cleanup list - {cleanup_list}")
         mpi_state = communication.MPIState.get_instance()
         # Cache serialized list of data IDs
         s_cleanup_list = SimpleDataSerializer().serialize_pickle(cleanup_list)
@@ -90,8 +86,10 @@ class GarbageCollector:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
-            An ID to data
+        proccess_owner : int
+            The rank of the process that owns the data.
+        data_number : int
+            Unique data number for the specified process.
         """
         self._cleanup_list.append(data_id)
 
