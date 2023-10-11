@@ -10,6 +10,13 @@ build:
     # We use mambaforge to install packages from conda-forge below
     python: "mambaforge-22.9"
 
+# We install unidist as a package to make C++ extensions available
+# for correct module imports when building the documentation.
+python:
+  install:
+    - method: pip
+      path: .
+
 sphinx:
    configuration: docs/conf.py
    # TODO: Fix #156 and set to true
