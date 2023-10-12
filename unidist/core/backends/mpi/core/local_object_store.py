@@ -178,7 +178,6 @@ class LocalObjectStore:
         """
         for data_id in cleanup_list:
             self._data_id_map.pop(data_id, None)
-            self._sent_data_map.pop(data_id, None)
 
     def generate_data_id(self, gc):
         """

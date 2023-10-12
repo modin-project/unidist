@@ -137,8 +137,6 @@ class GarbageCollector:
                     )
                     if executed_task_counter == self._task_counter:
                         self._send_cleanup_request(self._cleanup_list)
-                        # Clear the remaining references
-                        self._local_store.clear(self._cleanup_list)
                         self._cleanup_list.clear()
                         self._cleanup_counter += 1
                         self._timestamp = time.perf_counter()
