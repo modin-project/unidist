@@ -5,7 +5,6 @@
 """`LocalObjectStore` functionality."""
 
 import weakref
-from collections import defaultdict
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
@@ -32,7 +31,7 @@ class LocalObjectStore:
         # Data owner {DataID : Rank}
         self._data_owner_map = weakref.WeakKeyDictionary()
         # Data was already sent to this ranks {DataID : [ranks]}
-        self._sent_data_map = defaultdict(set)
+        self._sent_data_map = weakref.WeakKeyDictionary()
         # Data id generator
         self._data_id_counter = 0
         # Data serialized cache
@@ -51,7 +50,7 @@ class LocalObjectStore:
             cls.__instance = LocalObjectStore()
         return cls.__instance
 
-    def update_data_id_storage(self, data_id):
+    def maybe_update_data_id_map(self, data_id):
         """
         Add a strong reference to the data_id if necessary.
 
@@ -66,7 +65,7 @@ class LocalObjectStore:
         send the `unidist.core.backends.common.Operation.CLEANUP` operation with this data_id.
         """
         if (
-            data_id.proccess_owner != communication.MPIState.get_instance().global_rank
+            data_id.owner_rank != communication.MPIState.get_instance().global_rank
             and data_id not in self._data_id_map
         ):
             self._data_id_map[data_id] = data_id
@@ -83,7 +82,7 @@ class LocalObjectStore:
             Data to be put.
         """
         self._data_map[data_id] = data
-        self.update_data_id_storage(data_id)
+        self.maybe_update_data_id_map(data_id)
 
     def put_data_owner(self, data_id, rank):
         """
@@ -97,7 +96,7 @@ class LocalObjectStore:
             Rank number where the data resides.
         """
         self._data_owner_map[data_id] = rank
-        self.update_data_id_storage(data_id)
+        self.maybe_update_data_id_map(data_id)
 
     def get(self, data_id):
         """
@@ -243,7 +242,10 @@ class LocalObjectStore:
         rank : int
             Rank number where the data was sent.
         """
-        self._sent_data_map[data_id].add(rank)
+        if data_id in self._sent_data_map:
+            self._sent_data_map[data_id].add(rank)
+        else:
+            self._sent_data_map[data_id] = set([rank])
 
     def is_already_sent(self, data_id, rank):
         """
@@ -277,7 +279,7 @@ class LocalObjectStore:
             Serialized data to cache.
         """
         self._serialization_cache[data_id] = data
-        self.update_data_id_storage(data_id)
+        self.maybe_update_data_id_map(data_id)
 
     def is_already_serialized(self, data_id):
         """

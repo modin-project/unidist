@@ -36,7 +36,7 @@ class GarbageCollector:
         self._cleanup_threshold = 5
         self._time_threshold = 1  # seconds
         self._timestamp = 0  # seconds
-        # Cleanup list of tuple(int, int) which will be converted to DataId on workers
+        # Cleanup list of tuple(owner_rank, data_number)
         self._cleanup_list = []
         self._cleanup_list_threshold = 10
         # Reference to the global object store
@@ -86,10 +86,8 @@ class GarbageCollector:
 
         Parameters
         ----------
-        proccess_owner : int
-            The rank of the process that owns the data.
-        data_number : int
-            Unique data number for the specified process.
+        data_id_metadata : tuple
+                Tuple of the owner rank and data number describing a ``MpiDataID``.
         """
         self._cleanup_list.append(data_id)
 

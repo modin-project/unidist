@@ -260,32 +260,32 @@ def get_op_name(op):
 
 class MpiDataID(DataID):
     """
-    Class for tracking data IDs of the main process.
+    Class for tracking data IDs of MPI processes.
 
     The class extends ``unidist.core.backends.common.data_id.DataID`` functionality,
     ensuring the uniqueness of the object to work correctly with MPI communication.
 
     Parameters
     ----------
-    proccess_owner : int
+    owner_rank : int
         The rank of the process that owns the data.
     data_number : int
-        Unique data number for the specified process.
+        Unique data number for the owner process.
     """
 
     _instances = weakref.WeakValueDictionary()
 
-    def __new__(cls, proccess_owner, data_number, gc=None):
-        if (proccess_owner, data_number) in cls._instances:
-            return cls._instances[(proccess_owner, data_number)]
+    def __new__(cls, owner_rank, data_number, gc=None):
+        if (owner_rank, data_number) in cls._instances:
+            return cls._instances[(owner_rank, data_number)]
         else:
             new_instance = super().__new__(cls)
-            cls._instances[(proccess_owner, data_number)] = new_instance
+            cls._instances[(owner_rank, data_number)] = new_instance
             return new_instance
 
-    def __init__(self, proccess_owner, data_number, gc=None):
-        super().__init__(f"rank_{proccess_owner}_id_{data_number}")
-        self.proccess_owner = proccess_owner
+    def __init__(self, owner_rank, data_number, gc=None):
+        super().__init__(f"rank_{owner_rank}_id_{data_number}")
+        self.owner_rank = owner_rank
         self.data_number = data_number
         self._gc = gc
 
@@ -293,19 +293,25 @@ class MpiDataID(DataID):
         """
         Prepare arguments to serialize and send this object to another MPI process.
         """
-        return (self.proccess_owner, self.data_number)
+        return (self.owner_rank, self.data_number)
 
     def __getstate__(self):
         """Remove a reference to garbage collector for correct `pickle` serialization."""
-        attributes = self.__dict__.copy()
-        if hasattr(self, "_gc"):
-            attributes["_gc"] = None
-        return attributes
+        state = self.__dict__.copy()
+        # the attribute is removed instead of replacing the value
+        # to reduce the length of the serialized data
+        del state["_gc"]
+        return state
+
+    def __setstate__(self, state):
+        """Add a None reference to garbage collector for correct `pickle` deserialization."""
+        state["_gc"] = None
+        self.__dict__ = state
 
     def __del__(self):
         """Track object deletion by garbage collector."""
         if self._gc is not None:
-            self._gc.collect((self.proccess_owner, self.data_number))
+            self._gc.collect((self.owner_rank, self.data_number))
 
 
 def get_logger(logger_name, file_name, activate=None):

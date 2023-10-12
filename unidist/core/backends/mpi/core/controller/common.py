@@ -201,7 +201,7 @@ def request_worker_data(data_id):
 
     # Blocking get
     complex_data = pull_data(mpi_state.comm, owner_rank)
-    if data_id.base_data_id() != complex_data["id"]:
+    if data_id != complex_data["id"]:
         raise ValueError("Unexpected data_id!")
     data = complex_data["data"]
 
