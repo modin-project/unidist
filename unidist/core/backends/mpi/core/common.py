@@ -294,13 +294,22 @@ class MpiDataID(DataID):
         self.data_number = data_number
         self._gc = gc
 
-    def __reduce__(self):
-        """Create a new MpiDataId instance instead of restoring the object during deserialization."""
-        return MpiDataID, (self.owner_rank, self.data_number)
+    def __getnewargs__(self):
+        """Prepare arguments to reconstruct the object upon unpickling."""
+        return (self.owner_rank, self.data_number)
+
+    def __getstate__(self):
+        """Remove a reference to garbage collector for correct `pickle` serialization."""
+        state = self.__dict__.copy()
+        # the attribute is removed instead of replacing the value
+        # to reduce the length of the serialized data
+        if hasattr(self, "_gc"):
+            del state["_gc"]
+        return state
 
     def __del__(self):
         """Track object deletion by garbage collector."""
-        if self._gc is not None:
+        if hasattr(self, "_gc") and self._gc is not None:
             self._gc.collect((self.owner_rank, self.data_number))
 
 

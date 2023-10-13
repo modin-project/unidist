@@ -506,9 +506,7 @@ class SharedObjectStore:
             cls.__instance = SharedObjectStore()
         if cls.__instance.logger is None:
             logger_name = f"shared_store_{communication.MPIState.get_instance().host}"
-            cls.__instance.logger = common.get_logger(
-                logger_name, f"{logger_name}.log"
-            )
+            cls.__instance.logger = common.get_logger(logger_name, f"{logger_name}.log")
         return cls.__instance
 
     def is_allocated(self):
