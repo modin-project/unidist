@@ -200,7 +200,7 @@ class SharedObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             The data identifier to be converted to a numerical form
 
         Returns
@@ -217,7 +217,7 @@ class SharedObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
         service_index : int
             The service buffer index.
 
@@ -255,7 +255,7 @@ class SharedObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
         service_index : int
             The service buffer index.
@@ -287,7 +287,7 @@ class SharedObjectStore:
         ----------
         service_index : int
             The service buffer index.
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
         first_index : int
             The first index of data in the shared buffer.
@@ -320,7 +320,7 @@ class SharedObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
         service_index : int
             The service buffer index.
@@ -345,7 +345,7 @@ class SharedObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : uunidist.core.backends.mpi.core.common.MpiDataID
         shared_info : unidist.core.backends.mpi.utils.ImmutableDict
             Information required for data deserialization
         """
@@ -360,7 +360,7 @@ class SharedObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
         shared_info : dict
             Information for correct deserialization.
 
@@ -399,7 +399,7 @@ class SharedObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
         reservation_data : dict
             Information about the reserved space in shared memory for the current DataID.
         serialized_data : dict
@@ -462,7 +462,7 @@ class SharedObjectStore:
         ----------
         comm : object
             MPI communicator object.
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             Data identifier
         owner_rank : int
             Rank of the owner process.
@@ -506,9 +506,7 @@ class SharedObjectStore:
             cls.__instance = SharedObjectStore()
         if cls.__instance.logger is None:
             logger_name = f"shared_store_{communication.MPIState.get_instance().host}"
-            cls.__instance.logger = common.get_logger(
-                logger_name, f"{logger_name}.log", True
-            )
+            cls.__instance.logger = common.get_logger(logger_name, f"{logger_name}.log")
         return cls.__instance
 
     def is_allocated(self):
@@ -560,7 +558,7 @@ class SharedObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
 
         Returns
         -------
@@ -575,7 +573,7 @@ class SharedObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
         service_index : int
             The service buffer index.
 
@@ -612,7 +610,7 @@ class SharedObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
         service_index : int
             The service buffer index.
 
@@ -659,7 +657,7 @@ class SharedObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
         serialized_data : dict
             Serialized data to put into the storage.
         """
@@ -692,7 +690,7 @@ class SharedObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
         owner_rank : int
             The rank that sent the data.

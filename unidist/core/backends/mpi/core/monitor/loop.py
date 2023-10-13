@@ -245,6 +245,7 @@ def monitor_loop():
             cleanup_list = communication.recv_serialized_data(
                 mpi_state.comm, source_rank
             )
+            cleanup_list = [common.MpiDataID(*tpl) for tpl in cleanup_list]
             shm_manager.clear(cleanup_list)
         elif operation_type == common.Operation.READY_TO_SHUTDOWN:
             workers_ready_to_shutdown.append(source_rank)

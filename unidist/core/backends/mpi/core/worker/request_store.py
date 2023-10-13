@@ -72,7 +72,7 @@ class RequestStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
         rank : int
             Source rank requester.
@@ -101,7 +101,7 @@ class RequestStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
 
         Returns
@@ -117,7 +117,7 @@ class RequestStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
         """
         self._data_requests.discard(data_id)
@@ -139,7 +139,7 @@ class RequestStore:
 
         Parameters
         ----------
-        data_id : iterable or unidist.core.backends.common.data_id.DataID
+        data_id : iterable or unidist.core.backends.mpi.core.common.MpiDataID
             An ID or list of IDs to data.
         """
 
@@ -174,7 +174,7 @@ class RequestStore:
 
         Parameters
         ----------
-        data_id : iterable or unidist.core.backends.common.data_id.DataID
+        data_id : iterable or unidist.core.backends.mpi.core.common.MpiDataID
             An ID or list of IDs to data.
         """
         if isinstance(data_ids, (list, tuple)):
@@ -206,7 +206,7 @@ class RequestStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             Chech if `data_id` is available in object store.
 
         Notes
@@ -236,7 +236,7 @@ class RequestStore:
         ----------
         source_rank : int
             Rank number to send data to.
-        data_id: unidist.core.backends.common.data_id.DataID
+        data_id: unidist.core.backends.mpi.core.common.MpiDataID
             `data_id` associated data to request
         is_blocking_op : bool, default: False
             Whether the get request should be blocking or not.

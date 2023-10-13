@@ -36,7 +36,7 @@ class GarbageCollector:
         self._cleanup_threshold = 5
         self._time_threshold = 1  # seconds
         self._timestamp = 0  # seconds
-        # Cleanup list of DataIDs
+        # Cleanup list of tuple(owner_rank, data_number)
         self._cleanup_list = []
         self._cleanup_list_threshold = 10
         # Reference to the global object store
@@ -53,11 +53,7 @@ class GarbageCollector:
         cleanup_list : list
             List of data IDs.
         """
-        logger.debug(
-            "Send cleanup list - {}".format(
-                common.unwrapped_data_ids_list(cleanup_list)
-            )
-        )
+        logger.debug(f"Send cleanup list - {cleanup_list}")
         mpi_state = communication.MPIState.get_instance()
         # Cache serialized list of data IDs
         s_cleanup_list = SimpleDataSerializer().serialize_pickle(cleanup_list)
@@ -90,8 +86,8 @@ class GarbageCollector:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.mpi.core.common.MasterDataID
-            An ID to data
+        data_id_metadata : tuple
+            Tuple of the owner rank and data number describing a ``MpiDataID``.
         """
         self._cleanup_list.append(data_id)
 
@@ -141,8 +137,6 @@ class GarbageCollector:
                     )
                     if executed_task_counter == self._task_counter:
                         self._send_cleanup_request(self._cleanup_list)
-                        # Clear the remaining references
-                        self._local_store.clear(self._cleanup_list)
                         self._cleanup_list.clear()
                         self._cleanup_counter += 1
                         self._timestamp = time.perf_counter()

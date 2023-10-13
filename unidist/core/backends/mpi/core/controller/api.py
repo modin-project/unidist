@@ -375,7 +375,7 @@ def put(data):
 
     Returns
     -------
-    unidist.core.backends.mpi.core.common.MasterDataID
+    unidist.core.backends.mpi.core.common.MpiDataID
         An ID of an object in object storage.
     """
     local_store = LocalObjectStore.get_instance()
@@ -400,7 +400,7 @@ def get(data_ids):
 
     Parameters
     ----------
-    data_ids : unidist.core.backends.common.data_id.DataID or list
+    data_ids : unidist.core.backends.mpi.core.common.MpiDataID or list
         An ID(s) to object(s) to get data from.
 
     Returns
@@ -446,7 +446,7 @@ def wait(data_ids, num_returns=1):
 
     Parameters
     ----------
-    data_ids : unidist.core.backends.mpi.core.common.MasterDataID or list
+    data_ids : unidist.core.backends.mpi.core.common.MpiDataID or list
         ``DataID`` or list of ``DataID``-s to be waited.
     num_returns : int, default: 1
         The number of ``DataID``-s that should be returned as ready.
@@ -458,7 +458,7 @@ def wait(data_ids, num_returns=1):
     """
     if not isinstance(data_ids, list):
         data_ids = [data_ids]
-    # Since the controller should operate MasterDataID(s),
+    # Since the controller should operate MpiDataID(s),
     # we use this map to retrieve and return them
     # instead of DataID(s) received from workers.
     data_id_map = dict(zip(data_ids, data_ids))
@@ -477,7 +477,6 @@ def wait(data_ids, num_returns=1):
                 return ready, not_ready
 
     operation_type = common.Operation.WAIT
-    not_ready = [common.unwrap_data_ids(arg) for arg in not_ready]
     operation_data = {
         "data_ids": not_ready,
         "num_returns": pending_returns,
@@ -498,7 +497,7 @@ def wait(data_ids, num_returns=1):
     )
     ready.extend(data["ready"])
     not_ready = data["not_ready"]
-    # We have to retrieve and return MasterDataID(s)
+    # We have to retrieve and return MpiDataID(s)
     # in order for the controller to operate them in further operations.
     ready = [data_id_map[data_id] for data_id in ready]
     not_ready = [data_id_map[data_id] for data_id in not_ready]
@@ -527,7 +526,7 @@ def submit(task, *args, num_returns=1, **kwargs):
 
     Returns
     -------
-    unidist.core.backends.mpi.core.common.MasterDataID or list or None
+    unidist.core.backends.mpi.core.common.MpiDataID or list or None
         Type of returns depends on `num_returns` value:
 
         * if `num_returns == 1`, ``DataID`` will be returned.
@@ -557,20 +556,17 @@ def submit(task, *args, num_returns=1, **kwargs):
         )
     )
 
-    unwrapped_args = [common.unwrap_data_ids(arg) for arg in args]
-    unwrapped_kwargs = {k: common.unwrap_data_ids(v) for k, v in kwargs.items()}
-
-    task_base_id = common.master_data_ids_to_base(task)
-    push_data(dest_rank, task_base_id)
-    push_data(dest_rank, unwrapped_args)
-    push_data(dest_rank, unwrapped_kwargs)
+    push_data(dest_rank, task)
+    push_data(dest_rank, args)
+    push_data(dest_rank, kwargs)
 
     operation_type = common.Operation.EXECUTE
     operation_data = {
-        "task": task_base_id,
-        "args": unwrapped_args,
-        "kwargs": unwrapped_kwargs,
-        "output": common.master_data_ids_to_base(output_ids),
+        "task": task,
+        # tuple cannot be serialized iteratively and it will fail if some internal data cannot be serialized using Pickle
+        "args": list(args),
+        "kwargs": kwargs,
+        "output": output_ids,
     }
     async_operations = AsyncOperations.get_instance()
     h_list, _ = communication.isend_complex_operation(

@@ -135,7 +135,7 @@ class TaskStore:
         ----------
         dest_rank : int
             Rank number to request data from.
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             `data_id` associated data to request.
 
         Notes
@@ -172,7 +172,7 @@ class TaskStore:
 
         Parameters
         ----------
-        arg : object or unidist.core.backends.common.data_id.DataID
+        arg : object or unidist.core.backends.mpi.core.common.MpiDataID
             Data ID or object to inspect.
 
         Returns
@@ -187,7 +187,6 @@ class TaskStore:
         """
         if is_data_id(arg):
             local_store = LocalObjectStore.get_instance()
-            arg = local_store.get_unique_data_id(arg)
             if local_store.contains(arg):
                 value = LocalObjectStore.get_instance().get(arg)
                 # Data is already local or was pushed from master
@@ -210,7 +209,7 @@ class TaskStore:
 
         Parameters
         ----------
-        output_data_ids : list of unidist.core.backends.common.data_id.DataID
+        output_data_ids : list of unidist.core.backends.mpi.core.common.MpiDataID
             A list of output data IDs to store the results in local object store.
         task : callable
             Function to be executed.
@@ -428,12 +427,6 @@ class TaskStore:
         args = request["args"]
         kwargs = request["kwargs"]
         output_ids = request["output"]
-        if isinstance(output_ids, (list, tuple)):
-            output_ids = [
-                local_store.get_unique_data_id(data_id) for data_id in output_ids
-            ]
-        else:
-            output_ids = local_store.get_unique_data_id(output_ids)
 
         w_logger.debug("REMOTE task: {}".format(task))
         w_logger.debug("REMOTE args: {}".format(common.unwrapped_data_ids_list(args)))
