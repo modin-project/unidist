@@ -295,20 +295,36 @@ class MpiDataID(DataID):
         self._gc = gc
 
     def __getnewargs__(self):
-        """Prepare arguments to reconstruct the object upon unpickling."""
+        """
+        Prepare arguments to reconstruct the object upon unpickling.
+
+        Returns
+        -------
+        tuple
+            Tuple of the owner rank and data number to be passed into `__new__`.
+        """
         return (self.owner_rank, self.data_number)
 
     def __getstate__(self):
-        """Remove a reference to garbage collector for correct `pickle` serialization."""
+        """
+        Remove a reference to garbage collector for correct `pickle` serialization.
+
+        Returns
+        -------
+        dict
+            State of the object without garbage collector.
+        """
         state = self.__dict__.copy()
-        # the attribute is removed instead of replacing the value
-        # to reduce the length of the serialized data
+        # we remove this attribute for correct serialization,
+        # as well as to reduce the length of the serialized data
         if hasattr(self, "_gc"):
             del state["_gc"]
         return state
 
     def __del__(self):
         """Track object deletion by garbage collector."""
+        # check for existence of `._gc` attribute as
+        # it is missing upon unpickling
         if hasattr(self, "_gc") and self._gc is not None:
             self._gc.collect((self.owner_rank, self.data_number))
 
