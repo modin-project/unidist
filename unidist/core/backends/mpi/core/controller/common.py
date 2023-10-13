@@ -165,7 +165,7 @@ def request_worker_data(data_id):
 
     Parameters
     ----------
-    data_id : unidist.core.backends.common.data_id.DataID
+    data_id : unidist.core.backends.mpi.core.common.MpiDataID
         An ID(s) to object(s) to get data from.
 
     Returns
@@ -279,7 +279,7 @@ def _push_shared_data(dest_rank, data_id, is_blocking_op):
     ----------
     dest_rank : int
         Target rank.
-    data_id : unidist.core.backends.common.data_id.DataID
+    data_id : unidist.core.backends.mpi.core.common.MpiDataID
         An ID to data.
     is_blocking_op : bool
         Whether the communication should be blocking or not.

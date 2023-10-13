@@ -131,7 +131,7 @@ class SharedMemoryManager:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
 
         Returns
@@ -157,7 +157,7 @@ class SharedMemoryManager:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
         memory_len : int
             Required memory length.

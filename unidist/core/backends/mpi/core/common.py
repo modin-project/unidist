@@ -132,7 +132,7 @@ class MetadataPackage(ImmutableDict):
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
         s_data_len : int
             Main buffer length.
@@ -166,7 +166,7 @@ class MetadataPackage(ImmutableDict):
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
         s_data_len : int
             Main buffer length.
@@ -263,7 +263,8 @@ class MpiDataID(DataID):
     Class for tracking data IDs of MPI processes.
 
     The class extends ``unidist.core.backends.common.data_id.DataID`` functionality,
-    ensuring the uniqueness of the object to work correctly with MPI communication.
+    ensuring the uniqueness of the object to correctly construct/reconstruct it.
+    Otherwise, we would get into wrong garbage collection.
 
     Parameters
     ----------
@@ -293,36 +294,9 @@ class MpiDataID(DataID):
         self.data_number = data_number
         self._gc = gc
 
-    def __getnewargs__(self):
-        """
-        Prepare arguments to serialize and send this object to another MPI process.
-
-        Returns
-        -------
-        tuple
-            Tuple of the owner rank and data number.
-        """
-        return (self.owner_rank, self.data_number)
-
-    def __getstate__(self):
-        """Remove a reference to garbage collector for correct `pickle` serialization."""
-        state = self.__dict__.copy()
-        # we remove this attribute for correct serialization,
-        # as well as to reduce the length of the serialized data
-        del state["_gc"]
-        return state
-
-    def __setstate__(self, state):
-        """
-        Add ``None`` reference for garbage collector for correct `pickle` deserialization.
-
-        Parameters
-        ----------
-        state : dict
-            The state of the object for deserialization.
-        """
-        state["_gc"] = None
-        self.__dict__ = state
+    def __reduce__(self):
+        """Create a new MpiDataId instance instead of restoring the object during deserialization."""
+        return MpiDataID, (self.owner_rank, self.data_number)
 
     def __del__(self):
         """Track object deletion by garbage collector."""
@@ -392,7 +366,7 @@ def materialize_data_ids(data_ids, unwrap_data_id_impl, is_pending=False):
     """
     Traverse iterable object and materialize all data IDs.
 
-    Find all ``unidist.core.backends.common.data_id.DataID`` instances and call `unwrap_data_id_impl` on them.
+    Find all ``unidist.core.backends.mpi.core.common.MpiDataID`` instances and call `unwrap_data_id_impl` on them.
 
     Parameters
     ----------

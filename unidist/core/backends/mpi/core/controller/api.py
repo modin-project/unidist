@@ -400,7 +400,7 @@ def get(data_ids):
 
     Parameters
     ----------
-    data_ids : unidist.core.backends.common.data_id.DataID or list
+    data_ids : unidist.core.backends.mpi.core.common.MpiDataID or list
         An ID(s) to object(s) to get data from.
 
     Returns

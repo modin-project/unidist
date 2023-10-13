@@ -953,7 +953,7 @@ def send_reserve_operation(comm, data_id, data_size):
 
     Parameters
     ----------
-    data_id : unidist.core.backends.common.data_id.DataID
+    data_id : unidist.core.backends.mpi.core.common.MpiDataID
         An ID to data.
     data_size : int
         Length of a required range in shared memory.

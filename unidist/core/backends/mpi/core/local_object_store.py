@@ -56,7 +56,7 @@ class LocalObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
 
         Notes
@@ -76,7 +76,7 @@ class LocalObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
         data : object
             Data to be put.
@@ -90,7 +90,7 @@ class LocalObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
         rank : int
             Rank number where the data resides.
@@ -104,7 +104,7 @@ class LocalObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
 
         Returns
@@ -120,7 +120,7 @@ class LocalObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
 
         Returns
@@ -136,7 +136,7 @@ class LocalObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
 
         Returns
@@ -152,7 +152,7 @@ class LocalObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
 
         Returns
@@ -272,7 +272,7 @@ class LocalObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
         data : object
             Serialized data to cache.
@@ -286,7 +286,7 @@ class LocalObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
 
         Returns
@@ -302,7 +302,7 @@ class LocalObjectStore:
 
         Parameters
         ----------
-        data_id : unidist.core.backends.common.data_id.DataID
+        data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
 
         Returns
