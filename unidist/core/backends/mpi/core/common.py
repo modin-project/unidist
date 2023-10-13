@@ -271,16 +271,20 @@ class MpiDataID(DataID):
         The rank of the process that owns the data.
     data_number : int
         Unique data number for the owner process.
+    gc : unidist.core.backends.mpi.core.executor.GarbageCollector or None
+        Local garbage collector reference.
+        The actual object is for the data id owner, otherwise, ``None``.
     """
 
     _instances = weakref.WeakValueDictionary()
 
     def __new__(cls, owner_rank, data_number, gc=None):
-        if (owner_rank, data_number) in cls._instances:
-            return cls._instances[(owner_rank, data_number)]
+        key = (owner_rank, data_number)
+        if key in cls._instances:
+            return cls._instances[key]
         else:
             new_instance = super().__new__(cls)
-            cls._instances[(owner_rank, data_number)] = new_instance
+            cls._instances[key] = new_instance
             return new_instance
 
     def __init__(self, owner_rank, data_number, gc=None):
@@ -292,19 +296,31 @@ class MpiDataID(DataID):
     def __getnewargs__(self):
         """
         Prepare arguments to serialize and send this object to another MPI process.
+
+        Returns
+        -------
+        tuple
+            Tuple of the owner rank and data number.
         """
         return (self.owner_rank, self.data_number)
 
     def __getstate__(self):
         """Remove a reference to garbage collector for correct `pickle` serialization."""
         state = self.__dict__.copy()
-        # the attribute is removed instead of replacing the value
-        # to reduce the length of the serialized data
+        # we remove this attribute for correct serialization,
+        # as well as to reduce the length of the serialized data
         del state["_gc"]
         return state
 
     def __setstate__(self, state):
-        """Add a None reference to garbage collector for correct `pickle` deserialization."""
+        """
+        Add ``None`` reference for garbage collector for correct `pickle` deserialization.
+
+        Parameters
+        ----------
+        state : dict
+            The state of the object for deserialization.
+        """
         state["_gc"] = None
         self.__dict__ = state
 

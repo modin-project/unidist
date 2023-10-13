@@ -87,7 +87,7 @@ class GarbageCollector:
         Parameters
         ----------
         data_id_metadata : tuple
-                Tuple of the owner rank and data number describing a ``MpiDataID``.
+            Tuple of the owner rank and data number describing a ``MpiDataID``.
         """
         self._cleanup_list.append(data_id)
 

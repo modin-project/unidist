@@ -52,7 +52,7 @@ class LocalObjectStore:
 
     def maybe_update_data_id_map(self, data_id):
         """
-        Add a strong reference to the data_id if necessary.
+        Add a strong reference to the `data_id` if necessary.
 
         Parameters
         ----------
@@ -61,8 +61,8 @@ class LocalObjectStore:
 
         Notes
         -----
-        The worker must have a strong reference to the external data_id until the owner process
-        send the `unidist.core.backends.common.Operation.CLEANUP` operation with this data_id.
+        The worker must have a strong reference to the external `data_id` until the owner process
+        send the `unidist.core.backends.common.Operation.CLEANUP` operation with this `data_id`.
         """
         if (
             data_id.owner_rank != communication.MPIState.get_instance().global_rank
@@ -193,11 +193,11 @@ class LocalObjectStore:
         unidist.core.backends.mpi.core.common.MpiDataID
             Unique data ID instance.
         """
-        new_data_id = common.MpiDataID(
+        data_id = common.MpiDataID(
             communication.MPIState.get_instance().global_rank, self._data_id_counter, gc
         )
         self._data_id_counter += 1
-        return new_data_id
+        return data_id
 
     def generate_output_data_id(self, dest_rank, gc, num_returns=1):
         """
