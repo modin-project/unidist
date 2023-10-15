@@ -286,24 +286,28 @@ def _push_shared_data(dest_rank, data_id, is_blocking_op):
         If ``True``, the request should be processed immediatly
         even for a worker since it can get into controller mode.
     """
-    mpi_state = communication.MPIState.get_instance()
-    shared_store = SharedObjectStore.get_instance()
-    mpi_state = communication.MPIState.get_instance()
-    operation_type = common.Operation.PUT_SHARED_DATA
-    async_operations = AsyncOperations.get_instance()
-    info_package = shared_store.get_shared_info(data_id)
-    # wrap to dict for sending and correct deserialization of the object by the recipient
-    operation_data = dict(info_package)
-    if is_blocking_op:
-        communication.mpi_send_object(mpi_state.comm, operation_data, dest_rank)
-    else:
-        h_list = communication.isend_simple_operation(
-            mpi_state.comm,
-            operation_type,
-            operation_data,
-            dest_rank,
-        )
-        async_operations.extend(h_list)
+    local_store = LocalObjectStore.get_instance()
+    # Check if data was already pushed
+    if not local_store.is_already_sent(data_id, dest_rank):
+        mpi_state = communication.MPIState.get_instance()
+        shared_store = SharedObjectStore.get_instance()
+        mpi_state = communication.MPIState.get_instance()
+        operation_type = common.Operation.PUT_SHARED_DATA
+        async_operations = AsyncOperations.get_instance()
+        info_package = shared_store.get_shared_info(data_id)
+        # wrap to dict for sending and correct deserialization of the object by the recipient
+        operation_data = dict(info_package)
+        if is_blocking_op:
+            communication.mpi_send_object(mpi_state.comm, operation_data, dest_rank)
+        else:
+            h_list = communication.isend_simple_operation(
+                mpi_state.comm,
+                operation_type,
+                operation_data,
+                dest_rank,
+            )
+            async_operations.extend(h_list)
+        local_store.cache_send_info(data_id, dest_rank)
 
 
 def _push_data_owner(dest_rank, data_id):
