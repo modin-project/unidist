@@ -73,11 +73,11 @@ class Operation:
     PUT_DATA = 3
     PUT_OWNER = 4
     PUT_SHARED_DATA = 5
-    WAIT = 6
     ACTOR_CREATE = 7
     ACTOR_EXECUTE = 8
     CLEANUP = 9
     ### --- Monitor operations --- ###
+    WAIT = 6
     TASK_DONE = 10
     GET_TASK_COUNT = 11
     RESERVE_SHARED_MEMORY = 12
@@ -150,7 +150,7 @@ class MetadataPackage(ImmutableDict):
         return MetadataPackage(
             {
                 "package_type": MetadataPackage.LOCAL_DATA,
-                "id": data_id,
+                "id": data_id.__getnewargs__(),
                 "s_data_len": s_data_len,
                 "raw_buffers_len": raw_buffers_len,
                 "buffer_count": buffer_count,
@@ -186,7 +186,7 @@ class MetadataPackage(ImmutableDict):
         return MetadataPackage(
             {
                 "package_type": MetadataPackage.SHARED_DATA,
-                "id": weakref.proxy(data_id),
+                "id": data_id.__getnewargs__(),
                 "s_data_len": s_data_len,
                 "raw_buffers_len": tuple(raw_buffers_len),
                 "buffer_count": tuple(buffer_count),
@@ -292,7 +292,8 @@ class MpiDataID(DataID):
         super().__init__(f"rank_{owner_rank}_id_{data_number}")
         self.owner_rank = owner_rank
         self.data_number = data_number
-        self._gc = gc
+        if gc is not None:
+            self._gc = gc
 
     def __getnewargs__(self):
         """

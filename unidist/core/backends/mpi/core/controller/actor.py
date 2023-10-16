@@ -43,14 +43,21 @@ class ActorMethod:
         push_data(self._actor._owner_rank, args)
         push_data(self._actor._owner_rank, kwargs)
 
+        if num_returns == 1:
+            sending_output_ids = output_id.__getnewargs__()
+        elif num_returns > 1:
+            sending_output_ids = [o_id.__getnewargs__() for o_id in output_id]
+        else:
+            sending_output_ids = None
+
         operation_type = common.Operation.ACTOR_EXECUTE
         operation_data = {
             "task": self._method_name,
             # tuple cannot be serialized iteratively and it will fail if some internal data cannot be serialized using Pickle
             "args": list(args),
             "kwargs": kwargs,
-            "output": output_id,
-            "handler": self._actor._handler_id,
+            "output": sending_output_ids,
+            "handler": self._actor._handler_id.__getnewargs__(),
         }
         async_operations = AsyncOperations.get_instance()
         h_list, _ = communication.isend_complex_operation(
@@ -113,9 +120,9 @@ class Actor:
             operation_type = common.Operation.ACTOR_CREATE
             operation_data = {
                 "class": cls,
-                "args": args,
+                "args": list(args),
                 "kwargs": kwargs,
-                "handler": self._handler_id,
+                "handler": self._handler_id.__getnewargs__(),
             }
             async_operations = AsyncOperations.get_instance()
             h_list, _ = communication.isend_complex_operation(
@@ -142,7 +149,7 @@ class Actor:
             "cls": self._cls,
             "args": self._args,
             "owner_rank": self._owner_rank,
-            "handler_id": self._handler_id,
+            "handler_id": self._handler_id.__getnewargs__(),
             "kwargs": self._kwargs,
         }
         return state
@@ -167,7 +174,7 @@ class Actor:
             state["cls"],
             *state["args"],
             owner_rank=state["owner_rank"],
-            handler_id=state["handler_id"],
+            handler_id=common.MpiDataID(*state["handler_id"]),
             **state["kwargs"],
         )
 

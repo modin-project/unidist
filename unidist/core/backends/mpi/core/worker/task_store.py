@@ -149,7 +149,7 @@ class TaskStore:
         operation_type = common.Operation.GET
         operation_data = {
             "source": communication.MPIState.get_instance().global_rank,
-            "id": data_id,
+            "id": data_id.__getnewargs__(),
             "is_blocking_op": False,
         }
         async_operations = AsyncOperations.get_instance()
@@ -309,7 +309,7 @@ class TaskStore:
                 communication.send_simple_operation(
                     communication.MPIState.get_instance().comm,
                     common.Operation.TASK_DONE,
-                    completed_data_ids,
+                    [data_id.__getnewargs__() for data_id in completed_data_ids],
                     root_monitor,
                 )
 
@@ -397,7 +397,7 @@ class TaskStore:
             communication.send_simple_operation(
                 communication.MPIState.get_instance().comm,
                 common.Operation.TASK_DONE,
-                completed_data_ids,
+                [data_id.__getnewargs__() for data_id in completed_data_ids],
                 root_monitor,
             )
 

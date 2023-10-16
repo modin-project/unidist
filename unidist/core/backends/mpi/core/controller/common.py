@@ -128,7 +128,7 @@ def pull_data(comm, owner_rank):
     if info_package["package_type"] == common.MetadataPackage.SHARED_DATA:
         local_store = LocalObjectStore.get_instance()
         shared_store = SharedObjectStore.get_instance()
-        data_id = info_package["id"]
+        data_id = common.MpiDataID(*info_package["id"])
 
         if local_store.contains(data_id):
             return {
@@ -148,7 +148,7 @@ def pull_data(comm, owner_rank):
             comm, owner_rank, info_package=info_package
         )
         return {
-            "id": info_package["id"],
+            "id": common.MpiDataID(*info_package["id"]),
             "data": data,
         }
     elif info_package["package_type"] == common.MetadataPackage.TASK_DATA:
@@ -184,7 +184,7 @@ def request_worker_data(data_id):
     operation_type = common.Operation.GET
     operation_data = {
         "source": mpi_state.global_rank,
-        "id": data_id,
+        "id": data_id.__getnewargs__(),
         # set `is_blocking_op` to `True` to tell a worker
         # to send the data directly to the requester
         # without any delay
@@ -238,18 +238,14 @@ def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
         # Push the local master data to the target worker directly
         if is_serialized:
             operation_data = local_store.get_serialized_data(data_id)
-            # Insert `data_id` to get full metadata package further
-            operation_data["id"] = data_id
         else:
-            operation_data = {
-                "id": data_id,
-                "data": local_store.get(data_id),
-            }
+            operation_data = local_store.get(data_id)
 
         operation_type = common.Operation.PUT_DATA
         if is_blocking_op:
             serialized_data = communication.send_complex_data(
                 mpi_state.comm,
+                data_id,
                 operation_data,
                 dest_rank,
                 is_serialized=is_serialized,
@@ -261,6 +257,7 @@ def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
                 operation_data,
                 dest_rank,
                 is_serialized=is_serialized,
+                data_id=data_id,
             )
             async_operations.extend(h_list)
 
@@ -324,7 +321,7 @@ def _push_data_owner(dest_rank, data_id):
     local_store = LocalObjectStore.get_instance()
     operation_type = common.Operation.PUT_OWNER
     operation_data = {
-        "id": data_id,
+        "id": data_id.__getnewargs__(),
         "owner": local_store.get_data_owner(data_id),
     }
     async_operations = AsyncOperations.get_instance()

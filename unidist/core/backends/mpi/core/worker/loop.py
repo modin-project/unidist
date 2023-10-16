@@ -106,6 +106,17 @@ async def worker_loop():
         # Proceed the request
         if operation_type == common.Operation.EXECUTE:
             request = pull_data(mpi_state.comm, source_rank)
+            if request["output"] is not None:
+                # request["output"] can be tuple(int,int) or tuple(int,int)[]
+                if isinstance(request["output"], tuple) and isinstance(
+                    request["output"][0], int
+                ):
+                    request["output"] = common.MpiDataID(*request["output"])
+                else:
+                    request["output"] = [
+                        common.MpiDataID(*tpl) for tpl in request["output"]
+                    ]
+
             if not ready_to_shutdown_posted:
                 # Execute the task if possible
                 pending_request = task_store.process_task_request(request)
@@ -117,6 +128,7 @@ async def worker_loop():
 
         elif operation_type == common.Operation.GET:
             request = communication.mpi_recv_object(mpi_state.comm, source_rank)
+            request["id"] = common.MpiDataID(*request["id"])
             if request is not None and not ready_to_shutdown_posted:
                 request_store.process_get_request(
                     request["source"], request["id"], request["is_blocking_op"]
@@ -142,12 +154,13 @@ async def worker_loop():
 
         elif operation_type == common.Operation.PUT_OWNER:
             request = communication.mpi_recv_object(mpi_state.comm, source_rank)
+            data_id = common.MpiDataID(*request["id"])
             if not ready_to_shutdown_posted:
-                local_store.put_data_owner(request["id"], request["owner"])
+                local_store.put_data_owner(data_id, request["owner"])
 
                 w_logger.debug(
                     "PUT_OWNER {} id is owned by {} rank".format(
-                        request["id"]._id, request["owner"]
+                        data_id, request["owner"]
                     )
                 )
 
@@ -162,28 +175,33 @@ async def worker_loop():
             # Check pending actor requests also.
             task_store.check_pending_actor_tasks()
 
-        elif operation_type == common.Operation.WAIT:
-            request = communication.mpi_recv_object(mpi_state.comm, source_rank)
-            if not ready_to_shutdown_posted:
-                w_logger.debug("WAIT for {} id".format(request["id"]._id))
-                request_store.process_wait_request(request["id"])
-
         elif operation_type == common.Operation.ACTOR_CREATE:
             request = pull_data(mpi_state.comm, source_rank)
             if not ready_to_shutdown_posted:
                 cls = request["class"]
                 args = request["args"]
                 kwargs = request["kwargs"]
-                handler = request["handler"]
+                handler = common.MpiDataID(*request["handler"])
                 actor_map[handler] = cls(*args, **kwargs)
 
         elif operation_type == common.Operation.ACTOR_EXECUTE:
             request = pull_data(mpi_state.comm, source_rank)
+            if request["output"] is not None:
+                # request["output"] can be tuple(int,int) or tuple(int,int)[]
+                if isinstance(request["output"], tuple) and isinstance(
+                    request["output"][0], int
+                ):
+                    request["output"] = common.MpiDataID(*request["output"])
+                else:
+                    request["output"] = [
+                        common.MpiDataID(*tpl) for tpl in request["output"]
+                    ]
+
             if not ready_to_shutdown_posted:
                 # Prepare the data
                 # Actor method here is a data id so we have to retrieve it from the storage
                 method_name = local_store.get(request["task"])
-                handler = request["handler"]
+                handler = common.MpiDataID(*request["handler"])
                 actor_method = getattr(actor_map[handler], method_name)
                 request["task"] = actor_method
 

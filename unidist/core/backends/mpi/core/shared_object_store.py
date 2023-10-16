@@ -485,7 +485,7 @@ class SharedObjectStore:
         communication.send_simple_operation(
             comm,
             operation_type=common.Operation.REQUEST_SHARED_DATA,
-            operation_data={"id": data_id},
+            operation_data={"id": data_id.__getnewargs__()},
             dest_rank=owner_monitor,
         )
         communication.mpi_recv_buffer(comm, owner_monitor, sh_buf)
