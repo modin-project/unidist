@@ -36,8 +36,6 @@ class LocalObjectStore:
         self._data_id_counter = 0
         # Data serialized cache
         self._serialization_cache = weakref.WeakKeyDictionary()
-        # keep finalizers to clean deleted MasterId in _data_id_map
-        self.master_id_finalizers = []
 
     @classmethod
     def get_instance(cls):

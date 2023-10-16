@@ -142,6 +142,7 @@ def pull_data(comm, owner_rank=None):
             }
 
         data = shared_store.get(data_id, owner_rank, info_package)
+        local_store.put(data_id, data)
         return {
             "id": data_id,
             "data": data,
@@ -151,8 +152,10 @@ def pull_data(comm, owner_rank=None):
         data = communication.recv_complex_data(
             comm, owner_rank, info_package=info_package
         )
+        data_id = info_package["id"]
+        local_store.put(data_id, data)
         return {
-            "id": info_package["id"],
+            "id": data_id,
             "data": data,
         }
     elif info_package["package_type"] == common.MetadataPackage.TASK_DATA:
@@ -190,7 +193,7 @@ def request_worker_data(data_ids):
         operation_type = common.Operation.GET
         operation_data = {
             "source": mpi_state.global_rank,
-            "id": data_id.base_data_id(),
+            "id": data_id,
             # set `is_blocking_op` to `True` to tell a worker
             # to send the data directly to the requester
             # without any delay
@@ -214,9 +217,6 @@ def request_worker_data(data_ids):
         if data_id in data_ids:
             received_data += 1
             data_id = [d_id for d_id in data_ids if d_id == data_id][0]
-        data = complex_data["data"]
-        # Caching the result, check the protocol correctness here
-        local_store.put(data_id, data)
 
 
 def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
