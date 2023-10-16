@@ -193,13 +193,16 @@ def monitor_loop():
         if operation_type == common.Operation.TASK_DONE:
             task_counter.increment()
             output_data_ids = communication.mpi_recv_object(mpi_state.comm, source_rank)
+            output_data_ids = [common.MpiDataID(*tpl) for tpl in output_data_ids]
             data_id_tracker.add_to_completed(output_data_ids)
             wait_handler.process_wait_requests()
         elif operation_type == common.Operation.WAIT:
             # TODO: WAIT request can be received from several workers,
             # but not only from master. Handle this case when requested.
             operation_data = communication.mpi_recv_object(mpi_state.comm, source_rank)
-            awaited_data_ids = operation_data["data_ids"]
+            awaited_data_ids = [
+                common.MpiDataID(*tpl) for tpl in operation_data["data_ids"]
+            ]
             num_returns = operation_data["num_returns"]
             wait_handler.add_wait_request(awaited_data_ids, num_returns)
             wait_handler.process_wait_requests()
@@ -212,9 +215,10 @@ def monitor_loop():
             )
         elif operation_type == common.Operation.RESERVE_SHARED_MEMORY:
             request = communication.mpi_recv_object(mpi_state.comm, source_rank)
-            reservation_info = shm_manager.get(request["id"])
+            data_id = common.MpiDataID(*request["id"])
+            reservation_info = shm_manager.get(data_id)
             if reservation_info is None:
-                reservation_info = shm_manager.put(request["id"], request["size"])
+                reservation_info = shm_manager.put(data_id, request["size"])
                 is_first_request = True
             else:
                 is_first_request = False
@@ -226,9 +230,7 @@ def monitor_loop():
             )
         elif operation_type == common.Operation.REQUEST_SHARED_DATA:
             info_package = communication.mpi_recv_object(mpi_state.comm, source_rank)
-            data_id = info_package["id"]
-            if data_id is None:
-                raise ValueError("Requested DataID is None")
+            data_id = common.MpiDataID(*info_package["id"])
             reservation_info = shm_manager.get(data_id)
             if reservation_info is None:
                 raise RuntimeError(f"The monitor does not know the data id {data_id}")

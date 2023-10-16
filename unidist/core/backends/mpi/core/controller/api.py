@@ -478,7 +478,7 @@ def wait(data_ids, num_returns=1):
 
     operation_type = common.Operation.WAIT
     operation_data = {
-        "data_ids": not_ready,
+        "data_ids": [data_id.__getnewargs__() for data_id in not_ready],
         "num_returns": pending_returns,
     }
     mpi_state = communication.MPIState.get_instance()
@@ -560,13 +560,20 @@ def submit(task, *args, num_returns=1, **kwargs):
     push_data(dest_rank, args)
     push_data(dest_rank, kwargs)
 
+    if num_returns == 1:
+        sending_output_ids = output_ids.__getnewargs__()
+    elif num_returns > 1:
+        sending_output_ids = [o_id.__getnewargs__() for o_id in output_ids]
+    else:
+        sending_output_ids = None
+
     operation_type = common.Operation.EXECUTE
     operation_data = {
         "task": task,
         # tuple cannot be serialized iteratively and it will fail if some internal data cannot be serialized using Pickle
         "args": list(args),
         "kwargs": kwargs,
-        "output": output_ids,
+        "output": sending_output_ids,
     }
     async_operations = AsyncOperations.get_instance()
     h_list, _ = communication.isend_complex_operation(
