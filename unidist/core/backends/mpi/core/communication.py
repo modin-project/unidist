@@ -375,6 +375,21 @@ def mpi_recv_operation(comm):
 
 
 def mpi_iprobe_object(comm):
+    """
+    Receive an object of a standard Python data type from any source.
+
+    Parameters
+    ----------
+    comm : object
+        MPI communicator object.
+
+    Returns
+    -------
+    object
+        Received data object from another MPI process.
+    int
+        Process rank from which the object was obtained.
+    """
     backoff = MpiBackoff.get()
     status = MPI.Status()
     source = MPI.ANY_SOURCE
