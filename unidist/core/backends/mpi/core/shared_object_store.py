@@ -431,17 +431,18 @@ class SharedObjectStore:
         for i, raw_buffer in enumerate(raw_buffers):
             raw_buffer_first_index = last_prev_index
             raw_buffer_len = len(raw_buffer)
-            last_prev_index = raw_buffer_first_index + len(raw_buffer)
-            if last_prev_index > last_index:
+            raw_buffer_last_index = raw_buffer_first_index + len(raw_buffer)
+            if s_data_last_index > last_index:
                 raise ValueError(f"Not enough shared space for {i} raw_buffer")
 
             parallel_memcopy(
                 raw_buffer,
-                self.shared_buffer[raw_buffer_first_index:last_prev_index],
+                self.shared_buffer[raw_buffer_first_index:raw_buffer_last_index],
                 6,
             )
 
             buffer_lens.append(raw_buffer_len)
+            last_prev_index = raw_buffer_last_index
 
         self.logger.debug(
             f"Rank {communication.MPIState.get_instance().global_rank}: PUT {data_id} from {first_index} to {last_prev_index}. Service index: {service_index}"
@@ -639,11 +640,11 @@ class SharedObjectStore:
                 self.service_shared_buffer[service_index + self.FIRST_DATA_INDEX] = -1
                 self.service_shared_buffer[service_index + self.REFERENCES_NUMBER] = -1
                 self.logger.debug(
-                    f"Rank {communication.MPIState.get_instance().global_rank}: Clear {data_id}. Service index: {service_index} First index: {old_first_index} References number: {old_references_number}"
+                    f"Rank {communication.MPIState.get_instance().global_rank}: Clear {old_data_id}. Service index: {service_index} First index: {old_first_index} References number: {old_references_number}"
                 )
             else:
                 self.logger.debug(
-                    f"Rank {communication.MPIState.get_instance().global_rank}: Did not clear {data_id}, because there are was written another data_id: Data_ID(rank_{old_worker_id}_id_{old_data_id})"
+                    f"Rank {communication.MPIState.get_instance().global_rank}: Did not clear {old_data_id}, because there are was written another data_id: Data_ID(rank_{old_worker_id}_id_{old_data_id})"
                 )
                 self.logger.debug(
                     f"Service index: {service_index} First index: {old_first_index} References number: {old_references_number}"

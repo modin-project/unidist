@@ -117,8 +117,8 @@ def pull_data(comm, owner_rank=None):
 
     Parameters
     ----------
-    owner_rank : int
-        Source MPI process to receive data from.
+    owner_rank : int or None
+        Source MPI process to receive data from. None if data should be received from any source.
 
     Returns
     -------
@@ -126,7 +126,9 @@ def pull_data(comm, owner_rank=None):
         Received data object from another MPI process.
     """
     if owner_rank is None:
-        info_package, source = communication.mpi_iprobe_object(comm)
+        info_package, source = communication.mpi_iprobe_recv_object(
+            comm, tag=common.MPITag.BLOCKING_GET
+        )
         owner_rank = source
     else:
         info_package = communication.mpi_recv_object(comm, owner_rank)
@@ -168,12 +170,12 @@ def pull_data(comm, owner_rank=None):
 
 def request_worker_data(data_ids):
     """
-    Get an object(s) associated with `data_id` from the object storage.
+    Get an objects associated with `data_ids` from the object storage.
 
     Parameters
     ----------
-    data_id : unidist.core.backends.mpi.core.common.MpiDataID
-        An ID(s) to object(s) to get data from.
+    data_ids : list of unidist.core.backends.mpi.core.common.MpiDataID
+        An IDs to objects to get data from.
 
     Returns
     -------
@@ -199,8 +201,6 @@ def request_worker_data(data_ids):
             # without any delay
             "is_blocking_op": True,
         }
-        # We use a blocking send here because we have to wait for
-        # completion of the communication, which is necessary for the pipeline to continue.
         h_list = communication.isend_simple_operation(
             mpi_state.comm,
             operation_type,
@@ -209,14 +209,17 @@ def request_worker_data(data_ids):
         )
         async_operations.extend(h_list)
 
-    received_data = 0
-    while received_data < len(data_ids):
+    data_count = 0
+    while data_count < len(data_ids):
         # Blocking get
         complex_data = pull_data(mpi_state.comm)
+        if isinstance(complex_data["data"], Exception):
+            raise complex_data["data"]
         data_id = complex_data["id"]
         if data_id in data_ids:
-            received_data += 1
-            data_id = [d_id for d_id in data_ids if d_id == data_id][0]
+            data_count += 1
+        else:
+            raise RuntimeError(f"DataId {data_id} doesn't in data_ids {data_ids}")
 
 
 def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
@@ -307,7 +310,12 @@ def _push_shared_data(dest_rank, data_id, is_blocking_op):
         # wrap to dict for sending and correct deserialization of the object by the recipient
         operation_data = dict(info_package)
         if is_blocking_op:
-            communication.mpi_send_object(mpi_state.comm, operation_data, dest_rank)
+            communication.mpi_send_object(
+                mpi_state.comm,
+                operation_data,
+                dest_rank,
+                tag=common.MPITag.BLOCKING_GET,
+            )
         else:
             h_list = communication.isend_simple_operation(
                 mpi_state.comm,

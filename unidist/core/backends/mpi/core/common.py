@@ -105,6 +105,7 @@ class MPITag:
     OPERATION = 111
     OBJECT = 112
     BUFFER = 113
+    BLOCKING_GET = 114
 
 
 class MetadataPackage(ImmutableDict):

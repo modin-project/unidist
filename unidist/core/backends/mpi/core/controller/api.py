@@ -408,34 +408,28 @@ def get(data_ids):
     object
         A Python object.
     """
-    is_list = isinstance(data_ids, list)
     local_store = LocalObjectStore.get_instance()
 
-    if is_list:
-        remote_data_ids = [
-            data_id for data_id in data_ids if not local_store.contains(data_id)
-        ]
-    elif local_store.contains(data_ids):
-        remote_data_ids = []
-    else:
-        remote_data_ids = [data_ids]
+    is_list = isinstance(data_ids, list)
+    if not is_list:
+        data_ids = [data_ids]
+    remote_data_ids = [
+        data_id for data_id in data_ids if not local_store.contains(data_id)
+    ]
 
+    # Remote data gets available in the local store inside `request_worker_data`
     if remote_data_ids:
         request_worker_data(remote_data_ids)
 
     logger.debug("GET {} ids".format(common.unwrapped_data_ids_list(data_ids)))
 
-    return_value = None
-    if is_list:
-        return_value = [local_store.get(data_id) for data_id in data_ids]
-    else:
-        return_value = local_store.get(data_ids)
+    values = [local_store.get(data_id) for data_id in data_ids]
 
     # Initiate reference count based cleaup
     # if all the tasks were completed
     garbage_collector.regular_cleanup()
 
-    return return_value
+    return values if is_list else values[0]
 
 
 def wait(data_ids, num_returns=1):

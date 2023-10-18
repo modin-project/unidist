@@ -266,7 +266,7 @@ def mpi_send_operation(comm, op_type, dest_rank):
     comm.send(op_type, dest=dest_rank, tag=common.MPITag.OPERATION)
 
 
-def mpi_send_object(comm, data, dest_rank):
+def mpi_send_object(comm, data, dest_rank, tag=common.MPITag.OBJECT):
     """
     Send a Python object to another MPI rank in a blocking way.
 
@@ -286,7 +286,7 @@ def mpi_send_object(comm, data, dest_rank):
     Otherwise, use non-blocking ``mpi_isend_object``.
     * The special tag is used for this communication, namely, ``common.MPITag.OBJECT``.
     """
-    comm.send(data, dest=dest_rank, tag=common.MPITag.OBJECT)
+    comm.send(data, dest=dest_rank, tag=tag)
 
 
 def mpi_isend_operation(comm, op_type, dest_rank):
@@ -374,26 +374,27 @@ def mpi_recv_operation(comm):
     return op_type, status.Get_source()
 
 
-def mpi_iprobe_object(comm):
+def mpi_iprobe_recv_object(comm, tag=common.MPITag.OBJECT):
     """
     Receive an object of a standard Python data type from any source.
 
+    The source rank gets available from `iprobe`.
+
     Parameters
     ----------
-    comm : object
-        MPI communicator object.
+    comm : mpi4py.MPI.Comm
+        MPI communicator.
 
     Returns
     -------
     object
-        Received data object from another MPI process.
+        Received data from the source rank.
     int
-        Process rank from which the object was obtained.
+        Source rank.
     """
     backoff = MpiBackoff.get()
     status = MPI.Status()
     source = MPI.ANY_SOURCE
-    tag = common.MPITag.OBJECT
     while not comm.iprobe(source=source, tag=tag, status=status):
         time.sleep(backoff)
     source = status.source
@@ -576,7 +577,7 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, dest_rank, info_package):
     ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     # wrap to dict for sending and correct deserialization of the object by the recipient
-    comm.send(dict(info_package), dest=dest_rank, tag=common.MPITag.OBJECT)
+    comm.send(dict(info_package), dest=dest_rank, tag=common.MPITag.BLOCKING_GET)
     with pkl5._bigmpi as bigmpi:
         comm.Send(bigmpi(s_data), dest=dest_rank, tag=common.MPITag.BUFFER)
         for sbuf in raw_buffers:
