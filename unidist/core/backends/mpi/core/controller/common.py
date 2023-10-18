@@ -14,6 +14,7 @@ from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
 from unidist.core.backends.mpi.core.serialization import serialize_complex_data
 
+
 logger = common.get_logger("common", "common.log")
 
 
@@ -107,7 +108,7 @@ class RoundRobin:
         )
 
 
-def pull_data(comm, owner_rank):
+def pull_data(comm, owner_rank=None):
     """
     Receive data from another MPI process.
 
@@ -116,15 +117,22 @@ def pull_data(comm, owner_rank):
 
     Parameters
     ----------
-    owner_rank : int
+    owner_rank : int or None
         Source MPI process to receive data from.
+        If ``None``, data will be received from any source based on `iprobe`.
 
     Returns
     -------
     object
         Received data object from another MPI process.
     """
-    info_package = communication.mpi_recv_object(comm, owner_rank)
+    if owner_rank is None:
+        info_package, source = communication.mpi_iprobe_recv_object(
+            comm, tag=common.MPITag.OBJECT_BLOCKING
+        )
+        owner_rank = source
+    else:
+        info_package = communication.mpi_recv_object(comm, owner_rank)
     if info_package["package_type"] == common.MetadataPackage.SHARED_DATA:
         local_store = LocalObjectStore.get_instance()
         shared_store = SharedObjectStore.get_instance()
@@ -147,8 +155,10 @@ def pull_data(comm, owner_rank):
         data = communication.recv_complex_data(
             comm, owner_rank, info_package=info_package
         )
+        data_id = info_package["id"]
+        local_store.put(data_id, data)
         return {
-            "id": info_package["id"],
+            "id": data_id,
             "data": data,
         }
     elif info_package["package_type"] == common.MetadataPackage.TASK_DATA:
@@ -159,14 +169,14 @@ def pull_data(comm, owner_rank):
         raise ValueError("Unexpected package of data info!")
 
 
-def request_worker_data(data_id):
+def request_worker_data(data_ids):
     """
-    Get an object(s) associated with `data_id` from the object storage.
+    Get objects associated with `data_ids` from the object storage.
 
     Parameters
     ----------
-    data_id : unidist.core.backends.mpi.core.common.MpiDataID
-        An ID(s) to object(s) to get data from.
+    data_ids : list[unidist.core.backends.mpi.core.common.MpiDataID]
+        IDs to objects to get data from.
 
     Returns
     -------
@@ -175,39 +185,46 @@ def request_worker_data(data_id):
     """
     mpi_state = communication.MPIState.get_instance()
     local_store = LocalObjectStore.get_instance()
+    async_operations = AsyncOperations.get_instance()
 
-    owner_rank = local_store.get_data_owner(data_id)
+    for data_id in data_ids:
+        owner_rank = local_store.get_data_owner(data_id)
 
-    logger.debug("GET {} id from {} rank".format(data_id._id, owner_rank))
+        logger.debug("GET {} id from {} rank".format(data_id._id, owner_rank))
 
-    # Worker request
-    operation_type = common.Operation.GET
-    operation_data = {
-        "source": mpi_state.global_rank,
-        "id": data_id,
-        # set `is_blocking_op` to `True` to tell a worker
-        # to send the data directly to the requester
-        # without any delay
-        "is_blocking_op": True,
-    }
-    # We use a blocking send here because we have to wait for
-    # completion of the communication, which is necessary for the pipeline to continue.
-    communication.send_simple_operation(
-        mpi_state.comm,
-        operation_type,
-        operation_data,
-        owner_rank,
-    )
+        # Worker request
+        operation_type = common.Operation.GET
+        operation_data = {
+            "source": mpi_state.global_rank,
+            "id": data_id,
+            # set `is_blocking_op` to `True` to tell a worker
+            # to send the data directly to the requester
+            # without any delay
+            "is_blocking_op": True,
+        }
+        h_list = communication.isend_simple_operation(
+            mpi_state.comm,
+            operation_type,
+            operation_data,
+            owner_rank,
+        )
+        # We do not wait for async requests here because
+        # we can receive the data from the first available worker below
+        async_operations.extend(h_list)
 
-    # Blocking get
-    complex_data = pull_data(mpi_state.comm, owner_rank)
-    if data_id != complex_data["id"]:
-        raise ValueError("Unexpected data_id!")
-    data = complex_data["data"]
-
-    # Caching the result, check the protocol correctness here
-    local_store.put(data_id, data)
-    return data
+    data_count = 0
+    while data_count < len(data_ids):
+        # Remote data gets available in the local store inside `pull_data`
+        complex_data = pull_data(mpi_state.comm)
+        if isinstance(complex_data["data"], Exception):
+            raise complex_data["data"]
+        data_id = complex_data["id"]
+        if data_id in data_ids:
+            data_count += 1
+        else:
+            raise RuntimeError(
+                f"DataID {data_id} isn't in the requested list {data_ids}"
+            )
 
 
 def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
@@ -298,7 +315,12 @@ def _push_shared_data(dest_rank, data_id, is_blocking_op):
         # wrap to dict for sending and correct deserialization of the object by the recipient
         operation_data = dict(info_package)
         if is_blocking_op:
-            communication.mpi_send_object(mpi_state.comm, operation_data, dest_rank)
+            communication.mpi_send_object(
+                mpi_state.comm,
+                operation_data,
+                dest_rank,
+                tag=common.MPITag.OBJECT_BLOCKING,
+            )
         else:
             h_list = communication.isend_simple_operation(
                 mpi_state.comm,
