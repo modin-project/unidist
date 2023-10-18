@@ -416,7 +416,6 @@ def get(data_ids):
     remote_data_ids = [
         data_id for data_id in data_ids if not local_store.contains(data_id)
     ]
-
     # Remote data gets available in the local store inside `request_worker_data`
     if remote_data_ids:
         request_worker_data(remote_data_ids)

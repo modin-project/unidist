@@ -278,6 +278,8 @@ def mpi_send_object(comm, data, dest_rank, tag=common.MPITag.OBJECT):
         Data to send.
     dest_rank : int
         Target MPI process to transfer data.
+    tag : common.MPITag, default: common.MPITag.OBJECT
+        Message tag.
 
     Notes
     -----
@@ -384,6 +386,8 @@ def mpi_iprobe_recv_object(comm, tag=common.MPITag.OBJECT):
     ----------
     comm : mpi4py.MPI.Comm
         MPI communicator.
+    tag : common.MPITag, default: common.MPITag.OBJECT
+        Message tag.
 
     Returns
     -------
@@ -577,7 +581,7 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, dest_rank, info_package):
     ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     # wrap to dict for sending and correct deserialization of the object by the recipient
-    comm.send(dict(info_package), dest=dest_rank, tag=common.MPITag.BLOCKING_GET)
+    comm.send(dict(info_package), dest=dest_rank, tag=common.MPITag.OBJECT_BLOCKING)
     with pkl5._bigmpi as bigmpi:
         comm.Send(bigmpi(s_data), dest=dest_rank, tag=common.MPITag.BUFFER)
         for sbuf in raw_buffers:

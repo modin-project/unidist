@@ -118,7 +118,8 @@ def pull_data(comm, owner_rank=None):
     Parameters
     ----------
     owner_rank : int or None
-        Source MPI process to receive data from. None if data should be received from any source.
+        Source MPI process to receive data from.
+        If ``None``, data will be received from any source based on `iprobe`.
 
     Returns
     -------
@@ -127,7 +128,7 @@ def pull_data(comm, owner_rank=None):
     """
     if owner_rank is None:
         info_package, source = communication.mpi_iprobe_recv_object(
-            comm, tag=common.MPITag.BLOCKING_GET
+            comm, tag=common.MPITag.OBJECT_BLOCKING
         )
         owner_rank = source
     else:
@@ -170,12 +171,12 @@ def pull_data(comm, owner_rank=None):
 
 def request_worker_data(data_ids):
     """
-    Get an objects associated with `data_ids` from the object storage.
+    Get objects associated with `data_ids` from the object storage.
 
     Parameters
     ----------
-    data_ids : list of unidist.core.backends.mpi.core.common.MpiDataID
-        An IDs to objects to get data from.
+    data_ids : list[unidist.core.backends.mpi.core.common.MpiDataID]
+        IDs to objects to get data from.
 
     Returns
     -------
@@ -207,11 +208,13 @@ def request_worker_data(data_ids):
             operation_data,
             owner_rank,
         )
+        # We do not wait for async requests here because
+        # we can receive the data from the first available worker below
         async_operations.extend(h_list)
 
     data_count = 0
     while data_count < len(data_ids):
-        # Blocking get
+        # Remote data gets available in the local store inside `pull_data`
         complex_data = pull_data(mpi_state.comm)
         if isinstance(complex_data["data"], Exception):
             raise complex_data["data"]
@@ -219,7 +222,9 @@ def request_worker_data(data_ids):
         if data_id in data_ids:
             data_count += 1
         else:
-            raise RuntimeError(f"DataId {data_id} doesn't in data_ids {data_ids}")
+            raise RuntimeError(
+                f"DataID {data_id} isn't in the requested list {data_ids}"
+            )
 
 
 def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
@@ -314,7 +319,7 @@ def _push_shared_data(dest_rank, data_id, is_blocking_op):
                 mpi_state.comm,
                 operation_data,
                 dest_rank,
-                tag=common.MPITag.BLOCKING_GET,
+                tag=common.MPITag.OBJECT_BLOCKING,
             )
         else:
             h_list = communication.isend_simple_operation(
