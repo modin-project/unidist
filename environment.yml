@@ -16,6 +16,7 @@ dependencies:
   - cython
   - psutil
   - pytest
+  - numpy
   # for downloading packages from PyPI
   - pip
   - pip:
