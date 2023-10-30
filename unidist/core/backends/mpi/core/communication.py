@@ -115,15 +115,15 @@ class MPIState:
         self.comm = comm
         self.global_rank = comm.Get_rank()
         self.global_size = comm.Get_size()
-        self.host_comm = None
-        if common.is_shared_memory_supported():
-            self.host_comm = comm.Split_type(MPI.COMM_TYPE_SHARED)
-        host_rank = (
-            self.host_comm.Get_rank()
-            if self.host_comm is not None
-            else self.global_rank
-        )
         self.host = socket.gethostbyname(socket.gethostname())
+        try:
+            self.host_comm = comm.Split_type(MPI.COMM_TYPE_SHARED)
+        # Used if Split_type is not implemented in the MPI library
+        except Exception:
+            all_hosts = self.comm.allgather(self.host)
+            self.host_comm = comm.Split(all_hosts.index(self.host))
+
+        host_rank = self.host_comm.Get_rank()
         # Get topology of MPI cluster.
         cluster_info = self.comm.allgather((self.host, self.global_rank, host_rank))
         self.topology = defaultdict(dict)
@@ -132,9 +132,16 @@ class MPIState:
             self.topology[host][host_rank] = global_rank
             self.host_by_rank[global_rank] = host
 
-        self.monitor_processes = [
-            self.topology[host][MPIRank.MONITOR] for host in self.topology
-        ]
+        if common.is_shared_memory_supported():
+            self.monitor_processes = []
+            for host in self.topology:
+                if len(self.topology[host]) < 2:
+                    raise ValueError(
+                        "When using shared memory, each host must contain at least 2 processes, since one of them will be a service monitor."
+                    )
+                self.monitor_processes.append(self.topology[host][MPIRank.MONITOR])
+        else:
+            self.monitor_processes = [MPIRank.MONITOR]
 
         self.workers = []
         for host in self.topology:
@@ -218,7 +225,7 @@ class MPIState:
         int
             Rank of a monitor process.
         """
-        if self.host_comm is None:
+        if not common.is_shared_memory_supported():
             return MPIRank.MONITOR
 
         if rank is None:
