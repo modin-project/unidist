@@ -170,6 +170,7 @@ def monitor_loop():
     The loop exits on special cancelation operation.
     ``unidist.core.backends.mpi.core.common.Operations`` defines a set of supported operations.
     """
+    monitor_logger.debug("Monitor loop started")
     task_counter = TaskCounter.get_instance()
     mpi_state = communication.MPIState.get_instance()
     wait_handler = WaitHandler.get_instance()
@@ -182,7 +183,8 @@ def monitor_loop():
     # Once all workers excluding ``Root`` and ``Monitor`` ranks are ready to shutdown,
     # ``Monitor` sends the shutdown signal to every worker, as well as notifies ``Root`` that
     # it can exit the program.
-
+    # Barrier in monitor process to check if monitor loop has started
+    mpi_state.comm.Barrier()
     while True:
         # Listen receive operation from any source
         operation_type, source_rank = communication.mpi_recv_operation(

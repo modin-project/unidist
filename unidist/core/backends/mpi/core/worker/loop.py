@@ -84,6 +84,7 @@ async def worker_loop():
     The loop exits on special cancelation operation.
     ``unidist.core.backends.mpi.core.common.Operations`` defines a set of supported operations.
     """
+    w_logger.debug("Worker loop started")
     task_store = TaskStore.get_instance()
     local_store = LocalObjectStore.get_instance()
     request_store = RequestStore.get_instance()
@@ -94,6 +95,9 @@ async def worker_loop():
     # and the worker sends the ready to shutdown signal to ``Monitor``.
     # Once all workers excluding ``Root`` and ``Monitor`` ranks are ready to shutdown,
     # ``Monitor` sends the shutdown signal to every worker so they can exit the loop.
+
+    # Barrier in worker process to check if worker loop has started
+    mpi_state.comm.Barrier()
     while True:
         # Listen receive operation from any source
         operation_type, source_rank = await async_wrap(
