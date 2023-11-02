@@ -4,6 +4,7 @@
 
 """Common classes and utilities."""
 
+import os
 import logging
 import inspect
 import weakref
@@ -489,5 +490,32 @@ def is_shared_memory_supported():
         and not check_mpich_version("4.2.0")
     ):
         return False
+
+    return True
+
+
+def is_runned_by_mpiexec():
+    """
+    Check if the unidist was running using `mpiexec` command.
+
+    Returns
+    -------
+    bool
+        True or False.
+    """
+    if "Intel" in MPI.Get_library_version() and os.getenv("PMI_RANK") is None:
+        return False
+
+    if "MPICH" in MPI.Get_library_version() and os.getenv("PMI_RANK") is None:
+        return False
+
+    if (
+        "Open MPI" in MPI.Get_library_version()
+        and os.getenv("OMPI_COMM_WORLD_RANK") is None
+    ):
+        return False
+
+    # The lastest MS MPI does not support running without mpiexec.
+    # The other MPI library hasn't been checked.
 
     return True

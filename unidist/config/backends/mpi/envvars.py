@@ -15,7 +15,13 @@ class IsMpiSpawnWorkers(EnvironmentVariable, type=bool):
 
 
 class MpiHosts(EnvironmentVariable, type=ExactStr):
-    """MPI hosts to run unidist on."""
+    """
+    MPI hosts to run unidist on.
+
+    Notes
+    -----
+    This variable is only used without mpiexec.
+    """
 
     varname = "UNIDIST_MPI_HOSTS"
 

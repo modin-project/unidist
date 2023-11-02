@@ -22,6 +22,7 @@ from unidist.core.backends.mpi.core.serialization import (
     deserialize_complex_data,
 )
 import unidist.core.backends.mpi.core.common as common
+from unidist.config.backends.mpi.envvars import MpiHosts
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
@@ -131,6 +132,26 @@ class MPIState:
         for host, global_rank, host_rank in cluster_info:
             self.topology[host][host_rank] = global_rank
             self.host_by_rank[global_rank] = host
+
+        mpi_hosts = MpiHosts.get()
+        if mpi_hosts is not None:
+            host_list = mpi_hosts.split(",") if mpi_hosts is not None else ["localhost"]
+            host_count = len(host_list)
+
+            # check running hosts
+            if self.is_root_process() and len(self.topology.keys()) > host_count:
+                print(
+                    """WARNING: The number of running hosts is greater than that specified in the UNIDIST_MPI_HOSTS.
+                    If you want to run the program on a host other than the local one, specify the appropriate parameter for `mpiexec`
+                    (`--host` for OpenMPI or `--hosts` for other MPI implementations)
+                """
+                )
+
+            # check running hosts
+            if self.is_root_process() and len(self.topology.keys()) < host_count:
+                print(
+                    "WARNING: The number of running hosts is less than that specified in the UNIDIST_MPI_HOSTS. Check the `mpiexec` option to distribute processes between hosts."
+                )
 
         self.monitor_processes = [
             self.topology[host][MPIRank.MONITOR] for host in self.topology

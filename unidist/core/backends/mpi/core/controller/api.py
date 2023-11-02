@@ -154,8 +154,19 @@ def init():
         ]
         if IsMpiSpawnWorkers.get_value_source() != ValueSource.DEFAULT:
             py_str += [f"cfg.IsMpiSpawnWorkers.put({IsMpiSpawnWorkers.get()})"]
-        if MpiHosts.get_value_source() != ValueSource.DEFAULT:
+        # MpiHosts should only be used without mpiexec.
+        if (
+            MpiHosts.get_value_source() != ValueSource.DEFAULT
+            and not common.is_runned_by_mpiexec()
+        ):
             py_str += [f"cfg.MpiHosts.put('{MpiHosts.get()}')"]
+        else:
+            print(
+                """WARNING: MpiHosts is not used when running a script using mpiexec.
+                  Find out more about running Unidist on MPI cluster at the link:
+                  https://unidist.readthedocs.io/en/latest/using_unidist/unidist_on_mpi.html#unidist-on-mpi-cluster
+                  """
+            )
         if CpuCount.get_value_source() != ValueSource.DEFAULT:
             py_str += [f"cfg.CpuCount.put({CpuCount.get()})"]
         if MpiPickleThreshold.get_value_source() != ValueSource.DEFAULT:
@@ -201,10 +212,6 @@ def init():
 
         host_list = hosts.split(",") if hosts is not None else ["localhost"]
         host_count = len(host_list)
-        if hosts is not None and host_count == 1:
-            raise ValueError(
-                "MpiHosts cannot include only one host. If you want to run on a single node, just run the program without this option."
-            )
 
         if common.is_shared_memory_supported():
             # +host_count to add monitor process on each host
@@ -212,7 +219,7 @@ def init():
         else:
             # +1 for just a single process monitor
             nprocs_to_spawn = cpu_count + 1
-        if host_count > 1:
+        if hosts is not None:
             if "Open MPI" in lib_version:
                 # +1 to take into account the current root process
                 # to correctly allocate slots
