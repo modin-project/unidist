@@ -261,7 +261,7 @@ def init():
         atexit.register(_termination_handler)
         signal.signal(signal.SIGTERM, _termination_handler)
         signal.signal(signal.SIGINT, _termination_handler)
-        # Exit the init function in root only after monitor and worker loops have started.
+        # Exit the init function in root only after monitor and worker loops have started
         mpi_state.comm.Barrier()
         return
     elif mpi_state.is_monitor_process():

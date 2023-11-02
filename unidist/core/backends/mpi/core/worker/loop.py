@@ -96,7 +96,7 @@ async def worker_loop():
     # Once all workers excluding ``Root`` and ``Monitor`` ranks are ready to shutdown,
     # ``Monitor` sends the shutdown signal to every worker so they can exit the loop.
 
-    # Barrier in worker process to check if worker loop has started
+    # Barrier to check if worker process is ready to start the communication loop
     mpi_state.comm.Barrier()
     while True:
         # Listen receive operation from any source
