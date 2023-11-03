@@ -12,6 +12,7 @@ from .envvars import (
     MpiLog,
     MpiSharedObjectStore,
     MpiSharedObjectStoreMemory,
+    MpiSharedServiceMemory,
     MpiSharedObjectStoreThreshold,
     MpiRuntimeEnv,
 )
@@ -24,6 +25,7 @@ __all__ = [
     "MpiLog",
     "MpiSharedObjectStore",
     "MpiSharedObjectStoreMemory",
+    "MpiSharedServiceMemory",
     "MpiSharedObjectStoreThreshold",
     "MpiRuntimeEnv",
 ]
