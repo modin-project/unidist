@@ -130,7 +130,7 @@ class MPIState:
         if common.is_shared_memory_supported():
             self.monitor_processes = []
             for host in self.topology:
-                if len(self.topology[host]) > 2:
+                if len(self.topology[host]) >= 2:
                     self.monitor_processes.append(self.topology[host][MPIRank.MONITOR])
                 elif self.is_root_process():
                     raise ValueError(
