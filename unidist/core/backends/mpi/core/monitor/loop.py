@@ -149,7 +149,7 @@ class WaitHandler:
                             "not_ready": self.awaited_data_ids,
                         }
                         communication.mpi_send_object(
-                            communication.MPIState.get_instance().comm,
+                            communication.MPIState.get_instance().global_comm,
                             operation_data,
                             communication.MPIRank.ROOT,
                         )
@@ -185,20 +185,26 @@ def monitor_loop():
 
     while True:
         # Listen receive operation from any source
-        operation_type, source_rank = communication.mpi_recv_operation(mpi_state.comm)
+        operation_type, source_rank = communication.mpi_recv_operation(
+            mpi_state.global_comm
+        )
         monitor_logger.debug(
             f"common.Operation processing - {operation_type} from {source_rank} rank"
         )
         # Proceed the request
         if operation_type == common.Operation.TASK_DONE:
             task_counter.increment()
-            output_data_ids = communication.mpi_recv_object(mpi_state.comm, source_rank)
+            output_data_ids = communication.mpi_recv_object(
+                mpi_state.global_comm, source_rank
+            )
             data_id_tracker.add_to_completed(output_data_ids)
             wait_handler.process_wait_requests()
         elif operation_type == common.Operation.WAIT:
             # TODO: WAIT request can be received from several workers,
             # but not only from master. Handle this case when requested.
-            operation_data = communication.mpi_recv_object(mpi_state.comm, source_rank)
+            operation_data = communication.mpi_recv_object(
+                mpi_state.global_comm, source_rank
+            )
             awaited_data_ids = operation_data["data_ids"]
             num_returns = operation_data["num_returns"]
             wait_handler.add_wait_request(awaited_data_ids, num_returns)
@@ -206,12 +212,12 @@ def monitor_loop():
         elif operation_type == common.Operation.GET_TASK_COUNT:
             # We use a blocking send here because the receiver is waiting for the result.
             communication.mpi_send_object(
-                mpi_state.comm,
+                mpi_state.global_comm,
                 task_counter.task_counter,
                 source_rank,
             )
         elif operation_type == common.Operation.RESERVE_SHARED_MEMORY:
-            request = communication.mpi_recv_object(mpi_state.comm, source_rank)
+            request = communication.mpi_recv_object(mpi_state.global_comm, source_rank)
             reservation_info = shm_manager.get(request["id"])
             if reservation_info is None:
                 reservation_info = shm_manager.put(request["id"], request["size"])
@@ -220,12 +226,14 @@ def monitor_loop():
                 is_first_request = False
 
             communication.mpi_send_object(
-                mpi_state.comm,
+                mpi_state.global_comm,
                 data={**reservation_info, "is_first_request": is_first_request},
                 dest_rank=source_rank,
             )
         elif operation_type == common.Operation.REQUEST_SHARED_DATA:
-            info_package = communication.mpi_recv_object(mpi_state.comm, source_rank)
+            info_package = communication.mpi_recv_object(
+                mpi_state.global_comm, source_rank
+            )
             data_id = info_package["id"]
             if data_id is None:
                 raise ValueError("Requested DataID is None")
@@ -236,14 +244,14 @@ def monitor_loop():
                 reservation_info["first_index"], reservation_info["last_index"]
             )
             communication.mpi_send_buffer(
-                mpi_state.comm,
+                mpi_state.global_comm,
                 sh_buf,
                 dest_rank=source_rank,
                 data_type=MPI.BYTE,
             )
         elif operation_type == common.Operation.CLEANUP:
             cleanup_list = communication.recv_serialized_data(
-                mpi_state.comm, source_rank
+                mpi_state.global_comm, source_rank
             )
             cleanup_list = [common.MpiDataID(*tpl) for tpl in cleanup_list]
             shm_manager.clear(cleanup_list)
@@ -262,12 +270,12 @@ def monitor_loop():
             for rank_id in mpi_state.workers + mpi_state.monitor_processes:
                 if rank_id != mpi_state.global_rank:
                     communication.mpi_send_operation(
-                        mpi_state.comm,
+                        mpi_state.global_comm,
                         common.Operation.SHUTDOWN,
                         rank_id,
                     )
             communication.mpi_send_object(
-                mpi_state.comm,
+                mpi_state.global_comm,
                 common.Operation.SHUTDOWN,
                 communication.MPIRank.ROOT,
             )

@@ -98,14 +98,14 @@ async def worker_loop():
         # Listen receive operation from any source
         operation_type, source_rank = await async_wrap(
             communication.mpi_recv_operation
-        )(mpi_state.comm)
+        )(mpi_state.global_comm)
         w_logger.debug(
             f"common.Operation processing - {operation_type} from {source_rank} rank"
         )
 
         # Proceed the request
         if operation_type == common.Operation.EXECUTE:
-            request = pull_data(mpi_state.comm, source_rank)
+            request = pull_data(mpi_state.global_comm, source_rank)
             if not ready_to_shutdown_posted:
                 # Execute the task if possible
                 pending_request = task_store.process_task_request(request)
@@ -116,14 +116,14 @@ async def worker_loop():
                     task_store.check_pending_tasks()
 
         elif operation_type == common.Operation.GET:
-            request = communication.mpi_recv_object(mpi_state.comm, source_rank)
+            request = communication.mpi_recv_object(mpi_state.global_comm, source_rank)
             if request is not None and not ready_to_shutdown_posted:
                 request_store.process_get_request(
                     request["source"], request["id"], request["is_blocking_op"]
                 )
 
         elif operation_type == common.Operation.PUT_DATA:
-            request = pull_data(mpi_state.comm, source_rank)
+            request = pull_data(mpi_state.global_comm, source_rank)
             if not ready_to_shutdown_posted:
                 w_logger.debug(
                     "PUT (RECV) {} id from {} rank".format(
@@ -140,7 +140,7 @@ async def worker_loop():
                 task_store.check_pending_actor_tasks()
 
         elif operation_type == common.Operation.PUT_OWNER:
-            request = communication.mpi_recv_object(mpi_state.comm, source_rank)
+            request = communication.mpi_recv_object(mpi_state.global_comm, source_rank)
             if not ready_to_shutdown_posted:
                 local_store.put_data_owner(request["id"], request["owner"])
 
@@ -151,7 +151,7 @@ async def worker_loop():
                 )
 
         elif operation_type == common.Operation.PUT_SHARED_DATA:
-            result = pull_data(mpi_state.comm, source_rank)
+            result = pull_data(mpi_state.global_comm, source_rank)
 
             # Clear cached request to another worker, if data_id became available
             request_store.discard_data_request(result["id"])
@@ -162,13 +162,13 @@ async def worker_loop():
             task_store.check_pending_actor_tasks()
 
         elif operation_type == common.Operation.WAIT:
-            request = communication.mpi_recv_object(mpi_state.comm, source_rank)
+            request = communication.mpi_recv_object(mpi_state.global_comm, source_rank)
             if not ready_to_shutdown_posted:
                 w_logger.debug("WAIT for {} id".format(request["id"]._id))
                 request_store.process_wait_request(request["id"])
 
         elif operation_type == common.Operation.ACTOR_CREATE:
-            request = pull_data(mpi_state.comm, source_rank)
+            request = pull_data(mpi_state.global_comm, source_rank)
             if not ready_to_shutdown_posted:
                 cls = request["class"]
                 args = request["args"]
@@ -177,7 +177,7 @@ async def worker_loop():
                 actor_map[handler] = cls(*args, **kwargs)
 
         elif operation_type == common.Operation.ACTOR_EXECUTE:
-            request = pull_data(mpi_state.comm, source_rank)
+            request = pull_data(mpi_state.global_comm, source_rank)
             if not ready_to_shutdown_posted:
                 # Prepare the data
                 # Actor method here is a data id so we have to retrieve it from the storage
@@ -196,7 +196,7 @@ async def worker_loop():
 
         elif operation_type == common.Operation.CLEANUP:
             cleanup_list = communication.recv_serialized_data(
-                mpi_state.comm, source_rank
+                mpi_state.global_comm, source_rank
             )
             cleanup_list = [common.MpiDataID(*tpl) for tpl in cleanup_list]
             local_store.clear(cleanup_list)
@@ -208,7 +208,7 @@ async def worker_loop():
             request_store.clear_wait_requests()
             async_operations.finish()
             communication.mpi_send_operation(
-                mpi_state.comm,
+                mpi_state.global_comm,
                 common.Operation.READY_TO_SHUTDOWN,
                 mpi_state.get_monitor_by_worker_rank(communication.MPIRank.ROOT),
             )

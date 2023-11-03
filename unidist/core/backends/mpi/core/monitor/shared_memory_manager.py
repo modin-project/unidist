@@ -122,8 +122,10 @@ class SharedMemoryManager:
             self.monitor_comm = None
             mpi_state = communication.MPIState.get_instance()
 
-            monitor_group = mpi_state.comm.Get_group().Incl(mpi_state.monitor_processes)
-            self.monitor_comm = mpi_state.comm.Create_group(monitor_group)
+            monitor_group = mpi_state.global_comm.Get_group().Incl(
+                mpi_state.monitor_processes
+            )
+            self.monitor_comm = mpi_state.global_comm.Create_group(monitor_group)
 
     def get(self, data_id):
         """
