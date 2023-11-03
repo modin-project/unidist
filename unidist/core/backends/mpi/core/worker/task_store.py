@@ -154,7 +154,7 @@ class TaskStore:
         }
         async_operations = AsyncOperations.get_instance()
         h_list = communication.isend_simple_operation(
-            communication.MPIState.get_instance().comm,
+            communication.MPIState.get_instance().global_comm,
             operation_type,
             operation_data,
             dest_rank,
@@ -307,7 +307,7 @@ class TaskStore:
                     communication.MPIRank.ROOT
                 )
                 communication.send_simple_operation(
-                    communication.MPIState.get_instance().comm,
+                    communication.MPIState.get_instance().global_comm,
                     common.Operation.TASK_DONE,
                     completed_data_ids,
                     root_monitor,
@@ -395,7 +395,7 @@ class TaskStore:
                 communication.MPIRank.ROOT
             )
             communication.send_simple_operation(
-                communication.MPIState.get_instance().comm,
+                communication.MPIState.get_instance().global_comm,
                 common.Operation.TASK_DONE,
                 completed_data_ids,
                 root_monitor,

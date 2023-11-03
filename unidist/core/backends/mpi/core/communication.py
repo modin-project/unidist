@@ -87,7 +87,7 @@ class MPIState:
 
     Attributes
     ----------
-    comm : mpi4py.MPI.Comm
+    global_comm : mpi4py.MPI.Comm
         Global MPI communicator.
     host_comm : mpi4py.MPI.Comm
         MPI subcommunicator for the current host.
@@ -112,7 +112,7 @@ class MPIState:
 
     def __init__(self, comm):
         # attributes get actual values when MPI is initialized in `init` function
-        self.comm = comm
+        self.global_comm = comm
         self.global_rank = comm.Get_rank()
         self.global_size = comm.Get_size()
         self.host_comm = None
@@ -125,7 +125,9 @@ class MPIState:
         )
         self.host = socket.gethostbyname(socket.gethostname())
         # Get topology of MPI cluster.
-        cluster_info = self.comm.allgather((self.host, self.global_rank, host_rank))
+        cluster_info = self.global_comm.allgather(
+            (self.host, self.global_rank, host_rank)
+        )
         self.topology = defaultdict(dict)
         self.host_by_rank = defaultdict(None)
         for host, global_rank, host_rank in cluster_info:

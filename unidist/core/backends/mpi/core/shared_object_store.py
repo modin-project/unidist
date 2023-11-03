@@ -667,7 +667,7 @@ class SharedObjectStore:
         )
         # reserve shared memory
         reservation_data = communication.send_reserve_operation(
-            mpi_state.comm, data_id, data_size
+            mpi_state.global_comm, data_id, data_size
         )
         service_index = reservation_data["service_index"]
         first_index = reservation_data["first_index"]
@@ -707,7 +707,7 @@ class SharedObjectStore:
             # reserve shared memory
             shared_data_len = s_data_len + sum([buf for buf in raw_buffers_len])
             reservation_info = communication.send_reserve_operation(
-                mpi_state.comm, data_id, shared_data_len
+                mpi_state.global_comm, data_id, shared_data_len
             )
 
             service_index = reservation_info["service_index"]
@@ -715,7 +715,7 @@ class SharedObjectStore:
             if reservation_info["is_first_request"]:
                 # syncronize shared buffer
                 self._sync_shared_memory_from_another_host(
-                    mpi_state.comm,
+                    mpi_state.global_comm,
                     data_id,
                     owner_rank,
                     reservation_info["first_index"],
