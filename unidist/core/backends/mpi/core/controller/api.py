@@ -323,14 +323,14 @@ def shutdown():
             # We use a blocking send here because we have to wait for
             # completion of the communication, which is necessary for the pipeline to continue.
             communication.mpi_send_operation(
-                mpi_state.comm,
+                mpi_state.global_comm,
                 common.Operation.CANCEL,
                 rank_id,
             )
             logger.debug("Shutdown rank {}".format(rank_id))
         # Make sure that monitor has sent the shutdown signal to all workers.
         op_type = communication.mpi_recv_object(
-            mpi_state.comm,
+            mpi_state.global_comm,
             communication.MPIRank.MONITOR,
         )
         if op_type != common.Operation.SHUTDOWN:
@@ -488,13 +488,13 @@ def wait(data_ids, num_returns=1):
     # We use a blocking send and recv here because we have to wait for
     # completion of the communication, which is necessary for the pipeline to continue.
     communication.send_simple_operation(
-        mpi_state.comm,
+        mpi_state.global_comm,
         operation_type,
         operation_data,
         root_monitor,
     )
     data = communication.mpi_recv_object(
-        mpi_state.comm,
+        mpi_state.global_comm,
         root_monitor,
     )
     ready.extend(data["ready"])
@@ -572,7 +572,7 @@ def submit(task, *args, num_returns=1, **kwargs):
     }
     async_operations = AsyncOperations.get_instance()
     h_list, _ = communication.isend_complex_operation(
-        communication.MPIState.get_instance().comm,
+        communication.MPIState.get_instance().global_comm,
         operation_type,
         operation_data,
         dest_rank,

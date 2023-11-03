@@ -88,7 +88,7 @@ class MPIState:
 
     Attributes
     ----------
-    comm : mpi4py.MPI.Comm
+    global_comm : mpi4py.MPI.Comm
         Global MPI communicator.
     host_comm : mpi4py.MPI.Comm
         MPI subcommunicator for the current host.
@@ -113,20 +113,17 @@ class MPIState:
 
     def __init__(self, comm):
         # attributes get actual values when MPI is initialized in `init` function
-        self.comm = comm
+        self.global_comm = comm
         self.global_rank = comm.Get_rank()
         self.global_size = comm.Get_size()
-        self.host_comm = None
-        if common.is_shared_memory_supported():
-            self.host_comm = comm.Split_type(MPI.COMM_TYPE_SHARED)
-        host_rank = (
-            self.host_comm.Get_rank()
-            if self.host_comm is not None
-            else self.global_rank
-        )
         self.host = socket.gethostbyname(socket.gethostname())
+        self.host_comm = comm.Split_type(MPI.COMM_TYPE_SHARED)
+
+        host_rank = self.host_comm.Get_rank()
         # Get topology of MPI cluster.
-        cluster_info = self.comm.allgather((self.host, self.global_rank, host_rank))
+        cluster_info = self.global_comm.allgather(
+            (self.host, self.global_rank, host_rank)
+        )
         self.topology = defaultdict(dict)
         self.host_by_rank = defaultdict(None)
         for host, global_rank, host_rank in cluster_info:
@@ -153,9 +150,18 @@ class MPIState:
                     "WARNING: The number of running hosts is less than that specified in the UNIDIST_MPI_HOSTS. Check the `mpiexec` option to distribute processes between hosts."
                 )
 
-        self.monitor_processes = [
-            self.topology[host][MPIRank.MONITOR] for host in self.topology
-        ]
+        if common.is_shared_memory_supported():
+            self.monitor_processes = []
+            for host in self.topology:
+                if len(self.topology[host]) >= 2:
+                    self.monitor_processes.append(self.topology[host][MPIRank.MONITOR])
+                elif self.is_root_process():
+                    raise ValueError(
+                        "When using shared object store, each host must contain at least 2 processes, "
+                        "since one of them will be a service monitor."
+                    )
+        else:
+            self.monitor_processes = [MPIRank.MONITOR]
 
         self.workers = []
         for host in self.topology:
@@ -239,7 +245,7 @@ class MPIState:
         int
             Rank of a monitor process.
         """
-        if self.host_comm is None:
+        if not common.is_shared_memory_supported():
             return MPIRank.MONITOR
 
         if rank is None:

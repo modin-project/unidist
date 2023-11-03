@@ -54,7 +54,7 @@ class ActorMethod:
         }
         async_operations = AsyncOperations.get_instance()
         h_list, _ = communication.isend_complex_operation(
-            communication.MPIState.get_instance().comm,
+            communication.MPIState.get_instance().global_comm,
             operation_type,
             operation_data,
             self._actor._owner_rank,
@@ -119,7 +119,7 @@ class Actor:
             }
             async_operations = AsyncOperations.get_instance()
             h_list, _ = communication.isend_complex_operation(
-                communication.MPIState.get_instance().comm,
+                communication.MPIState.get_instance().global_comm,
                 operation_type,
                 operation_data,
                 self._owner_rank,

@@ -203,7 +203,7 @@ def request_worker_data(data_ids):
             "is_blocking_op": True,
         }
         h_list = communication.isend_simple_operation(
-            mpi_state.comm,
+            mpi_state.global_comm,
             operation_type,
             operation_data,
             owner_rank,
@@ -215,7 +215,7 @@ def request_worker_data(data_ids):
     data_count = 0
     while data_count < len(data_ids):
         # Remote data gets available in the local store inside `pull_data`
-        complex_data = pull_data(mpi_state.comm)
+        complex_data = pull_data(mpi_state.global_comm)
         if isinstance(complex_data["data"], Exception):
             raise complex_data["data"]
         data_id = complex_data["id"]
@@ -266,14 +266,14 @@ def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
         operation_type = common.Operation.PUT_DATA
         if is_blocking_op:
             serialized_data = communication.send_complex_data(
-                mpi_state.comm,
+                mpi_state.global_comm,
                 operation_data,
                 dest_rank,
                 is_serialized=is_serialized,
             )
         else:
             h_list, serialized_data = communication.isend_complex_operation(
-                mpi_state.comm,
+                mpi_state.global_comm,
                 operation_type,
                 operation_data,
                 dest_rank,
@@ -316,14 +316,14 @@ def _push_shared_data(dest_rank, data_id, is_blocking_op):
         operation_data = dict(info_package)
         if is_blocking_op:
             communication.mpi_send_object(
-                mpi_state.comm,
+                mpi_state.global_comm,
                 operation_data,
                 dest_rank,
                 tag=common.MPITag.OBJECT_BLOCKING,
             )
         else:
             h_list = communication.isend_simple_operation(
-                mpi_state.comm,
+                mpi_state.global_comm,
                 operation_type,
                 operation_data,
                 dest_rank,
@@ -351,7 +351,7 @@ def _push_data_owner(dest_rank, data_id):
     }
     async_operations = AsyncOperations.get_instance()
     h_list = communication.isend_simple_operation(
-        communication.MPIState.get_instance().comm,
+        communication.MPIState.get_instance().global_comm,
         operation_type,
         operation_data,
         dest_rank,

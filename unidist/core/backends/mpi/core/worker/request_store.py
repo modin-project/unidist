@@ -183,7 +183,7 @@ class RequestStore:
                     # Data is already in DataMap, so not problem here.
                     # We use a blocking send here because the receiver is waiting for the result.
                     communication.mpi_send_object(
-                        communication.MPIState.get_instance().comm,
+                        communication.MPIState.get_instance().global_comm,
                         data_id,
                         communication.MPIRank.ROOT,
                     )
@@ -192,7 +192,7 @@ class RequestStore:
             if data_ids in self._blocking_wait_requests:
                 # We use a blocking send here because the receiver is waiting for the result.
                 communication.mpi_send_object(
-                    communication.MPIState.get_instance().comm,
+                    communication.MPIState.get_instance().global_comm,
                     data_ids,
                     communication.MPIRank.ROOT,
                 )
@@ -217,7 +217,7 @@ class RequestStore:
             # Executor wait just for signal
             # We use a blocking send here because the receiver is waiting for the result.
             communication.mpi_send_object(
-                communication.MPIState.get_instance().comm,
+                communication.MPIState.get_instance().global_comm,
                 data_id,
                 communication.MPIRank.ROOT,
             )

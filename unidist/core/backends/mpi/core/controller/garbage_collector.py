@@ -61,7 +61,7 @@ class GarbageCollector:
         for rank_id in mpi_state.workers + mpi_state.monitor_processes:
             if rank_id != mpi_state.global_rank:
                 h_list = communication.isend_serialized_operation(
-                    mpi_state.comm,
+                    mpi_state.global_comm,
                     common.Operation.CLEANUP,
                     s_cleanup_list,
                     rank_id,
@@ -121,12 +121,12 @@ class GarbageCollector:
                     # We use a blocking send here because we have to wait for
                     # completion of the communication, which is necessary for the pipeline to continue.
                     communication.mpi_send_operation(
-                        mpi_state.comm,
+                        mpi_state.global_comm,
                         common.Operation.GET_TASK_COUNT,
                         root_monitor,
                     )
                     executed_task_counter = communication.mpi_recv_object(
-                        mpi_state.comm,
+                        mpi_state.global_comm,
                         root_monitor,
                     )
 
