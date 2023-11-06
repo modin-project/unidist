@@ -494,9 +494,9 @@ def is_shared_memory_supported():
     return True
 
 
-def is_runned_by_mpiexec():
+def is_run_with_mpiexec():
     """
-    Check if the unidist was running using `mpiexec` command.
+    Check if the unidist was run using `mpiexec` command.
 
     Returns
     -------
@@ -515,7 +515,7 @@ def is_runned_by_mpiexec():
     ):
         return False
 
-    # The lastest MS MPI does not support running without mpiexec.
+    # The latest MSMPI does not support running without mpiexec.
     # The other MPI library hasn't been checked.
 
     return True

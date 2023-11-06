@@ -123,12 +123,12 @@ you should use the appropriate parameter for ``mpiexec``.
 This parameter differs depending on the MPI implementation used.
 
 * For Intel MPI or MPICH: ``-hosts host1,host2``. You can also see 
-`Controlling Process Placement with the Intel® MPI Library <https://www.intel.com/content/www/us/en/developer/articles/technical/controlling-process-placement-with-the-intel-mpi-library.html>` 
-for deeper customization.
+`Controlling Process Placement with the Intel® MPI Library <https://www.intel.com/content/www/us/en/developer/articles/technical/controlling-process-placement-with-the-intel-mpi-library.html>`_ 
+or `MPICH wiki <https://github.com/pmodels/mpich/blob/main/doc/wiki/how_to/Using_the_Hydra_Process_Manager.md>`_ for deeper customization.
 
 * For OpenMPI: ``-host host1:n1,...,hostM:nM``
 where n1, ..., nM is the number of processes on each node, including system processes.
-You can also see `Scheduling processes across hosts with OpenMPI Library <https://docs.open-mpi.org/en/v5.0.x/launching-apps/scheduling.html>` for deeper customization. 
+You can also see `Scheduling processes across hosts with OpenMPI Library <https://docs.open-mpi.org/en/v5.0.x/launching-apps/scheduling.html>`_ for deeper customization. 
 
 
 Running without ``mpiexec`` command
@@ -163,11 +163,8 @@ Running is the same as in a single node.
 
 .. note::
     Root proccess will allways be executed locally and other proccesses will be spawned in order on the specified hosts.
-    If you want to run root proccess on anoother host you should use `ssh host` before your command and thoroughly check that environment will be correct. 
-    You can set some variables into ssh or activate conda envirenment before running python script.
-    
-    If you want to start a root process on another host, you should use `ssh host` before the command and carefully check that the environment is correct. 
-    You can set some variables in ssh command or activate the conda environment right before running the Python script:
+    If you want to run root proccess on anoother host, you should use `ssh host` before the command and carefully check that the environment is correct. 
+    You can set some variables in ssh command or activate the conda envirenment right before running the Python script:
 
 .. code-block:: bash
 

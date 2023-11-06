@@ -157,7 +157,7 @@ def init():
         # MpiHosts should only be used without mpiexec.
         if (
             MpiHosts.get_value_source() != ValueSource.DEFAULT
-            and not common.is_runned_by_mpiexec()
+            and not common.is_run_with_mpiexec()
         ):
             py_str += [f"cfg.MpiHosts.put('{MpiHosts.get()}')"]
         else:

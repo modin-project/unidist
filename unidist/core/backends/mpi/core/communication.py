@@ -132,7 +132,7 @@ class MPIState:
 
         mpi_hosts = MpiHosts.get()
         if mpi_hosts is not None:
-            host_list = mpi_hosts.split(",") if mpi_hosts is not None else ["localhost"]
+            host_list = mpi_hosts.split(",")
             host_count = len(host_list)
 
             # check running hosts
