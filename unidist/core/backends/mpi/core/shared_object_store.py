@@ -9,9 +9,8 @@ import sys
 import time
 import psutil
 import weakref
-import numpy as np
 
-from unidist.core.backends.mpi.core._memory import parallel_memcopy
+from unidist.core.backends.mpi.core._memory import parallel_memcopy, fill
 from unidist.core.backends.mpi.utils import ImmutableDict
 
 try:
@@ -190,8 +189,7 @@ class SharedObjectStore:
         self.service_shared_buffer = memoryview(service_buffer).cast("l")
         # Set -1 to the service buffer because 0 is a valid value and may be recognized by mistake.
         if mpi_state.is_monitor_process():
-            memoryview_array = np.frombuffer(self.service_shared_buffer, dtype=np.int64)
-            memoryview_array[:] = -1
+            fill(self.service_shared_buffer, -1)
 
     def _parse_data_id(self, data_id):
         """

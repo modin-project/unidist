@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from libc.stdint cimport uint8_t
+from libc.stdint cimport uint8_t,int64_t
 
 cimport memory
 
@@ -25,3 +25,17 @@ def parallel_memcopy(const uint8_t[:] src, uint8_t[:] dst, int memcopy_threads):
                                 len(src),
                                 64,
                                 memcopy_threads)
+
+def fill(int64_t[:] buff, int64_t value):
+    """
+    Fill a given buffer with a given value.
+
+    Parameters
+    ----------
+    buff : int64_t[:]
+        Original data.
+    value : int64_t
+        Value to fill
+    """
+    with nogil:
+        memory.fill(&buff[0],len(buff),  value)

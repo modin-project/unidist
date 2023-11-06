@@ -16,6 +16,9 @@ namespace unidist {
     uintptr_t value = reinterpret_cast<uintptr_t>(address);
     return reinterpret_cast<uint8_t *>(value & bits);
   }
+  void fill(int64_t *buff, int64_t size, int64_t value){
+    std::fill(buff,buff+size,value);
+  }
 
   void parallel_memcopy(uint8_t *dst,
                         const uint8_t *src,
