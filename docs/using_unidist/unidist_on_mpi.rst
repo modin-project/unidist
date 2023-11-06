@@ -110,28 +110,31 @@ When initializing unidist this execution model gets transformed to Controller/Wo
 Unidist on MPI cluster
 """"""""""""""""""""""
 
-Regardless of the chosen usage model (SPMD model or Controller/Worker model), there are two options for running on a cluster
+Regardless of the chosen usage model (SPMD model or Controller/Worker model),
+there are two options for running on a cluster.
 
-Running with `mpiexec` command
-------------------------------
+Running with ``mpiexec`` command
+--------------------------------
 
 This option is the most preferred and customizable.
 
-Running is almost the same as in a single node, but you should use the appropriate parameter for "mpiexec". This parameter differs depending on the mpi implementation used.
+Running is almost the same as in a single node, but, in addition,
+you should use the appropriate parameter for ``mpiexec``.
+This parameter differs depending on the MPI implementation used.
 
-For Intel MPI or MPICH: `-hosts host1,host2`. You also can see 
+* For Intel MPI or MPICH: ``-hosts host1,host2``. You can also see 
 `Controlling Process Placement with the Intel® MPI Library <https://www.intel.com/content/www/us/en/developer/articles/technical/controlling-process-placement-with-the-intel-mpi-library.html>` 
-for more deeper customize. 
+for deeper customization.
 
-For OpenMPi: `-host host1:n1,...,hostM:nM`
+* For OpenMPI: ``-host host1:n1,...,hostM:nM``
 where n1, ..., nM is the number of processes on each node, including system processes.
-You also can see `Scheduling processes across hosts with OpenMPI Library <https://docs.open-mpi.org/en/v5.0.x/launching-apps/scheduling.html>` for more deeper customize. 
+You can also see `Scheduling processes across hosts with OpenMPI Library <https://docs.open-mpi.org/en/v5.0.x/launching-apps/scheduling.html>` for deeper customization. 
 
 
-Running without 'mpiexec' command
----------------------------------
+Running without ``mpiexec`` command
+-----------------------------------
 
-To run the unidist on a cluster without the `mpiexec` command, you should specify hosts to run on.
+To run unidist on MPI in a cluster without the ``mpiexec`` command, you should specify hosts to run on.
 
 There are two ways to specify MPI hosts to run on.
 First, by setting the ``UNIDIST_MPI_HOSTS`` environment variable:
