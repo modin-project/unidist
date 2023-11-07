@@ -209,20 +209,20 @@ class SharedObjectStore:
 
         if self.shared_memory_size > allowed_memory_size:
             raise ValueError(
-                "Memory for shared object storage cannot be allocated " + 
-                "because the value set to `MpiSharedObjectStoreMemory` exceeds the available memory."
+                "Memory for shared object storage cannot be allocated "
+                + "because the value set to `MpiSharedObjectStoreMemory` exceeds the available memory."
             )
 
         if self.service_memory_size > allowed_memory_size:
             raise ValueError(
-                "Memory for shared service storage cannot be allocated " + 
-                "because the value set to `MpiSharedServiceMemory` exceeds the available memory."
+                "Memory for shared service storage cannot be allocated "
+                + "because the value set to `MpiSharedServiceMemory` exceeds the available memory."
             )
 
         if self.shared_memory_size + self.service_memory_size > allowed_memory_size:
             raise ValueError(
-                "The sum of the `MpiSharedObjectStoreMemory` and `MpiSharedServiceMemory` values is greater " + 
-                "than the available amount of memory."
+                "The sum of the `MpiSharedObjectStoreMemory` and `MpiSharedServiceMemory` values is greater "
+                + "than the available amount of memory."
             )
 
         # Shared memory is allocated only once by the monitor process.
@@ -239,10 +239,10 @@ class SharedObjectStore:
         self.shared_buffer, _ = self.win.Shared_query(communication.MPIRank.MONITOR)
 
         self.service_info_max_count = self.service_memory_size // (
-            self.INFO_SIZE * MPI.BYTE.size
-        ) * self.INFO_SIZE
+            self.INFO_SIZE * MPI.LONG.size
+        )
         self.service_win = MPI.Win.Allocate_shared(
-            self.service_memory_size
+            self.service_info_max_count * MPI.LONG.size
             if mpi_state.is_monitor_process()
             else 0,
             MPI.LONG.size,
