@@ -88,16 +88,16 @@ async def worker_loop():
     local_store = LocalObjectStore.get_instance()
     request_store = RequestStore.get_instance()
     async_operations = AsyncOperations.get_instance()
-    ready_to_shutdown_posted = False
+
+    # Barrier to check if worker process is ready to start the communication loop
+    mpi_state.global_comm.Barrier()
+    w_logger.debug("Worker loop started")
     # Once the worker receives the cancel signal from ``Root`` rank,
     # it is getting to shutdown. All pending requests and communications are cancelled,
     # and the worker sends the ready to shutdown signal to ``Monitor``.
     # Once all workers excluding ``Root`` and ``Monitor`` ranks are ready to shutdown,
     # ``Monitor` sends the shutdown signal to every worker so they can exit the loop.
-
-    # Barrier to check if worker process is ready to start the communication loop
-    mpi_state.global_comm.Barrier()
-    w_logger.debug("Worker loop started")
+    ready_to_shutdown_posted = False
     while True:
         # Listen receive operation from any source
         operation_type, source_rank = await async_wrap(
