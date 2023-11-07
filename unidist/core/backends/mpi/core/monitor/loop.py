@@ -183,7 +183,7 @@ def monitor_loop():
     # ``Monitor` sends the shutdown signal to every worker, as well as notifies ``Root`` that
     # it can exit the program.
     # Barrier to check if monitor process is ready to start the communication loop
-    mpi_state.comm.Barrier()
+    mpi_state.global_comm.Barrier()
     monitor_logger.debug("Monitor loop started")
     while True:
         # Listen receive operation from any source

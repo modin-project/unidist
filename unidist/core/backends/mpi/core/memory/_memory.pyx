@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from libc.stdint cimport uint8_t,int64_t
+from libc.stdint cimport uint8_t, int64_t
 
 cimport memory
 
@@ -35,7 +35,7 @@ def fill(int64_t[:] buff, int64_t value):
     buff : int64_t[:]
         Original data.
     value : int64_t
-        Value to fill
+        Value to fill.
     """
     with nogil:
-        memory.fill(&buff[0],len(buff),  value)
+        memory.fill(&buff[0], len(buff), value)
