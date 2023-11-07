@@ -14,7 +14,7 @@ from .backends.ray import (
 )
 from .backends.dask import DaskMemoryLimit, IsDaskCluster, DaskSchedulerAddress
 from .backends.mpi import (
-    IsMpiSpawnWorkers,
+    MpiSpawn,
     MpiHosts,
     MpiPickleThreshold,
     MpiBackoff,
@@ -38,7 +38,7 @@ __all__ = [
     "DaskMemoryLimit",
     "IsDaskCluster",
     "DaskSchedulerAddress",
-    "IsMpiSpawnWorkers",
+    "MpiSpawn",
     "MpiHosts",
     "ValueSource",
     "MpiPickleThreshold",

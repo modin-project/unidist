@@ -23,7 +23,7 @@ from unidist.core.backends.mpi.core.serialization import (
     deserialize_complex_data,
 )
 import unidist.core.backends.mpi.core.common as common
-from unidist.config.backends.mpi.envvars import IsMpiSpawnWorkers, MpiHosts
+from unidist.config.backends.mpi.envvars import MpiSpawn, MpiHosts
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
@@ -132,7 +132,7 @@ class MPIState:
             self.host_by_rank[global_rank] = host
 
         mpi_hosts = MpiHosts.get()
-        if mpi_hosts is not None and IsMpiSpawnWorkers.get():
+        if mpi_hosts is not None and MpiSpawn.get():
             host_list = mpi_hosts.split(",")
             host_count = len(host_list)
 
