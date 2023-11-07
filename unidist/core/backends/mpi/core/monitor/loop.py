@@ -177,12 +177,14 @@ def monitor_loop():
     shared_store = SharedObjectStore.get_instance()
     shm_manager = SharedMemoryManager()
 
-    workers_ready_to_shutdown = []
-    shutdown_workers = False
+    # Barrier to check if monitor process is ready to start the communication loop
+    mpi_state.global_comm.Barrier()
+    monitor_logger.debug("Monitor loop started")
     # Once all workers excluding ``Root`` and ``Monitor`` ranks are ready to shutdown,
     # ``Monitor` sends the shutdown signal to every worker, as well as notifies ``Root`` that
     # it can exit the program.
-
+    workers_ready_to_shutdown = []
+    shutdown_workers = False
     while True:
         # Listen receive operation from any source
         operation_type, source_rank = communication.mpi_recv_operation(

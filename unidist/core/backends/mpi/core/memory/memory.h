@@ -17,6 +17,8 @@ namespace unidist {
                         int64_t nbytes,
                         uintptr_t block_size,
                         int num_threads);
+    
+    void fill(int64_t *buff, int64_t size, int64_t value);
 }  // namespace unidist
 
 #endif  // MEMORY_H
