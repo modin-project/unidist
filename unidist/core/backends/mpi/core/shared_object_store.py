@@ -153,6 +153,9 @@ class SharedObjectStore:
 
         shared_object_store_memory = MpiSharedObjectStoreMemory.get()
         shared_service_memory = MpiSharedServiceMemory.get()
+        # Use only 95% of available shared memory because
+        # the rest is needed for intermediate shared buffers
+        # handled by MPI itself for communication of small messages.
         allowed_memory_size = int(self._get_allowed_memory_size() * 0.95)
 
         if shared_object_store_memory is not None:
@@ -164,7 +167,7 @@ class SharedObjectStore:
                 # To avoid division by 0
                 if MpiSharedObjectStoreThreshold.get() > 0:
                     self.service_memory_size = min(
-                        # allowd memory for serivce buffer
+                        # allowed memory size for service buffer
                         allowed_memory_size - self.shared_memory_size,
                         # maximum amount of memory required for the service buffer
                         (self.shared_memory_size // MpiSharedObjectStoreThreshold.get())
@@ -206,17 +209,20 @@ class SharedObjectStore:
 
         if self.shared_memory_size > allowed_memory_size:
             raise ValueError(
-                "Memory for shared object storage cannot be allocated because the value set to `MpiSharedObjectStoreMemory` exceeds the available memory."
+                "Memory for shared object storage cannot be allocated " + 
+                "because the value set to `MpiSharedObjectStoreMemory` exceeds the available memory."
             )
 
         if self.service_memory_size > allowed_memory_size:
             raise ValueError(
-                "Memory for shared service storage cannot be allocated because the value set to `MpiSharedServiceMemory` exceeds the available memory."
+                "Memory for shared service storage cannot be allocated " + 
+                "because the value set to `MpiSharedServiceMemory` exceeds the available memory."
             )
 
         if self.shared_memory_size + self.service_memory_size > allowed_memory_size:
             raise ValueError(
-                "The sum of the `MpiSharedObjectStoreMemory` and `MpiSharedServiceMemory` values is greater than the amount of memory that exists."
+                "The sum of the `MpiSharedObjectStoreMemory` and `MpiSharedServiceMemory` values is greater " + 
+                "than the available amount of memory."
             )
 
         # Shared memory is allocated only once by the monitor process.
@@ -234,9 +240,9 @@ class SharedObjectStore:
 
         self.service_info_max_count = self.service_memory_size // (
             self.INFO_SIZE * MPI.BYTE.size
-        )
+        ) * self.INFO_SIZE
         self.service_win = MPI.Win.Allocate_shared(
-            self.service_info_max_count * MPI.LONG.size
+            self.service_memory_size
             if mpi_state.is_monitor_process()
             else 0,
             MPI.LONG.size,
