@@ -62,6 +62,8 @@ Unidist Configuration Settings List
 +-------------------------------+-------------------------------------------+--------------------------------------------------------------------------+
 | MpiSharedObjectStoreMemory    | UNIDIST_MPI_SHARED_OBJECT_STORE_MEMORY    | How many bytes of memory to start the shared object store with           |
 +-------------------------------+-------------------------------------------+--------------------------------------------------------------------------+
+| MpiSharedServiceMemory        | UNIDIST_MPI_SHARED_SERVICE_MEMORY         | How many bytes of memory to start the shared service memory with         |
++-------------------------------+-------------------------------------------+--------------------------------------------------------------------------+
 | MpiSharedObjectStoreThreshold | UNIDIST_MPI_SHARED_OBJECT_STORE_THRESHOLD | Minimum size of data to put into the shared object store                 |
 +-------------------------------+-------------------------------------------+--------------------------------------------------------------------------+
 | MpiRuntimeEnv                 | Only the config API is available          | Runtime environment for MPI worker processes                             |

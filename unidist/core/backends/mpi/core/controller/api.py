@@ -42,6 +42,7 @@ from unidist.config import (
     MpiLog,
     MpiSharedObjectStore,
     MpiSharedObjectStoreMemory,
+    MpiSharedServiceMemory,
     MpiSharedObjectStoreThreshold,
     MpiRuntimeEnv,
 )
@@ -169,6 +170,10 @@ def init():
         if MpiSharedObjectStoreMemory.get_value_source() != ValueSource.DEFAULT:
             py_str += [
                 f"cfg.MpiSharedObjectStoreMemory.put({MpiSharedObjectStoreMemory.get()})"
+            ]
+        if MpiSharedServiceMemory.get_value_source() != ValueSource.DEFAULT:
+            py_str += [
+                f"cfg.MpiSharedServiceMemory.put({MpiSharedServiceMemory.get()})"
             ]
         if MpiSharedObjectStoreThreshold.get_value_source() != ValueSource.DEFAULT:
             py_str += [

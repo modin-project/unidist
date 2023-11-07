@@ -91,6 +91,12 @@ class MpiSharedObjectStoreMemory(EnvironmentVariable, type=int):
     varname = "UNIDIST_MPI_SHARED_OBJECT_STORE_MEMORY"
 
 
+class MpiSharedServiceMemory(EnvironmentVariable, type=int):
+    """How many bytes of memory to start the shared service memory with."""
+
+    varname = "UNIDIST_MPI_SHARED_SERVICE_MEMORY"
+
+
 class MpiSharedObjectStoreThreshold(EnvironmentVariable, type=int):
     """Minimum size of data to put into the shared object store."""
 
