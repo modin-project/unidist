@@ -238,8 +238,10 @@ class SharedObjectStore:
         )
         self.shared_buffer, _ = self.win.Shared_query(communication.MPIRank.MONITOR)
 
-        self.service_info_max_count = self.service_memory_size // (
-            self.INFO_SIZE * MPI.LONG.size
+        self.service_info_max_count = (
+            self.service_memory_size
+            // (self.INFO_SIZE * MPI.LONG.size)
+            * self.INFO_SIZE
         )
         self.service_win = MPI.Win.Allocate_shared(
             self.service_info_max_count * MPI.LONG.size
