@@ -110,7 +110,7 @@ When initializing unidist this execution model gets transformed to Controller/Wo
 Unidist on MPI cluster
 """"""""""""""""""""""
 
-Regardless of the chosen usage model (SPMD model or Controller/Worker model),
+Regardless of the chosen execution model (SPMD or Controller/Worker),
 there are two options for running on a cluster.
 
 Running with ``mpiexec`` command
@@ -127,14 +127,14 @@ This parameter differs depending on the MPI implementation used.
 or `MPICH wiki <https://github.com/pmodels/mpich/blob/main/doc/wiki/how_to/Using_the_Hydra_Process_Manager.md>`_ for deeper customization.
 
 * For OpenMPI: ``-host host1:n1,...,hostM:nM``
-where n1, ..., nM is the number of processes on each node, including system processes.
+where n1, ..., nM is the number of processes on each node, including Unidist service processes (root and one or some monitors).
 You can also see `Scheduling processes across hosts with OpenMPI Library <https://docs.open-mpi.org/en/v5.0.x/launching-apps/scheduling.html>`_ for deeper customization. 
-
 
 Running without ``mpiexec`` command
 -----------------------------------
 
-To run unidist on MPI in a cluster without the ``mpiexec`` command, you should specify hosts to run on.
+To run unidist on MPI in a cluster without ``mpiexec`` command,
+you should specify MPI hosts to run on using unidist configuration settings.
 
 There are two ways to specify MPI hosts to run on.
 First, by setting the ``UNIDIST_MPI_HOSTS`` environment variable:
@@ -163,7 +163,7 @@ Running is the same as in a single node.
 
 .. note::
     Root proccess will allways be executed locally and other proccesses will be spawned in order on the specified hosts.
-    If you want to run root proccess on anoother host, you should use `ssh host` before the command and carefully check that the environment is correct. 
+    If you want to run root process on a remote host, you should use `ssh host` before the command and carefully check that the environment is correct. 
     You can set some variables in ssh command or activate the conda envirenment right before running the Python script:
 
 .. code-block:: bash
