@@ -58,7 +58,7 @@ To run unidist on MPI in a single node using Controller/Worker model you should 
 
 MPI worker processes will be spawned dynamically by unidist.
 
-It is worth noting that `Intel MPI implementation <https://anaconda.org/intel/mpi4py>`_ supports the ability of spawning MPI processes
+It is worth noting that some MPI implementations, e.g., `Intel MPI implementation`_, support the ability of spawning MPI processes
 without using ``mpiexec`` command so you can run unidist on Intel MPI just with:
 
 .. code-block:: bash
@@ -122,12 +122,12 @@ Running is almost the same as in a single node, but, in addition,
 you should use the appropriate parameter for ``mpiexec``.
 This parameter differs depending on the MPI implementation used.
 
-* For Intel MPI or MPICH: ``-hosts host1,host2``. You can also see `Controlling Process Placement with the Intel® MPI Library`_ 
-or `MPICH wiki`_ for deeper customization.
-
-* For OpenMPI: ``-host host1:n1,...,hostM:nM``
-where n1, ..., nM is the number of processes on each node, including Unidist service processes (root and one or some monitors).
-You can also see `Scheduling processes across hosts with OpenMPI Library <https://docs.open-mpi.org/en/v5.0.x/launching-apps/scheduling.html>`_ for deeper customization. 
+* For Intel MPI or MPICH: ``-hosts host1,host2``.
+  You can also see `Controlling Process Placement with the Intel® MPI Library`_  or
+  `MPICH wiki`_ for deeper customization.
+* For OpenMPI: ``-host host1:n1,...,hostM:nM``, where n1, ..., nM is the number of processes on each node,
+  including unidist service processes (root and monitor(s)).
+  You can also see `Scheduling processes across hosts with OpenMPI Library`_ for deeper customization. 
 
 Running without ``mpiexec`` command
 -----------------------------------
@@ -171,5 +171,7 @@ Running is the same as in a single node.
 
 
 .. _`SPMD model`: https://en.wikipedia.org/wiki/Single_program,_multiple_data
+.. _`Intel MPI implementation`: https://anaconda.org/intel/mpi4py
 .. _`Controlling Process Placement with the Intel® MPI Library`: https://www.intel.com/content/www/us/en/developer/articles/technical/controlling-process-placement-with-the-intel-mpi-library.html
 .. _`MPICH wiki`: https://github.com/pmodels/mpich/blob/main/doc/wiki/how_to/Using_the_Hydra_Process_Manager.md
+.. _`Scheduling processes across hosts with OpenMPI Library`: https://docs.open-mpi.org/en/v5.0.x/launching-apps/scheduling.html

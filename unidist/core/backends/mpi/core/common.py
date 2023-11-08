@@ -507,16 +507,12 @@ def is_run_with_mpiexec():
     if "Intel" in lib_version and os.getenv("PMI_RANK") is None:
         return False
 
-    if "MPICH" in MPI.Get_library_version() and os.getenv("PMI_RANK") is None:
+    if "MPICH" in lib_version and os.getenv("PMI_RANK") is None:
         return False
 
-    if (
-        "Open MPI" in MPI.Get_library_version()
-        and os.getenv("OMPI_COMM_WORLD_RANK") is None
-    ):
+    if "Open MPI" in lib_version and os.getenv("OMPI_COMM_WORLD_RANK") is None:
         return False
 
     # The latest MSMPI does not support running without mpiexec.
     # Other MPI libraries haven't been checked.
-
     return True

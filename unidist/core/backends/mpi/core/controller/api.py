@@ -159,12 +159,11 @@ def init():
         if MpiHosts.get_value_source() != ValueSource.DEFAULT:
             if common.is_run_with_mpiexec():
                 warnings.warn(
-                    "MpiHosts is not used when running a script using mpiexec."
-                    + "Find out more about running Unidist on MPI cluster in the Unidist documentation."
+                    "MpiHosts is not used when running a script using mpiexec. "
+                    + "Find out more about running unidist on MPI cluster in the unidist documentation."
                 )
             else:
                 py_str += [f"cfg.MpiHosts.put('{MpiHosts.get()}')"]
-
         if CpuCount.get_value_source() != ValueSource.DEFAULT:
             py_str += [f"cfg.CpuCount.put({CpuCount.get()})"]
         if MpiPickleThreshold.get_value_source() != ValueSource.DEFAULT:
@@ -206,15 +205,12 @@ def init():
             # See more about Intel MPI environment variables in
             # https://www.intel.com/content/www/us/en/docs/mpi-library/developer-reference-linux/2021-8/other-environment-variables.html.
             os.environ["I_MPI_SPAWN"] = "1"
-
         # +1 for just a single process monitor
         nprocs_to_spawn = cpu_count + 1
-
         hosts = MpiHosts.get()
         if hosts is not None and not common.is_run_with_mpiexec():
             host_list = hosts.split(",")
             host_count = len(host_list)
-
             if common.is_shared_memory_supported():
                 # +host_count to add monitor process on each host
                 nprocs_to_spawn = cpu_count + host_count

@@ -139,18 +139,15 @@ class MPIState:
             # check running hosts
             if self.is_root_process() and len(self.topology.keys()) > host_count:
                 warnings.warn(
-                    """The number of running hosts is greater than that specified in the UNIDIST_MPI_HOSTS.
-                    If you want to run the program on a host other than the local one, specify the appropriate parameter for `mpiexec`
-                    (`--host` for OpenMPI or `--hosts` for other MPI implementations)
-                """
+                    "The number of running hosts is greater than that specified in the UNIDIST_MPI_HOSTS. "
+                    + "If you want to run the program on a host other than the local one, specify the appropriate parameter for `mpiexec` "
+                    + "(`--host` for OpenMPI and `--hosts` for Intel MPI or MPICH)."
                 )
-
-            # check running hosts
             if self.is_root_process() and len(self.topology.keys()) < host_count:
                 warnings.warn(
-                    "The number of running hosts is less than that specified in the UNIDIST_MPI_HOSTS. Check the `mpiexec` option to distribute processes between hosts."
+                    "The number of running hosts is less than that specified in the UNIDIST_MPI_HOSTS. "
+                    + "Check the `mpiexec` option to distribute processes between hosts."
                 )
-
         if common.is_shared_memory_supported():
             self.monitor_processes = []
             for host in self.topology:
