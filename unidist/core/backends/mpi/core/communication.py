@@ -131,7 +131,7 @@ class MPIState:
             self.host_by_rank[global_rank] = host
 
         mpi_hosts = MpiHosts.get()
-        if mpi_hosts is not None:
+        if mpi_hosts is not None and is_run_with_mpiexec():
             host_list = mpi_hosts.split(",")
             host_count = len(host_list)
 
