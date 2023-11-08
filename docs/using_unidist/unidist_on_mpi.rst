@@ -70,7 +70,7 @@ Refer to ``Using intel channel`` section of :doc:`Installation </installation>` 
 SPMD model
 ----------
 
-First of all, to run unidist on MPI in a single node using `SPMD model <https://en.wikipedia.org/wiki/Single_program,_multiple_data>`_,
+First of all, to run unidist on MPI in a single node using `SPMD model`_,
 you should set the ``UNIDIST_IS_MPI_SPAWN_WORKERS`` environment variable to ``False``:
 
 .. code-block:: bash
@@ -122,9 +122,8 @@ Running is almost the same as in a single node, but, in addition,
 you should use the appropriate parameter for ``mpiexec``.
 This parameter differs depending on the MPI implementation used.
 
-* For Intel MPI or MPICH: ``-hosts host1,host2``. You can also see 
-`Controlling Process Placement with the Intel® MPI Library <https://www.intel.com/content/www/us/en/developer/articles/technical/controlling-process-placement-with-the-intel-mpi-library.html>`_ 
-or `MPICH wiki <https://github.com/pmodels/mpich/blob/main/doc/wiki/how_to/Using_the_Hydra_Process_Manager.md>`_ for deeper customization.
+* For Intel MPI or MPICH: ``-hosts host1,host2``. You can also see `Controlling Process Placement with the Intel® MPI Library`_ 
+or `MPICH wiki`_ for deeper customization.
 
 * For OpenMPI: ``-host host1:n1,...,hostM:nM``
 where n1, ..., nM is the number of processes on each node, including Unidist service processes (root and one or some monitors).
@@ -168,4 +167,9 @@ Running is the same as in a single node.
 
 .. code-block:: bash
 
-    ssh host ENV_VARIABLE=value "source /PATH_TO_CONDA/activate CONDA_ENV; cd $PWD; python script.py"
+    ssh host ENV_VARIABLE=value "source $CONDA_PATH/bin/activate $CONDA_ENV; cd $PWD; python script.py"
+
+
+.. _`SPMD model`: https://en.wikipedia.org/wiki/Single_program,_multiple_data
+.. _`Controlling Process Placement with the Intel® MPI Library`: https://www.intel.com/content/www/us/en/developer/articles/technical/controlling-process-placement-with-the-intel-mpi-library.html
+.. _`MPICH wiki`: https://github.com/pmodels/mpich/blob/main/doc/wiki/how_to/Using_the_Hydra_Process_Manager.md

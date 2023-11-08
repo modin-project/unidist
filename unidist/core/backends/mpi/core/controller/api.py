@@ -9,6 +9,7 @@ import sys
 import atexit
 import signal
 import asyncio
+import warnings
 from collections import defaultdict
 
 try:
@@ -155,18 +156,15 @@ def init():
         if IsMpiSpawnWorkers.get_value_source() != ValueSource.DEFAULT:
             py_str += [f"cfg.IsMpiSpawnWorkers.put({IsMpiSpawnWorkers.get()})"]
         # MpiHosts should only be used without mpiexec.
-        if (
-            MpiHosts.get_value_source() != ValueSource.DEFAULT
-            and not common.is_run_with_mpiexec()
-        ):
-            py_str += [f"cfg.MpiHosts.put('{MpiHosts.get()}')"]
-        else:
-            print(
-                """WARNING: MpiHosts is not used when running a script using mpiexec.
-                  Find out more about running Unidist on MPI cluster at the link:
-                  https://unidist.readthedocs.io/en/latest/using_unidist/unidist_on_mpi.html#unidist-on-mpi-cluster
-                  """
-            )
+        if MpiHosts.get_value_source() != ValueSource.DEFAULT:
+            if common.is_run_with_mpiexec():
+                warnings.warn(
+                    "MpiHosts is not used when running a script using mpiexec."
+                    + "Find out more about running Unidist on MPI cluster in the Unidist documentation."
+                )
+            else:
+                py_str += [f"cfg.MpiHosts.put('{MpiHosts.get()}')"]
+
         if CpuCount.get_value_source() != ValueSource.DEFAULT:
             py_str += [f"cfg.CpuCount.put({CpuCount.get()})"]
         if MpiPickleThreshold.get_value_source() != ValueSource.DEFAULT:
@@ -200,7 +198,6 @@ def init():
         args += [py_str]
 
         cpu_count = CpuCount.get()
-        hosts = MpiHosts.get()
         info = MPI.Info.Create()
         lib_version = MPI.Get_library_version()
         if "Intel" in lib_version:
@@ -210,16 +207,18 @@ def init():
             # https://www.intel.com/content/www/us/en/docs/mpi-library/developer-reference-linux/2021-8/other-environment-variables.html.
             os.environ["I_MPI_SPAWN"] = "1"
 
-        host_list = hosts.split(",") if hosts is not None else ["localhost"]
-        host_count = len(host_list)
+        # +1 for just a single process monitor
+        nprocs_to_spawn = cpu_count + 1
 
-        if common.is_shared_memory_supported():
-            # +host_count to add monitor process on each host
-            nprocs_to_spawn = cpu_count + host_count
-        else:
-            # +1 for just a single process monitor
-            nprocs_to_spawn = cpu_count + 1
-        if hosts is not None:
+        hosts = MpiHosts.get()
+        if hosts is not None and not common.is_run_with_mpiexec():
+            host_list = hosts.split(",")
+            host_count = len(host_list)
+
+            if common.is_shared_memory_supported():
+                # +host_count to add monitor process on each host
+                nprocs_to_spawn = cpu_count + host_count
+
             if "Open MPI" in lib_version:
                 # +1 to take into account the current root process
                 # to correctly allocate slots

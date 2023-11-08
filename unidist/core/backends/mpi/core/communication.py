@@ -7,6 +7,7 @@
 from collections import defaultdict
 import socket
 import time
+import warnings
 
 try:
     import mpi4py
@@ -131,14 +132,14 @@ class MPIState:
             self.host_by_rank[global_rank] = host
 
         mpi_hosts = MpiHosts.get()
-        if mpi_hosts is not None and is_run_with_mpiexec():
+        if mpi_hosts is not None and not common.is_run_with_mpiexec():
             host_list = mpi_hosts.split(",")
             host_count = len(host_list)
 
             # check running hosts
             if self.is_root_process() and len(self.topology.keys()) > host_count:
-                print(
-                    """WARNING: The number of running hosts is greater than that specified in the UNIDIST_MPI_HOSTS.
+                warnings.warn(
+                    """The number of running hosts is greater than that specified in the UNIDIST_MPI_HOSTS.
                     If you want to run the program on a host other than the local one, specify the appropriate parameter for `mpiexec`
                     (`--host` for OpenMPI or `--hosts` for other MPI implementations)
                 """
@@ -146,8 +147,8 @@ class MPIState:
 
             # check running hosts
             if self.is_root_process() and len(self.topology.keys()) < host_count:
-                print(
-                    "WARNING: The number of running hosts is less than that specified in the UNIDIST_MPI_HOSTS. Check the `mpiexec` option to distribute processes between hosts."
+                warnings.warn(
+                    "The number of running hosts is less than that specified in the UNIDIST_MPI_HOSTS. Check the `mpiexec` option to distribute processes between hosts."
                 )
 
         if common.is_shared_memory_supported():
