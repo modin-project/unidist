@@ -50,7 +50,7 @@ Controller/Worker model
 -----------------------
 
 This execution model is similar to ones other execution backends use.
-To run unidist on MPI in a single node using Controller/Worker model you should use ``mpiexec -n 1 python <script.py>`` command.
+To run unidist on MPI in a single node using Controller/Worker model you should use ``mpiexec`` command.
 
 .. code-block:: bash
 
@@ -117,7 +117,7 @@ Controller/Worker model
 -----------------------
 
 This execution model is similar to ones other execution backends use.
-In order to run unidist on MPI in a cluster you should specify hosts to run on.
+To run unidist on MPI in a cluster using Controller/Worker model you should specify hosts to run on.
 There are two ways to specify MPI hosts to run on.
 
 First, by setting the ``UNIDIST_MPI_HOSTS`` environment variable:
@@ -142,7 +142,7 @@ Second, by setting the configuration value associated with the environment varia
 
     MpiHosts.put("host1,...,hostN")  # unidist will use the hosts to run on
 
-If you're running a program without ``mpiexec`` command, no further action required to run on specified MPI hosts.
+If you're running a program without ``mpiexec`` command, no further action required to run on the specified MPI hosts.
 
 .. note::
     Root proccess will always be executed locally and other proccesses will be spawned in order on the specified hosts.
@@ -161,7 +161,7 @@ This parameter differs depending on the MPI implementation used.
 * For Intel MPI or MPICH: ``-hosts host1,...,hostN``.
   You can also see `Controlling Process Placement with the Intel® MPI Library`_  or
   `MPICH wiki`_ for deeper customization.
-* For OpenMPI: ``-host host1:m1,...,hostN:mN``, where m1, ..., mN is the number of processes on each node,
+* For OpenMPI: ``-host host1:m1,...,hostN:mN``, where ``m1, ..., mN`` is the number of processes on each node,
   including unidist service processes (root and monitor(s)).
   You can also see `Scheduling processes across hosts with OpenMPI Library`_ for deeper customization.
 
@@ -197,7 +197,7 @@ This parameter differs depending on the MPI implementation used.
 * For Intel MPI or MPICH: ``-hosts host1,...,hostN``.
   You can also see `Controlling Process Placement with the Intel® MPI Library`_  or
   `MPICH wiki`_ for deeper customization.
-* For OpenMPI: ``-host host1:m1,...,hostN:mN``, where m1, ..., mN is the number of processes on each node,
+* For OpenMPI: ``-host host1:m1,...,hostN:mN``, where ``m1, ..., mN`` is the number of processes on each node,
   including unidist service processes (root and monitor(s)).
   You can also see `Scheduling processes across hosts with OpenMPI Library`_ for deeper customization.
 
