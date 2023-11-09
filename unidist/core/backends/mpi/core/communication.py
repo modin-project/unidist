@@ -7,6 +7,7 @@
 from collections import defaultdict
 import socket
 import time
+import warnings
 
 try:
     import mpi4py
@@ -22,6 +23,7 @@ from unidist.core.backends.mpi.core.serialization import (
     deserialize_complex_data,
 )
 import unidist.core.backends.mpi.core.common as common
+from unidist.config.backends.mpi.envvars import IsMpiSpawnWorkers, MpiHosts
 
 # TODO: Find a way to move this after all imports
 mpi4py.rc(recv_mprobe=False, initialize=False)
@@ -129,6 +131,23 @@ class MPIState:
             self.topology[host][host_rank] = global_rank
             self.host_by_rank[global_rank] = host
 
+        mpi_hosts = MpiHosts.get()
+        if mpi_hosts is not None and IsMpiSpawnWorkers.get():
+            host_list = mpi_hosts.split(",")
+            host_count = len(host_list)
+
+            # check running hosts
+            if self.is_root_process() and len(self.topology.keys()) > host_count:
+                warnings.warn(
+                    "The number of running hosts is greater than that specified in the UNIDIST_MPI_HOSTS. "
+                    + "If you want to run the program on a host other than the local one, specify the appropriate parameter for `mpiexec` "
+                    + "(`--host` for OpenMPI and `--hosts` for Intel MPI or MPICH)."
+                )
+            if self.is_root_process() and len(self.topology.keys()) < host_count:
+                warnings.warn(
+                    "The number of running hosts is less than that specified in the UNIDIST_MPI_HOSTS. "
+                    + "Check the `mpiexec` option to distribute processes between hosts."
+                )
         if common.is_shared_memory_supported():
             self.monitor_processes = []
             for host in self.topology:

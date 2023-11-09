@@ -50,7 +50,7 @@ Controller/Worker model
 -----------------------
 
 This execution model is similar to ones other execution backends use.
-To run unidist on MPI in a single node using Controller/Worker model you should use ``mpiexec -n 1 python <script.py>`` command.
+To run unidist on MPI in a single node using Controller/Worker model you should use ``mpiexec`` command.
 
 .. code-block:: bash
 
@@ -58,19 +58,20 @@ To run unidist on MPI in a single node using Controller/Worker model you should 
 
 MPI worker processes will be spawned dynamically by unidist.
 
-It is worth noting that `Intel MPI implementation <https://anaconda.org/intel/mpi4py>`_ supports the ability of spawning MPI processes
+It is worth noting that some MPI implementations, e.g., `Intel MPI implementation`_, support the ability of spawning MPI processes
 without using ``mpiexec`` command so you can run unidist on Intel MPI just with:
 
 .. code-block:: bash
 
     $ python script.py
 
-Refer to ``Using intel channel`` section of :doc:`Installation </installation>` page on how to install Intel MPI implementation to use it with unidist.
+Refer to ``Using intel channel`` section of :doc:`Installation </installation>` page on
+how to install Intel MPI implementation to use it with unidist.
 
 SPMD model
 ----------
 
-First of all, to run unidist on MPI in a single node using `SPMD model <https://en.wikipedia.org/wiki/Single_program,_multiple_data>`_,
+First of all, to run unidist on MPI in a single node using `SPMD model`_,
 you should set the ``UNIDIST_IS_MPI_SPAWN_WORKERS`` environment variable to ``False``:
 
 .. code-block:: bash
@@ -102,7 +103,7 @@ Then, you should also use ``mpiexec`` command and specify a number of workers to
 When initializing unidist this execution model gets transformed to Controller/Worker model.
 
 .. note:: 
-    Note that the process with rank 0 devotes for the controller (master) process you interact with,
+    Note that the process with rank 0 devotes for the controller (root) process you interact with,
     the process with rank 1 devotes for the monitor process unidist on MPI uses for tracking executed tasks.
     So the processes with ranks 2 to N devote for worker processes where computation will be executed.
     If you right away use Controller/Worker model to run unidist on MPI, this happens transparently.
@@ -116,8 +117,9 @@ Controller/Worker model
 -----------------------
 
 This execution model is similar to ones other execution backends use.
-In order to run unidist on MPI in a cluster you should specify hosts to run on.
+To run unidist on MPI in a cluster using Controller/Worker model you should specify hosts to run on.
 There are two ways to specify MPI hosts to run on.
+
 First, by setting the ``UNIDIST_MPI_HOSTS`` environment variable:
 
 .. code-block:: bash
@@ -140,12 +142,33 @@ Second, by setting the configuration value associated with the environment varia
 
     MpiHosts.put("host1,...,hostN")  # unidist will use the hosts to run on
 
-Running is the same as in a single node.
+If you're running a program without ``mpiexec`` command, no further action required to run on the specified MPI hosts.
+
+.. note::
+    Root proccess will always be executed locally and other proccesses will be spawned in order on the specified hosts.
+    If you want to run root process on a remote host, you should use ``ssh host`` before the command and
+    carefully check that the environment is correct. You can set some variables in ssh command or
+    activate the conda envirenment right before running the Python script:
+
+.. code-block:: bash
+
+    ssh host ENV_VARIABLE=value "source $CONDA_PATH/bin/activate $CONDA_ENV; cd $PWD; python script.py"
+
+If you're running a program with ``mpiexec`` command, running is almost the same as in a single node,
+but, in addition, you should use the appropriate parameter for ``mpiexec``.
+This parameter differs depending on the MPI implementation used.
+
+* For Intel MPI or MPICH: ``-hosts host1,...,hostN``.
+  You can also see `Controlling Process Placement with the Intel® MPI Library`_  or
+  `MPICH wiki`_ for deeper customization.
+* For OpenMPI: ``-host host1:m1,...,hostN:mN``, where ``m1, ..., mN`` is the number of processes on each node,
+  including unidist service processes (root and monitor(s)).
+  You can also see `Scheduling processes across hosts with OpenMPI Library`_ for deeper customization.
 
 SPMD model
 """"""""""
 
-First of all, to run unidist on MPI in a cluster using `SPMD model <https://en.wikipedia.org/wiki/Single_program,_multiple_data>`_,
+First of all, to run unidist on MPI in a cluster using `SPMD model`_,
 you should set the ``UNIDIST_IS_MPI_SPAWN_WORKERS`` environment variable to ``False``:
 
 .. code-block:: bash
@@ -168,16 +191,24 @@ or set the associated configuration value:
 
 This will enable unidist not to spawn MPI processes dynamically because the user himself spawns the processes.
 
-Then, you should also use ``mpiexec`` command and specify both hosts and a number of workers to spawn on each node.
+Then, you should use the appropriate parameter for ``mpiexec``.
+This parameter differs depending on the MPI implementation used.
 
-.. code-block:: bash
-
-    $ mpiexec -host host1:n1,...,hostM:nM python script.py
-
-When initializing unidist this execution model gets transformed to Controller/Worker model.
+* For Intel MPI or MPICH: ``-hosts host1,...,hostN``.
+  You can also see `Controlling Process Placement with the Intel® MPI Library`_  or
+  `MPICH wiki`_ for deeper customization.
+* For OpenMPI: ``-host host1:m1,...,hostN:mN``, where ``m1, ..., mN`` is the number of processes on each node,
+  including unidist service processes (root and monitor(s)).
+  You can also see `Scheduling processes across hosts with OpenMPI Library`_ for deeper customization.
 
 .. note:: 
-    Note that the process with rank 0 devotes for the controller (master) process you interact with,
+    Note that the process with rank 0 devotes for the controller (root) process you interact with,
     the process with rank 1 devotes for the monitor process unidist on MPI uses for tracking executed tasks.
     So the processes with ranks 2 to N devote for worker processes where computation will be executed.
     If you right away use Controller/Worker model to run unidist on MPI, this happens transparently.
+
+.. _`SPMD model`: https://en.wikipedia.org/wiki/Single_program,_multiple_data
+.. _`Intel MPI implementation`: https://anaconda.org/intel/mpi4py
+.. _`Controlling Process Placement with the Intel® MPI Library`: https://www.intel.com/content/www/us/en/developer/articles/technical/controlling-process-placement-with-the-intel-mpi-library.html
+.. _`MPICH wiki`: https://github.com/pmodels/mpich/blob/main/doc/wiki/how_to/Using_the_Hydra_Process_Manager.md
+.. _`Scheduling processes across hosts with OpenMPI Library`: https://docs.open-mpi.org/en/v5.0.x/launching-apps/scheduling.html

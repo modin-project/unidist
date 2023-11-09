@@ -206,10 +206,6 @@ def init():
 
         host_list = hosts.split(",") if hosts is not None else ["localhost"]
         host_count = len(host_list)
-        if hosts is not None and host_count == 1:
-            raise ValueError(
-                "MpiHosts cannot include only one host. If you want to run on a single node, just run the program without this option."
-            )
 
         if common.is_shared_memory_supported():
             # +host_count to add monitor process on each host

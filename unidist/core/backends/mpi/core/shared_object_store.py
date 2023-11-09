@@ -7,6 +7,7 @@
 import os
 import sys
 import time
+import warnings
 import psutil
 import weakref
 
@@ -133,7 +134,7 @@ class SharedObjectStore:
                 shm_stats = os.fstatvfs(shm_fd)
                 system_memory = shm_stats.f_bsize * shm_stats.f_bavail
                 if system_memory / (virtual_memory / 2) < 0.99:
-                    print(
+                    warnings.warn(
                         f"The size of /dev/shm is too small ({system_memory} bytes). The required size "
                         + f"at least half of RAM ({virtual_memory // 2} bytes). Please, delete files in /dev/shm or "
                         + "increase size of /dev/shm with --shm-size in Docker."
