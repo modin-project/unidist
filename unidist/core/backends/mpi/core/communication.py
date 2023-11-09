@@ -563,7 +563,9 @@ def mpi_recv_buffer(comm, source_rank, result_buffer=None):
         for i in range(num_partitions):
             if i + 1 < num_partitions:
                 tmp_buffer = bytearray(partitions[i + 1] - partitions[i])
-                comm.Recv(bigmpi(tmp_buffer), source=source_rank, tag=common.MPITag.BUFFER)
+                comm.Recv(
+                    bigmpi(tmp_buffer), source=source_rank, tag=common.MPITag.BUFFER
+                )
                 result_buffer[partitions[i] : partitions[i + 1]] = tmp_buffer
 
     return result_buffer
