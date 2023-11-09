@@ -463,7 +463,21 @@ def mpi_send_buffer(comm, buffer, dest_rank, data_type=MPI.CHAR, buffer_size=Non
     """
     if buffer_size:
         comm.send(buffer_size, dest=dest_rank, tag=common.MPITag.OBJECT)
-    comm.Send([buffer, data_type], dest=dest_rank, tag=common.MPITag.BUFFER)
+    else:
+        buffer_size = len(buffer)
+    # Maximum block size MPI is able to send/recv
+    block_size = pkl5._bigmpi.blocksize
+    partitions = list(range(0, buffer_size, block_size))
+    partitions.append(buffer_size)
+    num_partitions = len(partitions)
+    with pkl5._bigmpi as bigmpi:
+        for i in range(num_partitions):
+            if i + 1 < num_partitions:
+                comm.Send(
+                    bigmpi(buffer[partitions[i] : partitions[i + 1]]),
+                    dest=dest_rank,
+                    tag=common.MPITag.BUFFER,
+                )
 
 
 def mpi_isend_buffer(comm, buffer_size, buffer, dest_rank):
@@ -494,8 +508,21 @@ def mpi_isend_buffer(comm, buffer_size, buffer, dest_rank):
     requests = []
     h1 = comm.isend(buffer_size, dest=dest_rank, tag=common.MPITag.OBJECT)
     requests.append((h1, None))
-    h2 = comm.Isend([buffer, MPI.CHAR], dest=dest_rank, tag=common.MPITag.BUFFER)
-    requests.append((h2, buffer))
+    # Maximum block size MPI is able to send/recv
+    block_size = pkl5._bigmpi.blocksize
+    partitions = list(range(0, buffer_size, block_size))
+    partitions.append(buffer_size)
+    num_partitions = len(partitions)
+    with pkl5._bigmpi as bigmpi:
+        for i in range(num_partitions):
+            if i + 1 < num_partitions:
+                h2 = comm.Isend(
+                    bigmpi(buffer[partitions[i] : partitions[i + 1]]),
+                    dest=dest_rank,
+                    tag=common.MPITag.BUFFER,
+                )
+                requests.append((h2, buffer))
+
     return requests
 
 
@@ -525,7 +552,22 @@ def mpi_recv_buffer(comm, source_rank, result_buffer=None):
     if result_buffer is None:
         buf_size = comm.recv(source=source_rank, tag=common.MPITag.OBJECT)
         result_buffer = bytearray(buf_size)
-    comm.Recv(result_buffer, source=source_rank, tag=common.MPITag.BUFFER)
+    else:
+        buf_size = len(result_buffer)
+    # Maximum block size MPI is able to send/recv
+    block_size = pkl5._bigmpi.blocksize
+    partitions = list(range(0, buf_size, block_size))
+    partitions.append(buf_size)
+    num_partitions = len(partitions)
+    with pkl5._bigmpi as bigmpi:
+        for i in range(num_partitions):
+            if i + 1 < num_partitions:
+                tmp_buffer = bytearray(partitions[i + 1] - partitions[i])
+                comm.Recv(
+                    bigmpi(tmp_buffer), source=source_rank, tag=common.MPITag.BUFFER
+                )
+                result_buffer[partitions[i] : partitions[i + 1]] = tmp_buffer
+
     return result_buffer
 
 
