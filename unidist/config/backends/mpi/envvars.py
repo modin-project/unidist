@@ -20,7 +20,7 @@ class MpiHosts(EnvironmentVariable, type=ExactStr):
 
     Notes
     -----
-    This variable is only used if a program is run without mpiexec.
+    This variable is only used if a program is run in Controller/Worker model.
     """
 
     varname = "UNIDIST_MPI_HOSTS"
