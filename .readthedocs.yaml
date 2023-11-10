@@ -11,6 +11,8 @@ build:
     python: "mambaforge-22.9"
   jobs:
     post_create_environment:
+      # Build unidist to make C++ extensions available and also
+      # for correct module imports when building the documentation.
       - pip install --no-cache-dir -e .
 sphinx:
    configuration: docs/conf.py
