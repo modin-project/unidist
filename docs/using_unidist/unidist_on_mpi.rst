@@ -72,25 +72,25 @@ SPMD model
 ----------
 
 First of all, to run unidist on MPI in a single node using `SPMD model`_,
-you should set the ``UNIDIST_IS_MPI_SPAWN_WORKERS`` environment variable to ``False``:
+you should set the ``UNIDIST_MPI_SPAWN`` environment variable to ``False``:
 
 .. code-block:: bash
 
-    $ export UNIDIST_IS_MPI_SPAWN_WORKERS=False
+    $ export UNIDIST_MPI_SPAWN=False
 
 .. code-block:: python
 
     import os
 
-    os.environ["UNIDIST_IS_MPI_SPAWN_WORKERS"] = "False"
+    os.environ["UNIDIST_MPI_SPAWN"] = "False"
 
 or set the associated configuration value:
 
 .. code-block:: python
 
-    from unidist.config import IsMpiSpawnWorkers
+    from unidist.config import MpiSpawn
 
-    IsMpiSpawnWorkers.put(False)
+    MpiSpawn.put(False)
 
 This will enable unidist not to spawn MPI processes dynamically because the user himself spawns the processes.
 
@@ -169,25 +169,25 @@ SPMD model
 """"""""""
 
 First of all, to run unidist on MPI in a cluster using `SPMD model`_,
-you should set the ``UNIDIST_IS_MPI_SPAWN_WORKERS`` environment variable to ``False``:
+you should set the ``UNIDIST_MPI_SPAWN`` environment variable to ``False``:
 
 .. code-block:: bash
 
-    $ export UNIDIST_IS_MPI_SPAWN_WORKERS=False
+    $ export UNIDIST_MPI_SPAWN=False
 
 .. code-block:: python
 
     import os
 
-    os.environ["UNIDIST_IS_MPI_SPAWN_WORKERS"] = "False"
+    os.environ["UNIDIST_MPI_SPAWN"] = "False"
 
 or set the associated configuration value:
 
 .. code-block:: python
 
-    from unidist.config import IsMpiSpawnWorkers
+    from unidist.config import MpiSpawn
 
-    IsMpiSpawnWorkers.put(False)
+    MpiSpawn.put(False)
 
 This will enable unidist not to spawn MPI processes dynamically because the user himself spawns the processes.
 

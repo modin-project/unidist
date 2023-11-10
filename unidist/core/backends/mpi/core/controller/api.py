@@ -34,7 +34,7 @@ import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
 from unidist.config import (
     CpuCount,
-    IsMpiSpawnWorkers,
+    MpiSpawn,
     MpiHosts,
     ValueSource,
     MpiPickleThreshold,
@@ -145,7 +145,7 @@ def init():
 
     # Path to dynamically spawn MPI processes.
     # If a requirement is not met, processes have been started with mpiexec -n <N>, where N > 1.
-    if rank == 0 and parent_comm == MPI.COMM_NULL and IsMpiSpawnWorkers.get():
+    if rank == 0 and parent_comm == MPI.COMM_NULL and MpiSpawn.get():
         args = _get_py_flags()
         args += ["-c"]
         py_str = [
@@ -153,8 +153,8 @@ def init():
             "import unidist.config as cfg",
             "cfg.Backend.put('mpi')",
         ]
-        if IsMpiSpawnWorkers.get_value_source() != ValueSource.DEFAULT:
-            py_str += [f"cfg.IsMpiSpawnWorkers.put({IsMpiSpawnWorkers.get()})"]
+        if MpiSpawn.get_value_source() != ValueSource.DEFAULT:
+            py_str += [f"cfg.MpiSpawn.put({MpiSpawn.get()})"]
         if MpiHosts.get_value_source() != ValueSource.DEFAULT:
             py_str += [f"cfg.MpiHosts.put('{MpiHosts.get()}')"]
         if CpuCount.get_value_source() != ValueSource.DEFAULT:
@@ -272,7 +272,7 @@ def init():
         # If the user executes a program in SPMD mode,
         # we do not want workers to continue the flow after `unidist.init()`
         # so just killing them.
-        if not IsMpiSpawnWorkers.get():
+        if not MpiSpawn.get():
             sys.exit()
         return
     else:
@@ -282,7 +282,7 @@ def init():
         # If the user executes a program in SPMD mode,
         # we do not want workers to continue the flow after `unidist.init()`
         # so just killing them.
-        if not IsMpiSpawnWorkers.get():
+        if not MpiSpawn.get():
             sys.exit()
         return
 

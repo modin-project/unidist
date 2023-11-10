@@ -7,11 +7,11 @@
 from unidist.config.parameter import EnvironmentVariable, ExactStr
 
 
-class IsMpiSpawnWorkers(EnvironmentVariable, type=bool):
+class MpiSpawn(EnvironmentVariable, type=bool):
     """Whether to enable MPI spawn or not."""
 
     default = True
-    varname = "UNIDIST_IS_MPI_SPAWN_WORKERS"
+    varname = "UNIDIST_MPI_SPAWN"
 
 
 class MpiHosts(EnvironmentVariable, type=ExactStr):

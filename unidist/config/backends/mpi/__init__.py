@@ -5,7 +5,7 @@
 """Config entities specific for MPI backend which can be used for unidist behavior tuning."""
 
 from .envvars import (
-    IsMpiSpawnWorkers,
+    MpiSpawn,
     MpiHosts,
     MpiPickleThreshold,
     MpiBackoff,
@@ -18,7 +18,7 @@ from .envvars import (
 )
 
 __all__ = [
-    "IsMpiSpawnWorkers",
+    "MpiSpawn",
     "MpiHosts",
     "MpiPickleThreshold",
     "MpiBackoff",

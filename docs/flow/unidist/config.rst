@@ -48,7 +48,7 @@ Unidist Configuration Settings List
 +-------------------------------+-------------------------------------------+--------------------------------------------------------------------------+
 | DaskSchedulerAddress          | UNIDIST_DASK_SCHEDULER_ADDRESS            | Dask Scheduler address to connect to when running in Dask cluster        |
 +-------------------------------+-------------------------------------------+--------------------------------------------------------------------------+
-| IsMpiSpawnWorkers             | UNIDIST_IS_MPI_SPAWN_WORKERS              | Whether to enable MPI spawn or not                                       |
+| MpiSpawn                      | UNIDIST_MPI_SPAWN                         | Whether to enable MPI spawn or not                                       |
 +-------------------------------+-------------------------------------------+--------------------------------------------------------------------------+
 | MpiHosts                      | UNIDIST_MPI_HOSTS                         | MPI hosts to run unidist on                                              |
 +-------------------------------+-------------------------------------------+--------------------------------------------------------------------------+
