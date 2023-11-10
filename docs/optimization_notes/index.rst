@@ -8,6 +8,15 @@ Optimization Notes
 
 This page contains optimization notes for every backend that can be applied to it to get ultimate performance.
 
+.. toctree::
+   :hidden:
+
+   mpi
+   dask
+   ray
+   pymp
+   pyseq
+
 - :doc:`MPI <mpi>`
 - :doc:`Dask <dask>`
 - :doc:`Ray <ray>`

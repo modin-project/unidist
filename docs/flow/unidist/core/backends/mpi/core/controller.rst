@@ -30,7 +30,7 @@ Both of the functions block execution until read/write finishes.
 .. autofunction:: unidist.core.backends.mpi.core.controller.api.put
 
 :py:func:`~unidist.core.backends.mpi.core.controller.api.wait` carries out blocking of execution
-until a requested number of :py:class:`~unidist.core.backends.mpi.core.common.MasterDataID` isn't ready.
+until a requested number of :py:class:`~unidist.core.backends.mpi.core.common.MpiDataID` isn't ready.
 
 .. autofunction:: unidist.core.backends.mpi.core.controller.api.wait
 
