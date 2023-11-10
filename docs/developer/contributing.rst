@@ -174,6 +174,7 @@ dependencies from ``environment.yml`` or ``requirements.txt`` installed):
 
 .. code-block:: bash
 
+    pip install -e .
     cd docs
     sphinx-build -b html . build
 
