@@ -284,8 +284,8 @@ def mpi_send_operation(comm, op_type, dest_rank):
     Notes
     -----
     * This blocking send is used when we have to wait for completion of the communication,
-    which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
-    Otherwise, use non-blocking ``mpi_isend_operation``.
+      which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
+      Otherwise, use non-blocking ``mpi_isend_operation``.
     * The special tag is used for this communication, namely, ``common.MPITag.OPERATION``.
     """
     comm.send(op_type, dest=dest_rank, tag=common.MPITag.OPERATION)
@@ -309,8 +309,8 @@ def mpi_send_object(comm, data, dest_rank, tag=common.MPITag.OBJECT):
     Notes
     -----
     * This blocking send is used when we have to wait for completion of the communication,
-    which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
-    Otherwise, use non-blocking ``mpi_isend_object``.
+      which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
+      Otherwise, use non-blocking ``mpi_isend_object``.
     * The special tag is used for this communication, namely, ``common.MPITag.OBJECT``.
     """
     comm.send(data, dest=dest_rank, tag=tag)
@@ -361,7 +361,7 @@ def mpi_isend_object(comm, data, dest_rank):
 
     Notes
     -----
-    * The special tag is used for this communication, namely, ``common.MPITag.OBJECT``.
+    The special tag is used for this communication, namely, ``common.MPITag.OBJECT``.
     """
     return comm.isend(data, dest=dest_rank, tag=common.MPITag.OBJECT)
 
@@ -475,10 +475,10 @@ def mpi_send_buffer(comm, buffer, dest_rank, data_type=MPI.CHAR, buffer_size=Non
     Notes
     -----
     * This blocking send is used when we have to wait for completion of the communication,
-    which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
-    Otherwise, use non-blocking ``mpi_isend_buffer``.
+      which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
+      Otherwise, use non-blocking ``mpi_isend_buffer``.
     * The special tags are used for this communication, namely,
-    ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
+      ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     if buffer_size:
         comm.send(buffer_size, dest=dest_rank, tag=common.MPITag.OBJECT)
@@ -521,7 +521,7 @@ def mpi_isend_buffer(comm, buffer_size, buffer, dest_rank):
 
     Notes
     -----
-    * The special tags are used for this communication, namely,
+    The special tags are used for this communication, namely,
     ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     requests = []
@@ -565,7 +565,7 @@ def mpi_recv_buffer(comm, source_rank, result_buffer=None):
 
     Notes
     -----
-    * The special tags are used for this communication, namely,
+    The special tags are used for this communication, namely,
     ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     if result_buffer is None:
@@ -677,7 +677,7 @@ def send_complex_data(comm, data, dest_rank, is_serialized=False):
 
     Notes
     -----
-    * This blocking send is used when we have to wait for completion of the communication,
+    This blocking send is used when we have to wait for completion of the communication,
     which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
     Otherwise, use non-blocking ``isend_complex_data``.
     """
@@ -732,7 +732,7 @@ def _isend_complex_data_impl(comm, s_data, raw_buffers, dest_rank, info_package)
     Notes
     -----
     * The special tags are used for this communication, namely,
-    ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
+      ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     handlers = []
     # wrap to dict for sending and correct deserialization of the object by the recipient
@@ -778,7 +778,7 @@ def isend_complex_data(comm, data, dest_rank, is_serialized=False):
 
     Notes
     -----
-    * The special tags are used for this communication, namely,
+    The special tags are used for this communication, namely,
     ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     if is_serialized:
@@ -829,7 +829,7 @@ def recv_complex_data(comm, source_rank, info_package):
 
     Notes
     -----
-    * The special tags are used for this communication, namely,
+    The special tags are used for this communication, namely,
     ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     msgpack_buffer = bytearray(info_package["s_data_len"])
@@ -866,11 +866,11 @@ def send_simple_operation(comm, operation_type, operation_data, dest_rank):
     Notes
     -----
     * This blocking send is used when we have to wait for completion of the communication,
-    which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
-    Otherwise, use non-blocking ``isend_simple_operation``.
+      which is necessary for the pipeline to continue, or when the receiver is waiting for a result.
+      Otherwise, use non-blocking ``isend_simple_operation``.
     * Serialization of the data to be sent takes place just using ``pickle.dump`` in this case.
     * The special tags are used for this communication, namely,
-    ``common.MPITag.OPERATION`` and ``common.MPITag.OBJECT``.
+      ``common.MPITag.OPERATION`` and ``common.MPITag.OBJECT``.
     """
     # Send operation type
     mpi_send_operation(comm, operation_type, dest_rank)
@@ -902,7 +902,7 @@ def isend_simple_operation(comm, operation_type, operation_data, dest_rank):
     -----
     * Serialization of the data to be sent takes place just using ``pickle.dump`` in this case.
     * The special tags are used for this communication, namely,
-    ``common.MPITag.OPERATION`` and ``common.MPITag.OBJECT``.
+      ``common.MPITag.OPERATION`` and ``common.MPITag.OBJECT``.
     """
     # Send operation type
     handlers = []
@@ -948,7 +948,7 @@ def isend_complex_operation(
 
     Notes
     -----
-    * The special tags are used for this communication, namely,
+    The special tags are used for this communication, namely,
     ``common.MPITag.OPERATION``, ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     # Send operation type

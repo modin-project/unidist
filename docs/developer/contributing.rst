@@ -174,6 +174,9 @@ dependencies from ``environment.yml`` or ``requirements.txt`` installed):
 
 .. code-block:: bash
 
+    # Build unidist to make C++ extensions available and also
+    # for correct module imports when building the documentation.
+    pip install -e .
     cd docs
     sphinx-build -b html . build
 

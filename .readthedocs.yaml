@@ -9,7 +9,11 @@ build:
   tools:
     # We use mambaforge to install packages from conda-forge below
     python: "mambaforge-22.9"
-
+  jobs:
+    post_create_environment:
+      # Build unidist to make C++ extensions available and also
+      # for correct module imports when building the documentation.
+      - pip install --no-cache-dir -e .
 sphinx:
    configuration: docs/conf.py
    # TODO: Fix #156 and set to true

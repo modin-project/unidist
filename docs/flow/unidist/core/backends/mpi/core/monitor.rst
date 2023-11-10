@@ -8,7 +8,7 @@
 Monitor related functionality API
 """""""""""""""""""""""""""""""""
 
-Infinite :py:func:`~unidist.core.backends.mpi.core.monitor.monitor_loop` function tracks
+Infinite :py:func:`~unidist.core.backends.mpi.core.monitor.loop.monitor_loop` function tracks
 MPI backend statistics: executed tasks counter.
 
 API
@@ -16,4 +16,4 @@ API
 
 Cancel operation from :py:class:`~unidist.core.backends.mpi.core.common.Operations` class breaks the loop.
 
-.. autofunction:: unidist.core.backends.mpi.core.monitor.monitor_loop
+.. autofunction:: unidist.core.backends.mpi.core.monitor.loop.monitor_loop

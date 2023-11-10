@@ -16,11 +16,11 @@ API
 .. autoclass:: unidist.core.backends.mpi.core.common.Operation
   :members:
 
-.. autoclass:: unidist.core.backends.mpi.core.common.MasterDataID
+.. autoclass:: unidist.core.backends.mpi.core.common.MpiDataID
   :members:
 
 .. autofunction:: unidist.core.backends.mpi.core.common.get_logger
 .. autofunction:: unidist.core.backends.mpi.core.common.unwrapped_data_ids_list
-.. autofunction:: unidist.core.backends.mpi.core.common.master_data_ids_to_base
-.. autofunction:: unidist.core.backends.mpi.core.common.unwrap_data_ids
 .. autofunction:: unidist.core.backends.mpi.core.common.materialize_data_ids
+.. autofunction:: unidist.core.backends.mpi.core.common.check_mpich_version
+.. autofunction:: unidist.core.backends.mpi.core.common.is_shared_memory_supported
