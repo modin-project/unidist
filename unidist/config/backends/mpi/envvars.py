@@ -87,7 +87,7 @@ class MpiLog(EnvironmentVariable, type=bool):
 class MpiSharedObjectStore(EnvironmentVariable, type=bool):
     """Whether to enable shared object store or not."""
 
-    default = False
+    default = True
     varname = "UNIDIST_MPI_SHARED_OBJECT_STORE"
 
 
