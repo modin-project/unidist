@@ -416,17 +416,20 @@ def get(data_ids):
     is_list = isinstance(data_ids, list)
     if not is_list:
         data_ids = [data_ids]
-    remote_data_ids = [
-        data_id for data_id in data_ids if not local_store.contains(data_id)
-    ]
-    # Remote data gets available in the local store inside `request_worker_data`
-    if remote_data_ids:
-        request_worker_data(remote_data_ids)
+
+    def get_impl(data_id):
+        if local_store.contains(data_id):
+            value = local_store.get(data_id)
+        else:
+            value = request_worker_data(data_id)
+
+        if isinstance(value, Exception):
+            raise value
+
+        return value
 
     logger.debug("GET {} ids".format(common.unwrapped_data_ids_list(data_ids)))
-
-    values = [local_store.get(data_id) for data_id in data_ids]
-
+    values = [get_impl(data_id) for data_id in data_ids]
     # Initiate reference count based cleaup
     # if all the tasks were completed
     garbage_collector.regular_cleanup()
