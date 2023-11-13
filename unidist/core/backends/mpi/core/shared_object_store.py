@@ -106,8 +106,9 @@ class SharedObjectStore:
         # Length of service shared memory buffer in items
         self.service_info_max_count = None
 
+        mpi_state = communication.MPIState.get_instance()
         # Initialize all properties above
-        if common.is_shared_memory_supported():
+        if common.is_shared_memory_supported(raise_warning=mpi_state.is_root_process()):
             self._allocate_shared_memory()
 
         # Logger will be initialized after `communicator.MPIState`

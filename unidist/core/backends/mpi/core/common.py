@@ -6,6 +6,7 @@
 
 import logging
 import inspect
+import warnings
 import weakref
 
 from unidist.config.backends.mpi.envvars import MpiSpawn
@@ -463,9 +464,16 @@ def check_mpich_version(target_version):
     return versiontuple(mpich_version) >= versiontuple(target_version)
 
 
-def is_shared_memory_supported():
+def is_shared_memory_supported(raise_warning=False):
     """
     Check if the unidist on MPI supports shared memory.
+
+    Parameters
+    ----------
+    raise_warning: bool, default: False
+        Whether to raise a warning or not.
+        ``True`` is passed only for root process
+        to have the only warning.
 
     Returns
     -------
@@ -480,6 +488,11 @@ def is_shared_memory_supported():
         return False
 
     if MPI.VERSION < 3:
+        if raise_warning:
+            warnings.warn(
+                f"Shared object store for MPI backend is not supported for MPI version {MPI.VERSION} "
+                "since it doesn't support shared memory feature."
+            )
         return False
 
     # Mpich shared memory does not work with spawned processes prior to version 4.2.0.
@@ -488,6 +501,11 @@ def is_shared_memory_supported():
         and MpiSpawn.get()
         and not check_mpich_version("4.2.0")
     ):
+        if raise_warning:
+            warnings.warn(
+                "Shared object store for MPI backend is not supported in C/W model for MPICH version less than 4.2.0. "
+                + "Read more about this issue in the `troubleshooting` page of the unidist documentation."
+            )
         return False
 
     return True
