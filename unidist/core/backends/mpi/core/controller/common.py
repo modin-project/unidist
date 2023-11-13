@@ -138,7 +138,7 @@ def pull_data(comm, owner_rank):
             }
 
         data = shared_store.get(data_id, owner_rank, info_package)
-        # local_store.put(data_id, data)
+        local_store.put(data_id, data)
         return {
             "id": data_id,
             "data": data,
@@ -148,10 +148,8 @@ def pull_data(comm, owner_rank):
         data = communication.recv_complex_data(
             comm, owner_rank, info_package=info_package
         )
-        data_id = info_package["id"]
-        local_store.put(data_id, data)
         return {
-            "id": data_id,
+            "id": info_package["id"],
             "data": data,
         }
     elif info_package["package_type"] == common.MetadataPackage.TASK_DATA:
