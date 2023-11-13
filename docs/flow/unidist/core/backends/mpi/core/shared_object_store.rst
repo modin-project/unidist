@@ -15,8 +15,8 @@ data can be stored in :py:class:`~unidist.core.backends.mpi.core.local_object_st
 Topology changes
 ----------------
 
-If shared object store is enabled on a cluster, Unidist has some changes in the number of service processes.
-Monitor processes are created or assigned on each host. 
+If shared object store is enabled on a cluster, unidist has some changes in the number of service processes.
+Monitor processes are created and assigned on each host. 
 All monitoring processes can be divided into root monitor and non-root monitor.
 The non-root monitor is only responsible for managing shared object store on its host, 
 while the root monitor also performs the main work of the monitor.
@@ -45,10 +45,10 @@ You can control the size of shared memory using configuration settings:
 :class:`~unidist.config.backends.mpi.envvars.MpiSharedObjectStoreMemory` and
 :class:`~unidist.config.backends.mpi.envvars.MpiSharedServiceMemory`.
 
-Shared memory managment
------------------------
+Shared memory management
+------------------------
 
-All workers on the same host can write to shared memory, but the Monitor process manages it and determines 
+All workers on the same host can write to shared memory, but the monitor process manages it and determines 
 where data will be written and when it will be deleted. If a process wants to write some data to shared memory, 
 it asks the monitor to reserve memory in shared object store of the desired size and then writes it to shared memory.
 
