@@ -200,14 +200,15 @@ to start the number of workers exceeding the number of physical cores.
 
 To get more information about the flags refer to `Open MPI's mpiexec`_ command documentation.
 
-.. _`Open MPI's mpiexec`: https://www.open-mpi.org/doc/v3.1/man1/mpiexec.1.php
-.. _`issue`: https://github.com/modin-project/unidist/issues
+Shared object store for MPI backend is not supported in C/W model for MPICH version less than 4.2.0
+---------------------------------------------------------------------------------------------------
 
-
-Shared object store is not supported in C/W model if the using MPICH version is less than the 4.2.0 version.
-------------------------------------------------------------------------------------------------------------
-Unfortunately, this version of MPICH has a problem with shared memory in the Controller/Worker model.
+MPICH versions less than 4.2.0 have an issue related to shared memory feature in Controller/Worker model.
 
 **Solution**
-You can run your script using the SPMD model, or use other MPI implementations 
-such as Open MPI, Intel MPI, or MPICH above version 4.2.0.
+
+You can run your script using MPICH in SPMD model, or use other MPI implementations 
+such as Open MPI, Intel MPI, or MPICH above 4.2.0.
+
+.. _`Open MPI's mpiexec`: https://www.open-mpi.org/doc/v3.1/man1/mpiexec.1.php
+.. _`issue`: https://github.com/modin-project/unidist/issues

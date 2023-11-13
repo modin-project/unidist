@@ -107,9 +107,8 @@ class SharedObjectStore:
         self.service_info_max_count = None
 
         mpi_state = communication.MPIState.get_instance()
-
         # Initialize all properties above
-        if common.is_shared_memory_supported(send_warning=mpi_state.is_root_process()):
+        if common.is_shared_memory_supported(raise_warning=mpi_state.is_root_process()):
             self._allocate_shared_memory()
 
         # Logger will be initialized after `communicator.MPIState`
