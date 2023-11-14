@@ -1,0 +1,27 @@
+name: unidist
+channels:
+  - conda-forge
+dependencies:
+  # for development
+  # https://github.com/modin-project/unidist/issues/324
+  - pydantic<2
+  - ray-default>=1.13.0
+  - dask>=2.22.0
+  - distributed>=2.22.0
+  - mpi4py>=3.0.3
+  - msmpi
+  - msgpack-python>=1.0.0
+  - cloudpickle
+  - packaging
+  - cython
+  - psutil
+  - pytest
+  # for downloading packages from PyPI
+  - pip
+  - pip:
+      # for building the documentation
+      - sphinx
+      - sphinx_rtd_theme
+      # for code checks
+      - black
+      - flake8
