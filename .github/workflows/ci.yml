@@ -46,10 +46,6 @@ jobs:
 
   test-all:
     needs: [lint-black, lint-flake8]
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -l {0}
     strategy:
       matrix:
         os:
@@ -57,6 +53,10 @@ jobs:
           - windows
         python-version: ["3.8", "3.9"]
         backend: ["ray", "mpi", "dask", "pymp", "pyseq"]
+    runs-on: ${{ matrix.os }}-latest
+    defaults:
+      run:
+        shell: bash -l {0}
     env:
       UNIDIST_BACKEND: ${{matrix.backend}}
     name: test-${{ matrix.os }} (backend ${{matrix.backend}}, python ${{matrix.python-version}})
