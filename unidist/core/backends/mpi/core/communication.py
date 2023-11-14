@@ -118,12 +118,13 @@ class MPIState:
         self.global_rank = comm.Get_rank()
         self.global_size = comm.Get_size()
         self.host = socket.gethostbyname(socket.gethostname())
-        try:
-            self.host_comm = self.global_comm.Split_type(MPI.COMM_TYPE_SHARED)
-        # Used if Split_type does not work correctly in the MS MPI library
-        except MPI.Exception:
+        # `Split_type` does not work correctly in the MSMPI library in C/W model
+        # so we split the communicator in a different way
+        if "Microsoft MPI" in MPI.Get_library_version() and MpiSpawn.get():
             all_hosts = self.global_comm.allgather(self.host)
             self.host_comm = self.global_comm.Split(all_hosts.index(self.host))
+        else:
+            self.host_comm = self.global_comm.Split_type(MPI.COMM_TYPE_SHARED)
 
         host_rank = self.host_comm.Get_rank()
         # Get topology of MPI cluster.
