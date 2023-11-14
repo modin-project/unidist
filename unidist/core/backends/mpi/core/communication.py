@@ -291,7 +291,7 @@ def mpi_send_operation(comm, op_type, dest_rank):
     comm.send(op_type, dest=dest_rank, tag=common.MPITag.OPERATION)
 
 
-def mpi_send_object(comm, data, dest_rank, tag=common.MPITag.OBJECT):
+def mpi_send_object(comm, data, dest_rank):
     """
     Send a Python object to another MPI rank in a blocking way.
 
@@ -303,8 +303,6 @@ def mpi_send_object(comm, data, dest_rank, tag=common.MPITag.OBJECT):
         Data to send.
     dest_rank : int
         Target MPI process to transfer data.
-    tag : common.MPITag, default: common.MPITag.OBJECT
-        Message tag.
 
     Notes
     -----
@@ -313,7 +311,7 @@ def mpi_send_object(comm, data, dest_rank, tag=common.MPITag.OBJECT):
       Otherwise, use non-blocking ``mpi_isend_object``.
     * The special tag is used for this communication, namely, ``common.MPITag.OBJECT``.
     """
-    comm.send(data, dest=dest_rank, tag=tag)
+    comm.send(data, dest=dest_rank, tag=common.MPITag.OBJECT)
 
 
 def mpi_isend_operation(comm, op_type, dest_rank):
@@ -399,36 +397,6 @@ def mpi_recv_operation(comm):
     op_type = comm.recv(buf=None, source=source, tag=tag, status=status)
     log_operation(op_type, status)
     return op_type, status.Get_source()
-
-
-def mpi_iprobe_recv_object(comm, tag=common.MPITag.OBJECT):
-    """
-    Receive an object of a standard Python data type from any source.
-
-    The source rank gets available from `iprobe`.
-
-    Parameters
-    ----------
-    comm : mpi4py.MPI.Comm
-        MPI communicator.
-    tag : common.MPITag, default: common.MPITag.OBJECT
-        Message tag.
-
-    Returns
-    -------
-    object
-        Received data from the source rank.
-    int
-        Source rank.
-    """
-    backoff = MpiBackoff.get()
-    status = MPI.Status()
-    source = MPI.ANY_SOURCE
-    while not comm.iprobe(source=source, tag=tag, status=status):
-        time.sleep(backoff)
-    source = status.source
-    data = comm.recv(source=source, tag=tag, status=status)
-    return data, source
 
 
 def mpi_recv_object(comm, source_rank):
@@ -648,7 +616,7 @@ def _send_complex_data_impl(comm, s_data, raw_buffers, dest_rank, info_package):
     ``common.MPITag.OBJECT`` and ``common.MPITag.BUFFER``.
     """
     # wrap to dict for sending and correct deserialization of the object by the recipient
-    comm.send(dict(info_package), dest=dest_rank, tag=common.MPITag.OBJECT_BLOCKING)
+    comm.send(dict(info_package), dest=dest_rank, tag=common.MPITag.OBJECT)
     with pkl5._bigmpi as bigmpi:
         comm.Send(bigmpi(s_data), dest=dest_rank, tag=common.MPITag.BUFFER)
         for sbuf in raw_buffers:
