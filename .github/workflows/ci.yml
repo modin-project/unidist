@@ -4,7 +4,8 @@ on:
     paths:
       - .github/workflows/**
       - unidist/**
-      - environment.yml
+      - environment_linux.yml
+      - environment_win.yml
       - requirements.txt
       - setup.cfg
       - setup.py
@@ -67,7 +68,7 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v2
         with:
           activate-environment: unidist
-          environment-file: environment.yml
+          environment-file: ${{ matrix.os == 'ubuntu' && 'environment_linux.yml' || matrix.os == 'windows' && 'environment_win.yml' }}
           python-version: ${{matrix.python-version}}
           channel-priority: strict
           # we set use-only-tar-bz2 to false in order for conda to properly find new packages to be installed

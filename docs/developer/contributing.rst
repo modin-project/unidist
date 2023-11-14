@@ -117,7 +117,8 @@ dependencies for running the tests and formatting the code:
 
 .. code-block:: bash
 
-  conda env create --file environment.yml
+  conda env create --file environment_linux.yml # for Linux
+  conda env create --file environment_win.yml # for Windows
   # or
   pip install -r requirements.txt
 
@@ -170,7 +171,7 @@ Building documentation
 ----------------------
 
 To build the documentation, please follow the steps below from the project root (it is supposed you have
-dependencies from ``environment.yml`` or ``requirements.txt`` installed):
+dependencies from ``environment_linux.yml``(``environment_win.yml``) or ``requirements.txt`` installed):
 
 .. code-block:: bash
 

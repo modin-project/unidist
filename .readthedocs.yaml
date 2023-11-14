@@ -27,4 +27,4 @@ formats:
 # If we tried to install mpi4py from PyPI, installation would fail because
 # mpi4py requires a working MPI implementation installed beforehand.
 conda:
-  environment: environment.yml
+  environment: environment_linux.yml
