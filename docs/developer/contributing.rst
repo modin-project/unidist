@@ -171,7 +171,7 @@ Building documentation
 ----------------------
 
 To build the documentation, please follow the steps below from the project root (it is supposed you have
-dependencies from ``environment_linux.yml``(``environment_win.yml``) or ``requirements.txt`` installed):
+dependencies from ``environment_linux.yml`` or ``environment_win.yml`` or ``requirements.txt`` installed):
 
 .. code-block:: bash
 

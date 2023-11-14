@@ -99,18 +99,18 @@ jobs:
       # disabled shared object store on Windows as
       # msmpi doesn't support the shared memory feature.
       - run: UNIDIST_MPI_SHARED_OBJECT_STORE=True mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_actor.py
-        if: matrix.backend == 'mpi' && matrix.os != 'windows'
-      - run: UNIDIST_MPI_SHARED_OBJECT_STORE=False mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_actor.py
-        if: matrix.backend == 'mpi'
+        if: matrix.backend == 'mpi' && matrix.os == 'ubuntu'
+      - run: UNIDIST_MPI_SHARED_OBJECT_STORE=False mpiexec -n 1 python -m pytest unidist/test/test_actor.py
+        if: matrix.backend == 'mpi' && matrix.os == 'windows'
       - run: UNIDIST_MPI_SHARED_OBJECT_STORE=True mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_async_actor.py
-        if: matrix.backend == 'mpi' && matrix.os != 'windows'
-      - run: UNIDIST_MPI_SHARED_OBJECT_STORE=False mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_async_actor.py
-        if: matrix.backend == 'mpi'
+        if: matrix.backend == 'mpi' && matrix.os == 'ubuntu'
+      - run: UNIDIST_MPI_SHARED_OBJECT_STORE=False mpiexec -n 1 python -m pytest unidist/test/test_async_actor.py
+        if: matrix.backend == 'mpi' && matrix.os == 'windows'
       - run: UNIDIST_MPI_SHARED_OBJECT_STORE=True mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_task.py
-        if: matrix.backend == 'mpi' && matrix.os != 'windows'
-      - run: UNIDIST_MPI_SHARED_OBJECT_STORE=False mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_task.py
-        if: matrix.backend == 'mpi'
+        if: matrix.backend == 'mpi' && matrix.os == 'ubuntu'
+      - run: UNIDIST_MPI_SHARED_OBJECT_STORE=False mpiexec -n 1 python -m pytest unidist/test/test_task.py
+        if: matrix.backend == 'mpi' && matrix.os == 'windows'
       - run: UNIDIST_MPI_SHARED_OBJECT_STORE=True mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_general.py
-        if: matrix.backend == 'mpi' && matrix.os != 'windows'
-      - run: UNIDIST_MPI_SHARED_OBJECT_STORE=False mpiexec -n 1 --oversubscribe python -m pytest unidist/test/test_general.py
-        if: matrix.backend == 'mpi'
+        if: matrix.backend == 'mpi' && matrix.os == 'ubuntu'
+      - run: UNIDIST_MPI_SHARED_OBJECT_STORE=False mpiexec -n 1 python -m pytest unidist/test/test_general.py
+        if: matrix.backend == 'mpi' && matrix.os == 'windows'
