@@ -15,8 +15,12 @@ To build unidist wheels, use the following method:
     # Fresh clone unidist
     $ git clone git@github.com:modin-project/unidist.git
     $ cd unidist
-    # Build a pure Python wheel
-    $ python setup.py sdist bdist_wheel
+    # Build wheels. Wheels must be built per-distribution
+    $ python setup.py sdist bdist_wheel --plat-name manylinux1_x86_64
+    $ python setup.py sdist bdist_wheel --plat-name manylinux1_i686
+    $ python setup.py sdist bdist_wheel --plat-name win32
+    $ python setup.py sdist bdist_wheel --plat-name win_amd64
+    $ python setup.py sdist bdist_wheel --plat-name macosx_10_9_x86_64
 
 You may see the wheel in the `dist` folder: `ls -l dist`. Make sure the version is correct.
 Also make sure there is a ``tar`` file that contains the source.
