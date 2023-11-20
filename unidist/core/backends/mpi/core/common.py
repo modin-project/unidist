@@ -101,11 +101,15 @@ class MPITag:
         The tag for send/recv of a regular Python object.
     BUFFER : int, default: 113
         The tag for send/recv of a buffer-like object.
+    OBJECT_BLOCKING : int, default: 114
+        The tag for send/recv of a regular Python object
+        to indicate the blocking get request.
     """
 
     OPERATION = 111
     OBJECT = 112
     BUFFER = 113
+    OBJECT_BLOCKING = 114
 
 
 class MetadataPackage(ImmutableDict):

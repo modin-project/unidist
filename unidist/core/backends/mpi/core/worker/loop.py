@@ -134,7 +134,6 @@ async def worker_loop():
                         request["id"]._id, source_rank
                     )
                 )
-                local_store.put(request["id"], request["data"])
 
                 # Discard data request to another worker, if data has become available
                 request_store.discard_data_request(request["id"])
