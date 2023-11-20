@@ -218,7 +218,7 @@ def request_worker_data(data_ids):
     while data_count < len(data_ids):
         # Remote data gets available in the local store inside `pull_data`
         complex_data = pull_data(mpi_state.global_comm)
-        if isinstance(complex_data["data"], Exception) and exception_raised is not None:
+        if isinstance(complex_data["data"], Exception) and exception_raised is None:
             exception_raised = complex_data["data"]
         data_id = complex_data["id"]
         if data_id in data_ids:
