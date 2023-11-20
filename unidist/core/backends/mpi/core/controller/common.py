@@ -213,11 +213,13 @@ def request_worker_data(data_ids):
         async_operations.extend(h_list)
 
     data_count = 0
+    # If some dataids raise an exception it will be captured in exception_raised variable and raised after the while loop ends.
+    exception_raised = None
     while data_count < len(data_ids):
         # Remote data gets available in the local store inside `pull_data`
         complex_data = pull_data(mpi_state.global_comm)
         if isinstance(complex_data["data"], Exception):
-            raise complex_data["data"]
+            exception_raised = complex_data["data"]
         data_id = complex_data["id"]
         if data_id in data_ids:
             data_count += 1
@@ -225,6 +227,8 @@ def request_worker_data(data_ids):
             raise RuntimeError(
                 f"DataID {data_id} isn't in the requested list {data_ids}"
             )
+    if exception_raised:
+        raise exception_raised
 
 
 def _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized):
