@@ -40,7 +40,7 @@ class UnidistDistribution(Distribution):
 # https://github.com/modin-project/unidist/issues/324
 ray_deps = ["ray[default]>=1.13.0", "pydantic<2"]
 dask_deps = ["dask[complete]>=2.22.0", "distributed>=2.22.0"]
-mpi_deps = ["mpi4py>=3.0.3", "msgpack>=1.0.0"]
+mpi_deps = ["mpi4py>=3.0.3", "msgpack>=1.0.0", "psutil"]
 if sys.version_info[1] < 8:
     mpi_deps += "pickle5"
 all_deps = ray_deps + dask_deps + mpi_deps
