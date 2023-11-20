@@ -454,9 +454,15 @@ def check_mpich_version(target_version):
     def versiontuple(v):
         return tuple(map(int, (v.split("."))))
 
-    mpich_version = [
-        raw for raw in MPI.Get_library_version().split("\n") if "MPICH Version:" in raw
-    ][0].split(" ")[-1]
+    mpich_version = (
+        [
+            raw
+            for raw in MPI.Get_library_version().split("\n")
+            if "MPICH Version:" in raw
+        ][0]
+        .replace("\t", " ")
+        .split(" ")[-1]
+    )
     return versiontuple(mpich_version) >= versiontuple(target_version)
 
 
