@@ -386,7 +386,7 @@ def put(data):
 
     data_id = local_store.generate_data_id(garbage_collector)
     serialized_data = serialize_complex_data(data)
-    local_store.put(data_id, data)
+    # data is prepared for sending to another process, but is not saved to local storage
     if shared_store.is_allocated():
         shared_store.put(data_id, serialized_data)
     else:

@@ -394,22 +394,19 @@ def push_data(dest_rank, value, is_blocking_op=False):
         data_id = value
         if shared_store.contains(data_id):
             _push_shared_data(dest_rank, data_id, is_blocking_op)
+        elif local_store.is_already_serialized(data_id):
+            _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized=True)
         elif local_store.contains(data_id):
-            if local_store.is_already_serialized(data_id):
-                _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized=True)
+            data = local_store.get(data_id)
+            serialized_data = serialize_complex_data(data)
+            if shared_store.is_allocated() and shared_store.should_be_shared(
+                serialized_data
+            ):
+                shared_store.put(data_id, serialized_data)
+                _push_shared_data(dest_rank, data_id, is_blocking_op)
             else:
-                data = local_store.get(data_id)
-                serialized_data = serialize_complex_data(data)
-                if shared_store.is_allocated() and shared_store.should_be_shared(
-                    serialized_data
-                ):
-                    shared_store.put(data_id, serialized_data)
-                    _push_shared_data(dest_rank, data_id, is_blocking_op)
-                else:
-                    local_store.cache_serialized_data(data_id, serialized_data)
-                    _push_local_data(
-                        dest_rank, data_id, is_blocking_op, is_serialized=True
-                    )
+                local_store.cache_serialized_data(data_id, serialized_data)
+                _push_local_data(dest_rank, data_id, is_blocking_op, is_serialized=True)
         elif local_store.contains_data_owner(data_id):
             _push_data_owner(dest_rank, data_id)
         else:

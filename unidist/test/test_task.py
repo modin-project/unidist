@@ -6,7 +6,7 @@ import time
 import pytest
 
 import unidist
-from unidist.config import Backend
+from unidist.config import Backend, MpiSharedObjectStore
 from unidist.core.base.common import BackendName
 from .utils import (
     assert_equal,
@@ -122,3 +122,23 @@ def test_serialize_dict_with_tuple_key():
     }
 
     assert_equal(f.remote(data), data)
+
+
+@pytest.mark.xfail(
+    Backend.get() == BackendName.PYMP
+    or Backend.get() == BackendName.PYSEQ
+    or Backend.get() == BackendName.MPI
+    and not MpiSharedObjectStore.get(),
+    reason="PYMP, PYSEQ and MPI (disabled shared object store) do not copy data into the object store",
+)
+def test_data_immutability():
+    data = [1, 2, 3]
+    object_ref = unidist.put(data)
+
+    data[0] = 111
+    try:
+        assert_equal(object_ref, data)
+    except AssertionError:
+        pass
+    else:
+        assert False

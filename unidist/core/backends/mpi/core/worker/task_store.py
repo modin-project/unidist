@@ -188,7 +188,7 @@ class TaskStore:
         if is_data_id(arg):
             local_store = LocalObjectStore.get_instance()
             if local_store.contains(arg):
-                value = LocalObjectStore.get_instance().get(arg)
+                value = local_store.get(arg)
                 # Data is already local or was pushed from master
                 return value, False
             elif local_store.contains_data_owner(arg):
