@@ -5,7 +5,6 @@
 """An implementation of ``RemoteFunction`` interface using MPI."""
 
 import unidist.core.backends.mpi.core as mpi
-from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 from unidist.core.backends.common.data_id import is_data_id
 from unidist.core.backends.common.utils import unwrap_object_refs
 from unidist.core.base.object_ref import ObjectRef
@@ -30,7 +29,6 @@ class MPIRemoteFunction(RemoteFunction):
 
     def __init__(self, function, num_cpus, num_returns, resources):
         self._remote_function = function
-        self._remote_function_orig = function
         self._num_cpus = num_cpus
         self._num_returns = 1 if num_returns is None else num_returns
         self._resources = resources
@@ -75,13 +73,7 @@ class MPIRemoteFunction(RemoteFunction):
         unwrapped_kwargs = {k: unwrap_object_refs(v) for k, v in kwargs.items()}
 
         if not is_data_id(self._remote_function):
-            self._remote_function = mpi.put(self._remote_function_orig)
-        else:
-            # When a worker calls a remote function inside another remote function,
-            # we have to again serialize the former remote function and put it into the storage
-            # for further correct communication.
-            if not LocalObjectStore.get_instance().contains(self._remote_function):
-                self._remote_function = mpi.put(self._remote_function_orig)
+            self._remote_function = mpi.put(self._remote_function)
 
         data_ids = mpi.submit(
             self._remote_function,
