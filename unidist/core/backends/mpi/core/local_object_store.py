@@ -277,8 +277,9 @@ class LocalObjectStore:
         data : object
             Serialized data to cache.
         """
-        # Copying is necessary to avoid corruption of data obtained through out-of-band serialization,
+        # We make a copy to avoid data corruption obtained through out-of-band serialization,
         # and buffers are marked read-only to prevent them from being modified.
+        # `to_bytes()` call handles both points.
         data["raw_buffers"] = [buf.tobytes() for buf in data["raw_buffers"]]
         self._serialization_cache[data_id] = data
         self.maybe_update_data_id_map(data_id)

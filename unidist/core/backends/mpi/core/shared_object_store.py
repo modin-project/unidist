@@ -757,9 +757,11 @@ class SharedObjectStore:
             An ID to data.
         owner_rank : int, default: None
             The rank that sent the data.
-            This value is used to synchronize data in shared memory between different hosts if the value is defined.
+            This value is used to synchronize data in shared memory between different hosts
+            if the value is not ``None``.
         shared_info : dict, default: None
-            The necessary information to properly deserialize data from shared memory. If `shared_info` is None, the data already exists in shared memory.
+            The necessary information to properly deserialize data from shared memory.
+            If `shared_info` is ``None``, the data already exists in shared memory in the current process.
         """
         if shared_info is None:
             shared_info = self.get_shared_info(data_id)

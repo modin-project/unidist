@@ -16,11 +16,12 @@ except ImportError:
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
+from unidist.core.backends.mpi.core.object_store import ObjectStore
 from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 from unidist.core.backends.mpi.core.worker.request_store import RequestStore
 from unidist.core.backends.mpi.core.worker.task_store import TaskStore
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
-from unidist.core.backends.mpi.core.controller.common import pull_data, get_data
+from unidist.core.backends.mpi.core.controller.common import pull_data
 from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
 
 # TODO: Find a way to move this after all imports
@@ -85,6 +86,7 @@ async def worker_loop():
     ``unidist.core.backends.mpi.core.common.Operations`` defines a set of supported operations.
     """
     task_store = TaskStore.get_instance()
+    object_store = ObjectStore.get_instance()
     local_store = LocalObjectStore.get_instance()
     request_store = RequestStore.get_instance()
     async_operations = AsyncOperations.get_instance()
@@ -185,7 +187,7 @@ async def worker_loop():
             if not ready_to_shutdown_posted:
                 # Prepare the data
                 # Actor method here is a data id so we have to retrieve it from the storage
-                method_name = get_data(request["task"])
+                method_name = object_store.get_data(request["task"])
                 handler = request["handler"]
                 actor_method = getattr(actor_map[handler], method_name)
                 request["task"] = actor_method
