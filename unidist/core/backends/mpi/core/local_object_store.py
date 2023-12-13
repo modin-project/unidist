@@ -8,8 +8,6 @@ import weakref
 
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
-from unidist.core.backends.mpi.core.serialization import deserialize_complex_data
-from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
 
 
 class LocalObjectStore:
@@ -114,26 +112,7 @@ class LocalObjectStore:
         object
             Return local data associated with `data_id`.
         """
-        if data_id in self._data_map:
-            return self._data_map[data_id]
-        # data can be prepared for sending to another process, but is not saved to local storage
-        else:
-            shared_object_store = SharedObjectStore.get_instance()
-            if self.is_already_serialized(data_id):
-                serialized_data = self.get_serialized_data(data_id)
-                value = deserialize_complex_data(
-                    serialized_data["s_data"],
-                    serialized_data["raw_buffers"],
-                    serialized_data["buffer_count"],
-                )
-            elif shared_object_store.contains(data_id):
-                value = shared_object_store.get(data_id)
-            else:
-                raise ValueError(
-                    "The current data ID is not contained in the LocalObjectStore."
-                )
-            self.put(data_id, value)
-            return value
+        return self._data_map[data_id]
 
     def get_data_owner(self, data_id):
         """
@@ -165,12 +144,7 @@ class LocalObjectStore:
         bool
             Return the status if an object exist in local dictionary.
         """
-        shared_object_store = SharedObjectStore.get_instance()
-        return (
-            data_id in self._data_map
-            or self.is_already_serialized(data_id)
-            or shared_object_store.contains(data_id)
-        )
+        return data_id in self._data_map
 
     def contains_data_owner(self, data_id):
         """
@@ -305,9 +279,7 @@ class LocalObjectStore:
         """
         # Copying is necessary to avoid corruption of data obtained through out-of-band serialization,
         # and buffers are marked read-only to prevent them from being modified.
-        data["raw_buffers"] = [
-            memoryview(buf.tobytes()).toreadonly() for buf in data["raw_buffers"]
-        ]
+        data["raw_buffers"] = [buf.tobytes() for buf in data["raw_buffers"]]
         self._serialization_cache[data_id] = data
         self.maybe_update_data_id_map(data_id)
 

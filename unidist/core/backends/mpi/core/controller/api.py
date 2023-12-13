@@ -28,6 +28,8 @@ from unidist.core.backends.mpi.core.controller.common import (
     request_worker_data,
     push_data,
     RoundRobin,
+    get_data,
+    contains_data,
 )
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
@@ -411,21 +413,17 @@ def get(data_ids):
     object
         A Python object.
     """
-    local_store = LocalObjectStore.get_instance()
-
     is_list = isinstance(data_ids, list)
     if not is_list:
         data_ids = [data_ids]
-    remote_data_ids = [
-        data_id for data_id in data_ids if not local_store.contains(data_id)
-    ]
+    remote_data_ids = [data_id for data_id in data_ids if not contains_data(data_id)]
     # Remote data gets available in the local store inside `request_worker_data`
     if remote_data_ids:
         request_worker_data(remote_data_ids)
 
     logger.debug("GET {} ids".format(common.unwrapped_data_ids_list(data_ids)))
 
-    values = [local_store.get(data_id) for data_id in data_ids]
+    values = [get_data(data_id) for data_id in data_ids]
 
     # Initiate reference count based cleaup
     # if all the tasks were completed
@@ -463,11 +461,9 @@ def wait(data_ids, num_returns=1):
     not_ready = data_ids
     pending_returns = num_returns
     ready = []
-    local_store = LocalObjectStore.get_instance()
-
     logger.debug("WAIT {} ids".format(common.unwrapped_data_ids_list(data_ids)))
     for data_id in not_ready.copy():
-        if local_store.contains(data_id):
+        if contains_data(data_id):
             ready.append(data_id)
             not_ready.remove(data_id)
             pending_returns -= 1
