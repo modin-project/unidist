@@ -214,7 +214,7 @@ class RequestStore:
         Only ROOT rank is supported for now, therefore no rank argument needed.
         """
         object_store = ObjectStore.get_instance()
-        if object_store.contains_data(data_id):
+        if object_store.contains(data_id):
             # Executor wait just for signal
             # We use a blocking send here because the receiver is waiting for the result.
             communication.mpi_send_object(
@@ -249,7 +249,7 @@ class RequestStore:
         Request is asynchronous, no wait for the data sending.
         """
         object_store = ObjectStore.get_instance()
-        if object_store.contains_data(data_id):
+        if object_store.contains(data_id):
             push_data(
                 source_rank,
                 data_id,

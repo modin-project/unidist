@@ -1,3 +1,9 @@
+# Copyright (C) 2021-2023 Modin authors
+#
+# SPDX-License-Identifier: Apache-2.0
+
+"""`ObjectStore` functionality."""
+
 from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 from unidist.core.backends.mpi.core.serialization import deserialize_complex_data
 from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
@@ -27,7 +33,7 @@ class ObjectStore:
             cls.__instance = ObjectStore()
         return cls.__instance
 
-    def contains_data(self, data_id):
+    def contains(self, data_id):
         """
         Check if the data associated with `data_id` exists in the current process.
 
@@ -49,7 +55,7 @@ class ObjectStore:
             or shared_store.contains(data_id)
         )
 
-    def get_data(self, data_id):
+    def get(self, data_id):
         """
         Get data from any location in the current process.
 

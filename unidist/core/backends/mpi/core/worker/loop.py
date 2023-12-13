@@ -187,7 +187,7 @@ async def worker_loop():
             if not ready_to_shutdown_posted:
                 # Prepare the data
                 # Actor method here is a data id so we have to retrieve it from the storage
-                method_name = object_store.get_data(request["task"])
+                method_name = object_store.get(request["task"])
                 handler = request["handler"]
                 actor_method = getattr(actor_map[handler], method_name)
                 request["task"] = actor_method

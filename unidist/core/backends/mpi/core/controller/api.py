@@ -416,7 +416,7 @@ def get(data_ids):
     if not is_list:
         data_ids = [data_ids]
     remote_data_ids = [
-        data_id for data_id in data_ids if not object_store.contains_data(data_id)
+        data_id for data_id in data_ids if not object_store.contains(data_id)
     ]
     # Remote data gets available in the local store inside `request_worker_data`
     if remote_data_ids:
@@ -424,7 +424,7 @@ def get(data_ids):
 
     logger.debug("GET {} ids".format(common.unwrapped_data_ids_list(data_ids)))
 
-    values = [object_store.get_data(data_id) for data_id in data_ids]
+    values = [object_store.get(data_id) for data_id in data_ids]
 
     # Initiate reference count based cleaup
     # if all the tasks were completed
@@ -465,7 +465,7 @@ def wait(data_ids, num_returns=1):
     ready = []
     logger.debug("WAIT {} ids".format(common.unwrapped_data_ids_list(data_ids)))
     for data_id in not_ready.copy():
-        if object_store.contains_data(data_id):
+        if object_store.contains(data_id):
             ready.append(data_id)
             not_ready.remove(data_id)
             pending_returns -= 1

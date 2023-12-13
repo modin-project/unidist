@@ -189,8 +189,8 @@ class TaskStore:
         if is_data_id(arg):
             local_store = LocalObjectStore.get_instance()
             object_store = ObjectStore.get_instance()
-            if object_store.contains_data(arg):
-                value = object_store.get_data(arg)
+            if object_store.contains(arg):
+                value = object_store.get(arg)
                 # Data is already local or was pushed from master
                 return value, False
             elif local_store.contains_data_owner(arg):
@@ -425,7 +425,7 @@ class TaskStore:
         # Remote function here is a data id so we have to retrieve it from the storage,
         # whereas actor method is already materialized in the worker loop.
         if is_data_id(task):
-            task = object_store.get_data(task)
+            task = object_store.get(task)
         args = request["args"]
         kwargs = request["kwargs"]
         output_ids = request["output"]
