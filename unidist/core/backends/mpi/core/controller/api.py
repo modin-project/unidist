@@ -19,6 +19,7 @@ except ImportError:
     ) from None
 
 from unidist.core.backends.mpi.core.serialization import serialize_complex_data
+from unidist.core.backends.mpi.core.object_store import ObjectStore
 from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
 from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 from unidist.core.backends.mpi.core.controller.garbage_collector import (
@@ -386,7 +387,6 @@ def put(data):
 
     data_id = local_store.generate_data_id(garbage_collector)
     serialized_data = serialize_complex_data(data)
-    local_store.put(data_id, data)
     if shared_store.is_allocated():
         shared_store.put(data_id, serialized_data)
     else:
@@ -411,13 +411,12 @@ def get(data_ids):
     object
         A Python object.
     """
-    local_store = LocalObjectStore.get_instance()
-
+    object_store = ObjectStore.get_instance()
     is_list = isinstance(data_ids, list)
     if not is_list:
         data_ids = [data_ids]
     remote_data_ids = [
-        data_id for data_id in data_ids if not local_store.contains(data_id)
+        data_id for data_id in data_ids if not object_store.contains(data_id)
     ]
     # Remote data gets available in the local store inside `request_worker_data`
     if remote_data_ids:
@@ -425,7 +424,7 @@ def get(data_ids):
 
     logger.debug("GET {} ids".format(common.unwrapped_data_ids_list(data_ids)))
 
-    values = [local_store.get(data_id) for data_id in data_ids]
+    values = [object_store.get(data_id) for data_id in data_ids]
 
     # Initiate reference count based cleaup
     # if all the tasks were completed
@@ -454,6 +453,7 @@ def wait(data_ids, num_returns=1):
     tuple
         List of data IDs that are ready and list of the remaining data IDs.
     """
+    object_store = ObjectStore.get_instance()
     if not isinstance(data_ids, list):
         data_ids = [data_ids]
     # Since the controller should operate MpiDataID(s),
@@ -463,11 +463,9 @@ def wait(data_ids, num_returns=1):
     not_ready = data_ids
     pending_returns = num_returns
     ready = []
-    local_store = LocalObjectStore.get_instance()
-
     logger.debug("WAIT {} ids".format(common.unwrapped_data_ids_list(data_ids)))
     for data_id in not_ready.copy():
-        if local_store.contains(data_id):
+        if object_store.contains(data_id):
             ready.append(data_id)
             not_ready.remove(data_id)
             pending_returns -= 1

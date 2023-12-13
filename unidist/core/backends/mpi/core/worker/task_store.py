@@ -11,6 +11,7 @@ from unidist.core.backends.common.data_id import is_data_id
 import unidist.core.backends.mpi.core.common as common
 import unidist.core.backends.mpi.core.communication as communication
 from unidist.core.backends.mpi.core.async_operations import AsyncOperations
+from unidist.core.backends.mpi.core.object_store import ObjectStore
 from unidist.core.backends.mpi.core.local_object_store import LocalObjectStore
 from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
 from unidist.core.backends.mpi.core.serialization import serialize_complex_data
@@ -187,8 +188,9 @@ class TaskStore:
         """
         if is_data_id(arg):
             local_store = LocalObjectStore.get_instance()
-            if local_store.contains(arg):
-                value = LocalObjectStore.get_instance().get(arg)
+            object_store = ObjectStore.get_instance()
+            if object_store.contains(arg):
+                value = object_store.get(arg)
                 # Data is already local or was pushed from master
                 return value, False
             elif local_store.contains_data_owner(arg):
@@ -417,13 +419,13 @@ class TaskStore:
         dict or None
             Same request if the task couldn`t be executed, otherwise ``None``.
         """
+        object_store = ObjectStore.get_instance()
         # Parse request
-        local_store = LocalObjectStore.get_instance()
         task = request["task"]
         # Remote function here is a data id so we have to retrieve it from the storage,
         # whereas actor method is already materialized in the worker loop.
         if is_data_id(task):
-            task = local_store.get(task)
+            task = object_store.get(task)
         args = request["args"]
         kwargs = request["kwargs"]
         output_ids = request["output"]

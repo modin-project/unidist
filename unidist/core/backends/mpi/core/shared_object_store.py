@@ -747,7 +747,7 @@ class SharedObjectStore:
         # put shared info
         self._put_shared_info(data_id, shared_info)
 
-    def get(self, data_id, owner_rank, shared_info):
+    def get(self, data_id, owner_rank=None, shared_info=None):
         """
         Get data from another worker using shared memory.
 
@@ -755,54 +755,66 @@ class SharedObjectStore:
         ----------
         data_id : unidist.core.backends.mpi.core.common.MpiDataID
             An ID to data.
-        owner_rank : int
+        owner_rank : int, default: None
             The rank that sent the data.
-        shared_info : dict
+            This value is used to synchronize data in shared memory between different hosts
+            if the value is not ``None``.
+        shared_info : dict, default: None
             The necessary information to properly deserialize data from shared memory.
+            If `shared_info` is ``None``, the data already exists in shared memory in the current process.
         """
-        mpi_state = communication.MPIState.get_instance()
-        s_data_len = shared_info["s_data_len"]
-        raw_buffers_len = shared_info["raw_buffers_len"]
-        service_index = shared_info["service_index"]
-        buffer_count = shared_info["buffer_count"]
+        if shared_info is None:
+            shared_info = self.get_shared_info(data_id)
+        else:
+            mpi_state = communication.MPIState.get_instance()
+            s_data_len = shared_info["s_data_len"]
+            raw_buffers_len = shared_info["raw_buffers_len"]
+            service_index = shared_info["service_index"]
+            buffer_count = shared_info["buffer_count"]
 
-        # check data in shared memory
-        if not self._check_service_info(data_id, service_index):
-            # reserve shared memory
-            shared_data_len = s_data_len + sum([buf for buf in raw_buffers_len])
-            reservation_info = communication.send_reserve_operation(
-                mpi_state.global_comm, data_id, shared_data_len
+            # check data in shared memory
+            if not self._check_service_info(data_id, service_index):
+                # reserve shared memory
+                shared_data_len = s_data_len + sum([buf for buf in raw_buffers_len])
+                reservation_info = communication.send_reserve_operation(
+                    mpi_state.global_comm, data_id, shared_data_len
+                )
+
+                service_index = reservation_info["service_index"]
+                # check if worker should sync shared buffer or it is doing by another worker
+                if reservation_info["is_first_request"]:
+                    # syncronize shared buffer
+                    if owner_rank is None:
+                        raise ValueError(
+                            "The data is not in the host's shared memory and the data must be synchronized, "
+                            + "but the owner rank is not defined."
+                        )
+
+                    self._sync_shared_memory_from_another_host(
+                        mpi_state.global_comm,
+                        data_id,
+                        owner_rank,
+                        reservation_info["first_index"],
+                        reservation_info["last_index"],
+                        service_index,
+                    )
+                    # put service info
+                    self._put_service_info(
+                        service_index, data_id, reservation_info["first_index"]
+                    )
+                else:
+                    # wait while another worker syncronize shared buffer
+                    while not self._check_service_info(data_id, service_index):
+                        time.sleep(MpiBackoff.get())
+
+            # put shared info with updated data_id and service_index
+            shared_info = common.MetadataPackage.get_shared_info(
+                data_id, s_data_len, raw_buffers_len, buffer_count, service_index
             )
+            self._put_shared_info(data_id, shared_info)
 
-            service_index = reservation_info["service_index"]
-            # check if worker should sync shared buffer or it is doing by another worker
-            if reservation_info["is_first_request"]:
-                # syncronize shared buffer
-                self._sync_shared_memory_from_another_host(
-                    mpi_state.global_comm,
-                    data_id,
-                    owner_rank,
-                    reservation_info["first_index"],
-                    reservation_info["last_index"],
-                    service_index,
-                )
-                # put service info
-                self._put_service_info(
-                    service_index, data_id, reservation_info["first_index"]
-                )
-            else:
-                # wait while another worker syncronize shared buffer
-                while not self._check_service_info(data_id, service_index):
-                    time.sleep(MpiBackoff.get())
-
-        # put shared info with updated data_id and service_index
-        shared_info = common.MetadataPackage.get_shared_info(
-            data_id, s_data_len, raw_buffers_len, buffer_count, service_index
-        )
-        self._put_shared_info(data_id, shared_info)
-
-        # increment ref
-        self._increment_ref_number(data_id, shared_info["service_index"])
+            # increment ref
+            self._increment_ref_number(data_id, shared_info["service_index"])
 
         # read from shared buffer and deserialized
         return self._read_from_shared_buffer(data_id, shared_info)

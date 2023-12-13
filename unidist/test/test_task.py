@@ -122,3 +122,15 @@ def test_serialize_dict_with_tuple_key():
     }
 
     assert_equal(f.remote(data), data)
+
+
+@pytest.mark.xfail(
+    Backend.get() == BackendName.PYSEQ,
+    reason="PUT using PYSEQ does not provide immutable data",
+)
+def test_data_immutability():
+    data = [1, 2, 3]
+    object_ref = unidist.put(data)
+
+    data[0] = 111
+    assert_equal(object_ref, [1, 2, 3])
