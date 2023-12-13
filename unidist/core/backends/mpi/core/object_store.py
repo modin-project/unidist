@@ -11,7 +11,7 @@ from unidist.core.backends.mpi.core.shared_object_store import SharedObjectStore
 
 class ObjectStore:
     """
-    Class that combines checking and reciving data from all stores in a current process.
+    Class that combines checking and retrieving data from the shared and local stores in a current process.
 
     Notes
     -----
