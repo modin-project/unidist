@@ -76,7 +76,7 @@ jobs:
           use-only-tar-bz2: false
       # Build unidist to make C++ extensions available
       - name: Build unidist
-        run: pip install -e .
+        run: pip install unidist==0.6.0
       - name: Conda environment
         run: |
           conda info
