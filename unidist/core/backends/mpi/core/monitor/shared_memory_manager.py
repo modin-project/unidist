@@ -208,13 +208,15 @@ class SharedMemoryManager:
         has_refs = array(
             "B",
             [
-                1
-                if data_id in self._reservation_info
-                and self.shared_store.get_ref_number(
-                    data_id, self._reservation_info[data_id]["service_index"]
+                (
+                    1
+                    if data_id in self._reservation_info
+                    and self.shared_store.get_ref_number(
+                        data_id, self._reservation_info[data_id]["service_index"]
+                    )
+                    > 0
+                    else 0
                 )
-                > 0
-                else 0
                 for data_id in cleanup_list
             ],
         )

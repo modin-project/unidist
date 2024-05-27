@@ -52,7 +52,7 @@ jobs:
         os:
           - ubuntu
           - windows
-        python-version: ["3.8", "3.9"]
+        python-version: ["3.10"]
         backend: ["ray", "mpi", "dask", "pymp", "pyseq"]
     runs-on: ${{ matrix.os }}-latest
     defaults:
@@ -76,7 +76,7 @@ jobs:
           use-only-tar-bz2: false
       # Build unidist to make C++ extensions available
       - name: Build unidist
-        run: pip install -e .
+        run: pip install unidist==0.6.0
       - name: Conda environment
         run: |
           conda info

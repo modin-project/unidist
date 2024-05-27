@@ -230,9 +230,11 @@ class SharedObjectStore:
         info = MPI.Info.Create()
         info.Set("alloc_shared_noncontig", "true")
         self.win = MPI.Win.Allocate_shared(
-            self.shared_memory_size * MPI.BYTE.size
-            if mpi_state.is_monitor_process()
-            else 0,
+            (
+                self.shared_memory_size * MPI.BYTE.size
+                if mpi_state.is_monitor_process()
+                else 0
+            ),
             MPI.BYTE.size,
             comm=mpi_state.host_comm,
             info=info,
@@ -245,9 +247,11 @@ class SharedObjectStore:
             * self.INFO_SIZE
         )
         self.service_win = MPI.Win.Allocate_shared(
-            self.service_info_max_count * MPI.LONG.size
-            if mpi_state.is_monitor_process()
-            else 0,
+            (
+                self.service_info_max_count * MPI.LONG.size
+                if mpi_state.is_monitor_process()
+                else 0
+            ),
             MPI.LONG.size,
             comm=mpi_state.host_comm,
             info=info,
@@ -363,13 +367,13 @@ class SharedObjectStore:
         worker_id, data_number = self._parse_data_id(data_id)
 
         with WinLock(self.service_win):
-            self.service_shared_buffer[
-                service_index + self.FIRST_DATA_INDEX
-            ] = first_index
+            self.service_shared_buffer[service_index + self.FIRST_DATA_INDEX] = (
+                first_index
+            )
             self.service_shared_buffer[service_index + self.REFERENCES_NUMBER] = 1
-            self.service_shared_buffer[
-                service_index + self.DATA_NUMBER_INDEX
-            ] = data_number
+            self.service_shared_buffer[service_index + self.DATA_NUMBER_INDEX] = (
+                data_number
+            )
             self.service_shared_buffer[service_index + self.WORKER_ID_INDEX] = worker_id
 
         self.finalizers.append(
