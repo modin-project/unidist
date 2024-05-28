@@ -21,12 +21,12 @@ jobs:
     name: lint (black)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.8.x"
+          python-version: "3.10"
           architecture: "x64"
       - run: pip install black
       - run: black --check --diff .
@@ -35,12 +35,12 @@ jobs:
     name: lint (flake8)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.8.x"
+          python-version: "3.10"
           architecture: "x64"
       - run: pip install flake8 flake8-print
       - run: flake8 --enable=T .
@@ -52,7 +52,7 @@ jobs:
         os:
           - ubuntu
           - windows
-        python-version: ["3.8", "3.9"]
+        python-version: ["3.9", "3.10"]
         backend: ["ray", "mpi", "dask", "pymp", "pyseq"]
     runs-on: ${{ matrix.os }}-latest
     defaults:
@@ -62,10 +62,10 @@ jobs:
       UNIDIST_BACKEND: ${{matrix.backend}}
     name: test-${{ matrix.os }} (backend ${{matrix.backend}}, python ${{matrix.python-version}})
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           activate-environment: unidist
           environment-file: ${{ matrix.os == 'ubuntu' && 'environment_linux.yml' || matrix.os == 'windows' && 'environment_win.yml' }}

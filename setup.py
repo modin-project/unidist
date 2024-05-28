@@ -42,6 +42,6 @@ setup(
         "mpi": mpi_deps,
         "all": all_deps,
     },
-    python_requires=">=3.7.1",
+    python_requires=">=3.9",
     ext_modules=cythonize([_memory]),
 )
