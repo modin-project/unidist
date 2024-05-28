@@ -22,6 +22,8 @@ _memory = Extension(
     "unidist.core.backends.mpi.core._memory",
     ["unidist/core/backends/mpi/core/memory/_memory.pyx"],
     language="c++",
+    extra_compile_args=["-std=c++11"],
+    extra_link_args=["-std=c++11"],
 )
 
 setup(
