@@ -17,7 +17,7 @@ from .api import (
     num_cpus,
     cluster_resources,
 )
-from ._version import get_versions
+from . import _version
 
 __all__ = [
     "init",
@@ -33,5 +33,4 @@ __all__ = [
     "cluster_resources",
 ]
 
-__version__ = get_versions()["version"]
-del get_versions
+__version__ = _version.get_versions()["version"]
