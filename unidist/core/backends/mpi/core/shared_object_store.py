@@ -445,13 +445,17 @@ class SharedObjectStore:
         first_index = self.service_shared_buffer[service_index + self.FIRST_DATA_INDEX]
 
         s_data_last_index = first_index + s_data_len
-        s_data = self.shared_buffer[first_index:s_data_last_index].toreadonly()
+        s_data = (
+            self.shared_buffer[first_index:s_data_last_index].cast("b").toreadonly()
+        )
         prev_last_index = s_data_last_index
         raw_buffers = []
         for raw_buffer_len in buffer_lens:
             raw_last_index = prev_last_index + raw_buffer_len
             raw_buffers.append(
-                self.shared_buffer[prev_last_index:raw_last_index].toreadonly()
+                self.shared_buffer[prev_last_index:raw_last_index]
+                .cast("b")
+                .toreadonly()
             )
             prev_last_index = raw_last_index
 
