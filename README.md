@@ -6,7 +6,7 @@
 <p align="center">
 <a href="https://github.com/modin-project/unidist/actions"><img src="https://github.com/modin-project/unidist/actions/workflows/ci.yml/badge.svg" align="center"></a>
 <a href="https://unidist.readthedocs.io/en/latest/?badge=latest"><img alt="" src="https://readthedocs.org/projects/unidist/badge/?version=latest" align="center"></a>
-<a href="https://pypi.org/project/unidist/"><img src="https://badge.fury.io/py/unidist.svg" alt="PyPI version" align="center"></a>
+<a href="https://pypi.org/project/unidist/0.7.1/"><img src="https://img.shields.io/badge/pypi-0.7.1-blue.svg" alt="PyPI version" align="center"></a>
 <a href="https://pepy.tech/project/unidist"><img src="https://static.pepy.tech/personalized-badge/unidist?period=total&units=international_system&left_color=black&right_color=blue&left_text=Downloads" align="center"></a>
 </p>
 
