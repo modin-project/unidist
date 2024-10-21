@@ -2,3 +2,5 @@ include versioneer.py
 include unidist/_version.py
 include unidist/core/backends/mpi/core/memory/_memory.pyx
 include unidist/core/backends/mpi/core/memory/memory.pxd
+include unidist/core/backends/mpi/core/memory/memory.cpp
+include unidist/core/backends/mpi/core/memory/memory.h
